@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Coinnect — The open routing layer for global money</title>
+  <script>
+    // Apply saved theme before render to avoid flash
+    if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
+    tailwind = { config: { darkMode: 'class' } };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
@@ -19,8 +24,9 @@
       position: absolute;
       left: 11px; top: 24px; bottom: -8px;
       width: 2px;
-      background: #374151;
     }
+    .dark .step-line::before { background: #374151; }
+    .step-line::before { background: #d1d5db; }
     .step-line:last-child::before { display: none; }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
     .loading-dot { animation: pulse-dot 1.2s ease infinite; }
@@ -28,17 +34,24 @@
     .loading-dot:nth-child(3) { animation-delay: .4s; }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen">
+<body class="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
 
   <!-- Header -->
-  <header class="border-b border-gray-800 px-6 py-4">
+  <header class="border-b border-gray-200 dark:border-gray-800 px-6 py-4">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-sm font-bold text-white">C</div>
         <span class="font-semibold text-lg">Coinnect</span>
-        <span class="text-xs text-gray-500 border border-gray-700 rounded px-2 py-0.5">beta</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5">beta</span>
       </div>
-      <div class="text-xs text-gray-500">non-profit · open source · no fees</div>
+      <div class="flex items-center gap-4">
+        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">non-profit · open source · no fees</span>
+        <button onclick="toggleTheme()" id="themeBtn"
+          class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          title="Toggle theme">
+          <span id="themeIcon" class="text-base">☀️</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -48,7 +61,7 @@
       <span class="gradient-text">Find the cheapest way</span><br>
       to send money anywhere
     </h1>
-    <p class="text-gray-400 text-lg max-w-xl mx-auto">
+    <p class="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto">
       Compares crypto exchanges, fiat services, and P2P platforms in real time.
       No affiliate fees. No bias. Just the best route.
     </p>
@@ -56,18 +69,18 @@
 
   <!-- Quote form -->
   <div class="max-w-2xl mx-auto px-6">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
       <div class="grid grid-cols-3 gap-4 mb-4">
         <!-- Amount -->
         <div class="col-span-3 sm:col-span-1">
-          <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">Amount</label>
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Amount</label>
           <input id="amount" type="number" value="500" min="1"
-            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white text-lg font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
+            class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
         </div>
         <!-- From -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">From</label>
-          <select id="from" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">From</label>
+          <select id="from" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
             <option value="USD" selected>🇺🇸 USD</option>
             <option value="EUR">🇪🇺 EUR</option>
             <option value="GBP">🇬🇧 GBP</option>
@@ -77,8 +90,8 @@
         </div>
         <!-- To -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wide">To</label>
-          <select id="to" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-cyan-500">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">To</label>
+          <select id="to" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
             <option value="MXN" selected>🇲🇽 MXN</option>
             <option value="NGN">🇳🇬 NGN</option>
             <option value="PHP">🇵🇭 PHP</option>
@@ -105,8 +118,8 @@
   <div id="results" class="max-w-2xl mx-auto px-6 mt-8 pb-16"></div>
 
   <!-- Footer -->
-  <footer class="text-center text-xs text-gray-600 pb-8">
-    <a href="/docs" class="hover:text-gray-400 transition-colors">API docs</a>
+  <footer class="text-center text-xs text-gray-400 dark:text-gray-600 pb-8">
+    <a href="/docs" class="hover:text-gray-600 dark:hover:text-gray-400 transition-colors">API docs</a>
     &nbsp;·&nbsp;
     <span>Rates refresh every 3 min</span>
     &nbsp;·&nbsp;
@@ -130,9 +143,23 @@ function fmtNum(n) {
   return n.toFixed(4).replace(/\.?0+$/, '');
 }
 
+function isDark() { return document.documentElement.classList.contains('dark'); }
+
+function toggleTheme() {
+  const dark = isDark();
+  document.documentElement.classList.toggle('dark', !dark);
+  localStorage.theme = dark ? 'light' : 'dark';
+  document.getElementById('themeIcon').textContent = dark ? '🌙' : '☀️';
+}
+
+function initThemeIcon() {
+  document.getElementById('themeIcon').textContent = isDark() ? '☀️' : '🌙';
+}
+
 function loading() {
+  const textColor = isDark() ? 'text-gray-400' : 'text-gray-500';
   document.getElementById('results').innerHTML = `
-    <div class="text-center py-12 text-gray-400">
+    <div class="text-center py-12 ${textColor}">
       <div class="flex justify-center gap-1.5 mb-3">
         <div class="w-2 h-2 rounded-full bg-cyan-400 loading-dot"></div>
         <div class="w-2 h-2 rounded-full bg-cyan-400 loading-dot"></div>
@@ -143,9 +170,12 @@ function loading() {
 }
 
 function rankColor(rank) {
-  return rank === 1
+  if (rank === 1) return isDark()
     ? 'border-cyan-500/40 bg-cyan-950/30'
-    : 'border-gray-700 bg-gray-900';
+    : 'border-cyan-400/50 bg-cyan-50';
+  return isDark()
+    ? 'border-gray-700 bg-gray-900'
+    : 'border-gray-200 bg-white';
 }
 
 function renderSavings(routes, amount, from) {
@@ -156,46 +186,65 @@ function renderSavings(routes, amount, from) {
   const bestCost = amount * best.total_cost_pct / 100;
   const saved = (wuCost - bestCost).toFixed(2);
   if (saved <= 0) return '';
+  const bg = isDark()
+    ? 'bg-emerald-950/40 border-emerald-700/40'
+    : 'bg-emerald-50 border-emerald-200';
+  const textMain = isDark() ? 'text-emerald-400' : 'text-emerald-700';
+  const textSub = isDark() ? 'text-gray-400' : 'text-gray-500';
   return `
-    <div class="mb-4 bg-emerald-950/40 border border-emerald-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
+    <div class="mb-4 ${bg} border rounded-xl px-4 py-3 flex items-center gap-3">
       <span class="text-2xl">💸</span>
       <div>
-        <div class="text-emerald-400 font-semibold text-sm">Save ~${from} ${saved} vs Western Union</div>
-        <div class="text-gray-400 text-xs">Best route costs ${best.total_cost_pct.toFixed(2)}% · Western Union costs ${wuRoute.total_cost_pct.toFixed(2)}%</div>
+        <div class="${textMain} font-semibold text-sm">Save ~${from} ${saved} vs Western Union</div>
+        <div class="${textSub} text-xs">Best route costs ${best.total_cost_pct.toFixed(2)}% · Western Union costs ${wuRoute.total_cost_pct.toFixed(2)}%</div>
       </div>
     </div>`;
 }
 
 function renderRoute(r, from, to) {
   const badge = r.rank === 1
-    ? '<span class="text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-full px-2 py-0.5">Best</span>'
+    ? '<span class="text-xs bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 rounded-full px-2 py-0.5">Best</span>'
     : '';
 
-  const steps = r.steps.map((s, i) => `
+  const stepNumBg = isDark() ? 'bg-gray-800 border-gray-600 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500';
+  const stepCurrency = isDark() ? 'text-white' : 'text-gray-900';
+  const stepVia = isDark() ? 'text-gray-500' : 'text-gray-400';
+  const stepBadge = isDark() ? 'text-gray-300 bg-gray-800 border-gray-700' : 'text-gray-600 bg-gray-100 border-gray-200';
+  const stepFee = isDark() ? 'text-gray-500' : 'text-gray-400';
+  const stepInstr = isDark() ? 'text-gray-500' : 'text-gray-400';
+  const divider = isDark() ? 'border-gray-800' : 'border-gray-100';
+  const receiveAmt = isDark() ? 'text-white' : 'text-gray-900';
+  const receiveCur = isDark() ? 'text-gray-400' : 'text-gray-500';
+  const metaText = isDark() ? 'text-gray-500' : 'text-gray-400';
+  const labelText = isDark() ? 'text-gray-100' : 'text-gray-800';
+
+  const steps = r.steps.map((s) => `
     <div class="step-line relative pl-8 pb-4">
-      <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-xs text-gray-400">${s.step}</div>
+      <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${stepNumBg} border flex items-center justify-center text-xs">${s.step}</div>
       <div class="flex items-center gap-2 mb-0.5">
-        <span class="font-mono text-sm text-white">${flag(s.from_currency)} ${s.from_currency} → ${flag(s.to_currency)} ${s.to_currency}</span>
-        <span class="text-xs text-gray-500">via</span>
-        <span class="text-xs font-medium text-gray-300 bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5">${s.via}</span>
-        <span class="text-xs text-gray-500">${s.fee_pct}%</span>
+        <span class="font-mono text-sm ${stepCurrency}">${flag(s.from_currency)} ${s.from_currency} → ${flag(s.to_currency)} ${s.to_currency}</span>
+        <span class="text-xs ${stepVia}">via</span>
+        <span class="text-xs font-medium ${stepBadge} border rounded px-1.5 py-0.5">${s.via}</span>
+        <span class="text-xs ${stepFee}">${s.fee_pct}%</span>
       </div>
-      <div class="text-xs text-gray-500">${s.instructions}</div>
+      <div class="text-xs ${stepInstr}">${s.instructions}</div>
     </div>`).join('');
+
+  const errBg = isDark() ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-50 border-gray-200 text-gray-500';
 
   return `
     <div class="route-card border ${rankColor(r.rank)} rounded-xl p-5 mb-3">
       <div class="flex items-start justify-between mb-4">
         <div class="flex items-center gap-2">
-          <span class="text-base font-semibold">${r.label}</span>
+          <span class="text-base font-semibold ${labelText}">${r.label}</span>
           ${badge}
         </div>
         <div class="text-right">
-          <div class="text-xl font-bold text-white font-mono">${flag(to)} ${fmtNum(r.they_receive)} <span class="text-gray-400 text-base font-normal">${to}</span></div>
-          <div class="text-xs text-gray-500">${r.total_cost_pct.toFixed(2)}% total fee · ${r.total_time_minutes} min</div>
+          <div class="text-xl font-bold ${receiveAmt} font-mono">${flag(to)} ${fmtNum(r.they_receive)} <span class="${receiveCur} text-base font-normal">${to}</span></div>
+          <div class="text-xs ${metaText}">${r.total_cost_pct.toFixed(2)}% total fee · ${r.total_time_minutes} min</div>
         </div>
       </div>
-      <div class="border-t border-gray-800 pt-4">
+      <div class="border-t ${divider} pt-4">
         ${steps}
       </div>
     </div>`;
@@ -210,6 +259,10 @@ async function getQuote() {
   loading();
   document.getElementById('searchBtn').disabled = true;
 
+  const metaText = isDark() ? 'text-gray-500' : 'text-gray-400';
+  const footerText = isDark() ? 'text-gray-600' : 'text-gray-400';
+  const errBg = isDark() ? 'border-gray-800 text-gray-500' : 'border-gray-200 text-gray-400';
+
   try {
     const res = await fetch(`${API}/v1/quote?from=${from}&to=${to}&amount=${amount}`);
     if (!res.ok) {
@@ -219,22 +272,20 @@ async function getQuote() {
     const data = await res.json();
     const routes = data.routes;
 
-    const html = `
-      <div class="text-xs text-gray-500 mb-4 flex items-center justify-between">
+    document.getElementById('results').innerHTML = `
+      <div class="text-xs ${metaText} mb-4 flex items-center justify-between">
         <span>${routes.length} route${routes.length !== 1 ? 's' : ''} found</span>
         <span>Updated ${new Date(data.generated_at).toLocaleTimeString()}</span>
       </div>
       ${renderSavings(routes, amount, from)}
       ${routes.map(r => renderRoute(r, from, to)).join('')}
-      <div class="mt-4 text-center text-xs text-gray-600">
+      <div class="mt-4 text-center text-xs ${footerText}">
         Coinnect shows routes — it never executes transfers or holds funds.
         Each exchange handles its own KYC.
       </div>`;
-
-    document.getElementById('results').innerHTML = html;
   } catch(e) {
     document.getElementById('results').innerHTML = `
-      <div class="text-center py-8 text-gray-500 border border-gray-800 rounded-xl">
+      <div class="text-center py-8 ${errBg} border rounded-xl">
         <div class="text-2xl mb-2">⚠️</div>
         <div class="text-sm">${e.message}</div>
         <div class="text-xs mt-1">This corridor may not be supported yet</div>
@@ -244,8 +295,7 @@ async function getQuote() {
   }
 }
 
-// Auto-search on load
-window.onload = () => getQuote();
+window.onload = () => { initThemeIcon(); getQuote(); };
 </script>
 </body>
 </html>
