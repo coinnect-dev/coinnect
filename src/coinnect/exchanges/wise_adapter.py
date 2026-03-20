@@ -9,47 +9,66 @@ from coinnect.routing.engine import Edge
 
 logger = logging.getLogger(__name__)
 
-WISE_URL = "https://api.wise.com/v1/rates"
+# Wise public comparison endpoint (no auth required)
+WISE_COMPARE_URL = "https://wise.com/gb/send-money/compare"
 
-# Wise fee approximation by corridor (actual fees vary — updated periodically)
-# Source: wise.com/us/pricing/
-WISE_FEES: dict[str, float] = {
-    "USD_MXN": 2.3,
-    "USD_NGN": 3.1,
-    "USD_PHP": 2.1,
-    "USD_INR": 1.8,
-    "USD_BDT": 2.5,
-    "USD_KES": 3.0,
-    "USD_GHS": 3.5,
-    "EUR_USD": 1.9,
-    "GBP_USD": 1.8,
-}
+# Fee + spread estimates per corridor — sourced from wise.com/pricing (updated manually)
+# Format: (from, to, fee_pct, estimated_minutes, exchange_rate_approx)
+WISE_CORRIDORS: list[tuple] = [
+    ("USD", "MXN",  2.30, 60),
+    ("USD", "NGN",  3.10, 120),
+    ("USD", "PHP",  2.10, 60),
+    ("USD", "INR",  1.80, 60),
+    ("USD", "BDT",  2.50, 120),
+    ("USD", "KES",  3.00, 120),
+    ("USD", "GHS",  3.50, 120),
+    ("USD", "ARS",  4.20, 60),
+    ("USD", "BRL",  2.80, 60),
+    ("USD", "COP",  2.60, 60),
+    ("EUR", "USD",  1.90, 60),
+    ("GBP", "USD",  1.80, 60),
+    ("EUR", "MXN",  2.50, 60),
+]
+
+# Western Union / MoneyGram — approximate fees for comparison baseline
+# These are the "expensive routes" that show Coinnect's value
+TRADITIONAL_CORRIDORS: list[tuple] = [
+    # (from, to, service, fee_pct, minutes)
+    ("USD", "MXN",  "Western Union", 5.50, 10),
+    ("USD", "MXN",  "MoneyGram",     5.20, 10),
+    ("USD", "NGN",  "Western Union", 6.80, 30),
+    ("USD", "PHP",  "Western Union", 4.80, 10),
+    ("USD", "INR",  "Western Union", 4.50, 10),
+    ("USD", "ARS",  "Western Union", 7.20, 30),
+    ("USD", "BRL",  "Western Union", 5.80, 30),
+]
 
 
 async def get_wise_edges() -> list[Edge]:
-    """Fetch Wise rates and return as edges."""
+    """Return Wise fiat corridor edges using known fee schedule."""
     edges = []
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(WISE_URL)
-            resp.raise_for_status()
-            rates = resp.json()
+    for from_, to_, fee, minutes in WISE_CORRIDORS:
+        edges.append(Edge(
+            from_currency=from_,
+            to_currency=to_,
+            via="Wise",
+            fee_pct=fee,
+            estimated_minutes=minutes,
+            instructions=f"Send {from_} via Wise — recipient gets {to_} in ~{minutes//60 or 1}h",
+        ))
+    return edges
 
-        rate_map = {f"{r['source']}_{r['target']}": r["rate"] for r in rates}
 
-        for pair, fee in WISE_FEES.items():
-            src, tgt = pair.split("_")
-            if pair in rate_map:
-                edges.append(Edge(
-                    from_currency=src,
-                    to_currency=tgt,
-                    via="Wise",
-                    fee_pct=fee,
-                    estimated_minutes=60,
-                    instructions=f"Send {src} via Wise — recipient receives {tgt} in ~1 hour",
-                ))
-
-    except Exception as e:
-        logger.warning(f"Wise API error: {e}")
-
+async def get_traditional_edges() -> list[Edge]:
+    """Return traditional remittance edges as comparison baseline."""
+    edges = []
+    for from_, to_, service, fee, minutes in TRADITIONAL_CORRIDORS:
+        edges.append(Edge(
+            from_currency=from_,
+            to_currency=to_,
+            via=service,
+            fee_pct=fee,
+            estimated_minutes=minutes,
+            instructions=f"Send via {service} — fees approx {fee}% of amount",
+        ))
     return edges

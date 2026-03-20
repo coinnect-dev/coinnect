@@ -71,13 +71,14 @@ def find_routes(
     Dijkstra to find cheapest routes.
     Returns list of (total_cost_pct, amount_received, path).
     """
-    # heap: (total_cost, -amount_received, steps_count, current, amount, path)
-    heap = [(0.0, -amount, 0, start, amount, [])]
+    counter = 0  # tie-breaker so heap never compares Edge objects
+    # heap: (total_cost, counter, steps_count, current, amount, path)
+    heap = [(0.0, counter, 0, start, amount, [])]
     results = []
-    visited_states = {}
+    visited_states: dict[tuple, float] = {}
 
     while heap and len(results) < max_routes:
-        cost, neg_received, steps, curr, curr_amount, path = heapq.heappop(heap)
+        cost, _, steps, curr, curr_amount, path = heapq.heappop(heap)
 
         state = (curr, steps)
         if state in visited_states and visited_states[state] <= cost:
@@ -94,9 +95,10 @@ def find_routes(
         for edge in graph.get(curr, []):
             new_amount = curr_amount * (1 - edge.fee_pct / 100)
             new_cost = cost + edge.fee_pct
+            counter += 1
             heapq.heappush(heap, (
                 new_cost,
-                -new_amount,
+                counter,
                 steps + 1,
                 edge.to_currency,
                 new_amount,
