@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: Coinnect API
+  description: |
+    The open routing layer for global money.
+
+    Coinnect finds the cheapest path to send money between any two currencies,
+    across traditional remittance services, crypto exchanges, and P2P platforms.
+
+    This API is free to use, requires no authentication, and returns no user data.
+    It is designed to be called by humans, bots, and AI agents alike.
+  version: 0.1.0
+  contact:
+    name: Coinnect
+    url: https://coinnect.bot
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.coinnect.bot/v1
+    description: Production (forthcoming)
+
+paths:
+  /quote:
+    get:
+      summary: Get ranked transfer routes
+      description: |
+        Returns all viable routes to transfer money from one currency to another,
+        ranked by total cost. Each route may involve multiple steps across
+        different exchanges.
+
+        This endpoint is safe to call from AI agents as a tool/function.
+      operationId: getQuote
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Source currency (ISO 4217 or crypto ticker)
+          schema:
+            type: string
+            example: USD
+        - name: to
+          in: query
+          required: true
+          description: Destination currency (ISO 4217 or crypto ticker)
+          schema:
+            type: string
+            example: NGN
+        - name: amount
+          in: query
+          required: true
+          description: Amount in source currency
+          schema:
+            type: number
+            example: 500
+        - name: priority
+          in: query
+          required: false
+          description: Optimize for cost (default) or speed
+          schema:
+            type: string
+            enum: [cost, speed]
+            default: cost
+      responses:
+        '200':
+          description: Ranked list of transfer routes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+              example:
+                from: USD
+                to: NGN
+                amount: 500
+                generated_at: "2026-05-01T10:00:00Z"
+                routes:
+                  - rank: 1
+                    label: Cheapest
+                    total_cost_pct: 1.4
+                    total_time_minutes: 60
+                    you_send: 500.00
+                    they_receive: 762450
+                    they_receive_currency: NGN
+                    vs_western_union_saving_usd: 21.50
+                    steps:
+                      - step: 1
+                        from: USD
+                        to: USDC
+                        via: Kraken
+                        fee_pct: 0.5
+                        estimated_minutes: 10
+                        instructions: "Buy USDC on Kraken with your USD balance"
+                      - step: 2
+                        from: USDC
+                        to: NGN
+                        via: Yellow Card
+                        fee_pct: 0.9
+                        estimated_minutes: 50
+                        instructions: "Send USDC to Yellow Card, recipient receives NGN"
+                  - rank: 2
+                    label: Fastest
+                    total_cost_pct: 3.8
+                    total_time_minutes: 10
+                    you_send: 500.00
+                    they_receive: 731200
+                    they_receive_currency: NGN
+                    steps:
+                      - step: 1
+                        from: USD
+                        to: NGN
+                        via: Western Union
+                        fee_pct: 3.8
+                        estimated_minutes: 10
+                        instructions: "Send via Western Union online"
+
+  /exchanges:
+    get:
+      summary: List all integrated exchanges
+      operationId: listExchanges
+      responses:
+        '200':
+          description: List of exchanges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exchanges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Exchange'
+
+  /corridors:
+    get:
+      summary: List supported currency corridors
+      operationId: listCorridors
+      responses:
+        '200':
+          description: Supported from/to currency pairs
+
+  /health:
+    get:
+      summary: API health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is operational
+          content:
+            application/json:
+              example:
+                ok: true
+                status: live
+                exchanges_online: 9
+                last_rate_refresh: "2026-05-01T09:58:00Z"
+
+components:
+  schemas:
+    QuoteResponse:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        amount:
+          type: number
+        generated_at:
+          type: string
+          format: date-time
+        routes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Route'
+
+    Route:
+      type: object
+      properties:
+        rank:
+          type: integer
+        label:
+          type: string
+        total_cost_pct:
+          type: number
+        total_time_minutes:
+          type: integer
+        you_send:
+          type: number
+        they_receive:
+          type: number
+        they_receive_currency:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+
+    Step:
+      type: object
+      properties:
+        step:
+          type: integer
+        from:
+          type: string
+        to:
+          type: string
+        via:
+          type: string
+        fee_pct:
+          type: number
+        estimated_minutes:
+          type: integer
+        instructions:
+          type: string
+          description: Human-readable step instructions
+
+    Exchange:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [traditional_remittance, crypto_exchange, p2p_platform]
+        regions:
+          type: array
+          items:
+            type: string
+        api_documented:
+          type: boolean
+        regulated:
+          type: boolean
