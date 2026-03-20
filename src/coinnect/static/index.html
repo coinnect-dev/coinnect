@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Coinnect — The open routing layer for global money</title>
   <script>
-    // Apply saved theme before render to avoid flash
     if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
     tailwind = { config: { darkMode: 'class' } };
   </script>
@@ -17,16 +16,16 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .route-card { transition: all 0.2s ease; }
+    .route-card { transition: transform 0.2s ease; }
     .route-card:hover { transform: translateY(-2px); }
     .step-line::before {
       content: '';
       position: absolute;
       left: 11px; top: 24px; bottom: -8px;
       width: 2px;
+      background: #d1d5db;
     }
     .dark .step-line::before { background: #374151; }
-    .step-line::before { background: #d1d5db; }
     .step-line:last-child::before { display: none; }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
     .loading-dot { animation: pulse-dot 1.2s ease infinite; }
@@ -45,18 +44,18 @@
         <span class="text-xs text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5">beta</span>
       </div>
       <div class="flex items-center gap-4">
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">non-profit · open source · no fees</span>
+        <span class="text-xs text-gray-400 hidden sm:block">non-profit · open source · no fees</span>
         <button onclick="toggleTheme()" id="themeBtn"
-          class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-base"
           title="Toggle theme">
-          <span id="themeIcon" class="text-base">☀️</span>
+          <span id="themeIcon"></span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Hero -->
-  <div class="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
+  <div class="max-w-4xl mx-auto px-6 pt-14 pb-8 text-center">
     <h1 class="text-4xl font-bold mb-3">
       <span class="gradient-text">Find the cheapest way</span><br>
       to send money anywhere
@@ -71,44 +70,65 @@
   <div class="max-w-2xl mx-auto px-6">
     <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
       <div class="grid grid-cols-3 gap-4 mb-4">
-        <!-- Amount -->
         <div class="col-span-3 sm:col-span-1">
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Amount</label>
           <input id="amount" type="number" value="500" min="1"
             class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white text-lg font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
         </div>
-        <!-- From -->
         <div>
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">From</label>
           <select id="from" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
             <option value="USD" selected>🇺🇸 USD</option>
             <option value="EUR">🇪🇺 EUR</option>
             <option value="GBP">🇬🇧 GBP</option>
+            <option value="SGD">🇸🇬 SGD</option>
+            <option value="JPY">🇯🇵 JPY</option>
+            <option value="AUD">🇦🇺 AUD</option>
+            <option value="CAD">🇨🇦 CAD</option>
             <option value="USDC">USDC</option>
             <option value="USDT">USDT</option>
           </select>
         </div>
-        <!-- To -->
         <div>
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">To</label>
           <select id="to" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
-            <option value="MXN" selected>🇲🇽 MXN</option>
-            <option value="NGN">🇳🇬 NGN</option>
-            <option value="PHP">🇵🇭 PHP</option>
-            <option value="INR">🇮🇳 INR</option>
-            <option value="ARS">🇦🇷 ARS</option>
-            <option value="BRL">🇧🇷 BRL</option>
-            <option value="COP">🇨🇴 COP</option>
-            <option value="KES">🇰🇪 KES</option>
-            <option value="GHS">🇬🇭 GHS</option>
-            <option value="BTC">₿ BTC</option>
-            <option value="ETH">Ξ ETH</option>
+            <optgroup label="Asia">
+              <option value="PHP" selected>🇵🇭 PHP — Philippines</option>
+              <option value="INR">🇮🇳 INR — India</option>
+              <option value="IDR">🇮🇩 IDR — Indonesia</option>
+              <option value="VND">🇻🇳 VND — Vietnam</option>
+              <option value="THB">🇹🇭 THB — Thailand</option>
+              <option value="BDT">🇧🇩 BDT — Bangladesh</option>
+              <option value="PKR">🇵🇰 PKR — Pakistan</option>
+              <option value="LKR">🇱🇰 LKR — Sri Lanka</option>
+              <option value="NPR">🇳🇵 NPR — Nepal</option>
+            </optgroup>
+            <optgroup label="Latin America">
+              <option value="MXN">🇲🇽 MXN — Mexico</option>
+              <option value="BRL">🇧🇷 BRL — Brazil</option>
+              <option value="COP">🇨🇴 COP — Colombia</option>
+              <option value="ARS">🇦🇷 ARS — Argentina</option>
+              <option value="PEN">🇵🇪 PEN — Peru</option>
+            </optgroup>
+            <optgroup label="Africa">
+              <option value="NGN">🇳🇬 NGN — Nigeria</option>
+              <option value="KES">🇰🇪 KES — Kenya</option>
+              <option value="GHS">🇬🇭 GHS — Ghana</option>
+              <option value="TZS">🇹🇿 TZS — Tanzania</option>
+              <option value="UGX">🇺🇬 UGX — Uganda</option>
+            </optgroup>
+            <optgroup label="Crypto">
+              <option value="USDC">USDC</option>
+              <option value="USDT">USDT</option>
+              <option value="BTC">₿ BTC</option>
+              <option value="ETH">Ξ ETH</option>
+            </optgroup>
           </select>
         </div>
       </div>
 
       <button id="searchBtn" onclick="getQuote()"
-        class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold py-3.5 rounded-xl transition-all text-base">
+        class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-all text-base">
         Find cheapest route →
       </button>
     </div>
@@ -130,9 +150,11 @@
 const API = '';
 
 const FLAGS = {
-  USD:'🇺🇸',EUR:'🇪🇺',GBP:'🇬🇧',MXN:'🇲🇽',NGN:'🇳🇬',PHP:'🇵🇭',
-  INR:'🇮🇳',ARS:'🇦🇷',BRL:'🇧🇷',COP:'🇨🇴',KES:'🇰🇪',GHS:'🇬🇭',
-  BTC:'₿',ETH:'Ξ',USDC:'',USDT:''
+  USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', SGD:'🇸🇬', JPY:'🇯🇵', AUD:'🇦🇺', CAD:'🇨🇦',
+  MXN:'🇲🇽', NGN:'🇳🇬', PHP:'🇵🇭', INR:'🇮🇳', ARS:'🇦🇷', BRL:'🇧🇷',
+  COP:'🇨🇴', KES:'🇰🇪', GHS:'🇬🇭', IDR:'🇮🇩', VND:'🇻🇳', THB:'🇹🇭',
+  BDT:'🇧🇩', PKR:'🇵🇰', LKR:'🇱🇰', NPR:'🇳🇵', PEN:'🇵🇪', TZS:'🇹🇿', UGX:'🇺🇬',
+  BTC:'₿', ETH:'Ξ', USDC:'', USDT:''
 };
 
 function flag(c) { return FLAGS[c] || ''; }
@@ -140,7 +162,21 @@ function flag(c) { return FLAGS[c] || ''; }
 function fmtNum(n) {
   if (n >= 1000000) return (n/1000000).toFixed(2)+'M';
   if (n >= 1000) return n.toLocaleString('en', {maximumFractionDigits:2});
+  if (n < 0.01) return n.toFixed(8).replace(/0+$/, '');
   return n.toFixed(4).replace(/\.?0+$/, '');
+}
+
+function fmtRate(send, receive, fromC, toC) {
+  const rate = receive / send;
+  if (rate >= 1) return `1 ${fromC} = ${fmtNum(rate)} ${toC}`;
+  return `1 ${toC} = ${fmtNum(1/rate)} ${fromC}`;
+}
+
+function fmtTime(mins) {
+  if (mins < 60) return `~${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `~${h}h ${m}m` : `~${h}h`;
 }
 
 function isDark() { return document.documentElement.classList.contains('dark'); }
@@ -149,102 +185,101 @@ function toggleTheme() {
   const dark = isDark();
   document.documentElement.classList.toggle('dark', !dark);
   localStorage.theme = dark ? 'light' : 'dark';
-  document.getElementById('themeIcon').textContent = dark ? '🌙' : '☀️';
+  updateThemeIcon();
 }
 
-function initThemeIcon() {
+function updateThemeIcon() {
   document.getElementById('themeIcon').textContent = isDark() ? '☀️' : '🌙';
 }
 
 function loading() {
-  const textColor = isDark() ? 'text-gray-400' : 'text-gray-500';
   document.getElementById('results').innerHTML = `
-    <div class="text-center py-12 ${textColor}">
+    <div class="text-center py-12 text-gray-400 dark:text-gray-500">
       <div class="flex justify-center gap-1.5 mb-3">
         <div class="w-2 h-2 rounded-full bg-cyan-400 loading-dot"></div>
         <div class="w-2 h-2 rounded-full bg-cyan-400 loading-dot"></div>
         <div class="w-2 h-2 rounded-full bg-cyan-400 loading-dot"></div>
       </div>
-      <p class="text-sm">Checking ${Object.keys(FLAGS).length - 2} exchanges in real time...</p>
+      <p class="text-sm">Checking exchanges in real time...</p>
     </div>`;
-}
-
-function rankColor(rank) {
-  if (rank === 1) return isDark()
-    ? 'border-cyan-500/40 bg-cyan-950/30'
-    : 'border-cyan-400/50 bg-cyan-50';
-  return isDark()
-    ? 'border-gray-700 bg-gray-900'
-    : 'border-gray-200 bg-white';
 }
 
 function renderSavings(routes, amount, from) {
   const wuRoute = routes.find(r => r.steps.some(s => s.via === 'Western Union'));
   const best = routes[0];
   if (!wuRoute || !best) return '';
-  const wuCost = amount * wuRoute.total_cost_pct / 100;
-  const bestCost = amount * best.total_cost_pct / 100;
-  const saved = (wuCost - bestCost).toFixed(2);
+  const saved = (amount * (wuRoute.total_cost_pct - best.total_cost_pct) / 100).toFixed(2);
   if (saved <= 0) return '';
-  const bg = isDark()
-    ? 'bg-emerald-950/40 border-emerald-700/40'
-    : 'bg-emerald-50 border-emerald-200';
-  const textMain = isDark() ? 'text-emerald-400' : 'text-emerald-700';
-  const textSub = isDark() ? 'text-gray-400' : 'text-gray-500';
   return `
-    <div class="mb-4 ${bg} border rounded-xl px-4 py-3 flex items-center gap-3">
+    <div class="mb-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700/40 rounded-xl px-4 py-3 flex items-center gap-3">
       <span class="text-2xl">💸</span>
       <div>
-        <div class="${textMain} font-semibold text-sm">Save ~${from} ${saved} vs Western Union</div>
-        <div class="${textSub} text-xs">Best route costs ${best.total_cost_pct.toFixed(2)}% · Western Union costs ${wuRoute.total_cost_pct.toFixed(2)}%</div>
+        <div class="text-emerald-700 dark:text-emerald-400 font-semibold text-sm">Save ~${from} ${saved} vs Western Union</div>
+        <div class="text-gray-500 dark:text-gray-400 text-xs">Best route ${best.total_cost_pct.toFixed(2)}% · Western Union ${wuRoute.total_cost_pct.toFixed(2)}%</div>
       </div>
     </div>`;
 }
 
 function renderRoute(r, from, to) {
-  const badge = r.rank === 1
-    ? '<span class="text-xs bg-cyan-500/20 text-cyan-500 border border-cyan-500/30 rounded-full px-2 py-0.5">Best</span>'
+  const best = r.rank === 1;
+  const cardBorder = best
+    ? 'border-cyan-300 dark:border-cyan-500/40 bg-cyan-50/50 dark:bg-cyan-950/20'
+    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900';
+  const badge = best
+    ? '<span class="text-xs bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-500/30 rounded-full px-2 py-0.5 ml-1">Best</span>'
     : '';
 
-  const stepNumBg = isDark() ? 'bg-gray-800 border-gray-600 text-gray-400' : 'bg-gray-100 border-gray-300 text-gray-500';
-  const stepCurrency = isDark() ? 'text-white' : 'text-gray-900';
-  const stepVia = isDark() ? 'text-gray-500' : 'text-gray-400';
-  const stepBadge = isDark() ? 'text-gray-300 bg-gray-800 border-gray-700' : 'text-gray-600 bg-gray-100 border-gray-200';
-  const stepFee = isDark() ? 'text-gray-500' : 'text-gray-400';
-  const stepInstr = isDark() ? 'text-gray-500' : 'text-gray-400';
-  const divider = isDark() ? 'border-gray-800' : 'border-gray-100';
-  const receiveAmt = isDark() ? 'text-white' : 'text-gray-900';
-  const receiveCur = isDark() ? 'text-gray-400' : 'text-gray-500';
-  const metaText = isDark() ? 'text-gray-500' : 'text-gray-400';
-  const labelText = isDark() ? 'text-gray-100' : 'text-gray-800';
+  const rate = fmtRate(r.you_send, r.they_receive, from, to);
 
-  const steps = r.steps.map((s) => `
+  const steps = r.steps.map(s => `
     <div class="step-line relative pl-8 pb-4">
-      <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${stepNumBg} border flex items-center justify-center text-xs">${s.step}</div>
-      <div class="flex items-center gap-2 mb-0.5">
-        <span class="font-mono text-sm ${stepCurrency}">${flag(s.from_currency)} ${s.from_currency} → ${flag(s.to_currency)} ${s.to_currency}</span>
-        <span class="text-xs ${stepVia}">via</span>
-        <span class="text-xs font-medium ${stepBadge} border rounded px-1.5 py-0.5">${s.via}</span>
-        <span class="text-xs ${stepFee}">${s.fee_pct}%</span>
+      <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">${s.step}</div>
+      <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+        <span class="font-mono text-sm text-gray-900 dark:text-white">${flag(s.from_currency)} ${s.from_currency} → ${flag(s.to_currency)} ${s.to_currency}</span>
+        <span class="text-xs text-gray-400">via</span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">${s.via}</span>
+        <span class="text-xs text-gray-400">${s.fee_pct}%</span>
       </div>
-      <div class="text-xs ${stepInstr}">${s.instructions}</div>
+      <div class="text-xs text-gray-400 dark:text-gray-500">${s.instructions}</div>
     </div>`).join('');
 
-  const errBg = isDark() ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-gray-50 border-gray-200 text-gray-500';
-
   return `
-    <div class="route-card border ${rankColor(r.rank)} rounded-xl p-5 mb-3">
-      <div class="flex items-start justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <span class="text-base font-semibold ${labelText}">${r.label}</span>
+    <div class="route-card border ${cardBorder} rounded-xl p-5 mb-3">
+
+      <!-- Title row -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
+          <span class="font-semibold text-gray-800 dark:text-gray-100">${r.label}</span>
           ${badge}
         </div>
-        <div class="text-right">
-          <div class="text-xl font-bold ${receiveAmt} font-mono">${flag(to)} ${fmtNum(r.they_receive)} <span class="${receiveCur} text-base font-normal">${to}</span></div>
-          <div class="text-xs ${metaText}">${r.total_cost_pct.toFixed(2)}% total fee · ${r.total_time_minutes} min</div>
+        <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+          <span class="flex items-center gap-1">🕐 ${fmtTime(r.total_time_minutes)}</span>
+          <span class="font-medium text-gray-500 dark:text-gray-400">${r.total_cost_pct.toFixed(2)}% fees</span>
         </div>
       </div>
-      <div class="border-t ${divider} pt-4">
+
+      <!-- Transfer summary: 4 values -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="bg-gray-100 dark:bg-gray-800/60 rounded-xl px-4 py-3">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">You send</div>
+          <div class="text-xl font-bold font-mono text-gray-900 dark:text-white">${flag(from)} ${fmtNum(r.you_send)}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">${from}</div>
+        </div>
+        <div class="bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 rounded-xl px-4 py-3">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">They receive</div>
+          <div class="text-xl font-bold font-mono text-cyan-700 dark:text-cyan-300">${flag(to)} ${fmtNum(r.they_receive)}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">${to}</div>
+        </div>
+      </div>
+
+      <!-- Exchange rate -->
+      <div class="flex items-center justify-center gap-2 mb-4 py-2 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-700/40">
+        <span class="text-xs text-gray-400">Exchange rate:</span>
+        <span class="text-sm font-mono font-medium text-gray-700 dark:text-gray-200">${rate}</span>
+      </div>
+
+      <!-- Steps -->
+      <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
         ${steps}
       </div>
     </div>`;
@@ -259,10 +294,6 @@ async function getQuote() {
   loading();
   document.getElementById('searchBtn').disabled = true;
 
-  const metaText = isDark() ? 'text-gray-500' : 'text-gray-400';
-  const footerText = isDark() ? 'text-gray-600' : 'text-gray-400';
-  const errBg = isDark() ? 'border-gray-800 text-gray-500' : 'border-gray-200 text-gray-400';
-
   try {
     const res = await fetch(`${API}/v1/quote?from=${from}&to=${to}&amount=${amount}`);
     if (!res.ok) {
@@ -273,29 +304,28 @@ async function getQuote() {
     const routes = data.routes;
 
     document.getElementById('results').innerHTML = `
-      <div class="text-xs ${metaText} mb-4 flex items-center justify-between">
+      <div class="text-xs text-gray-400 dark:text-gray-500 mb-4 flex items-center justify-between">
         <span>${routes.length} route${routes.length !== 1 ? 's' : ''} found</span>
         <span>Updated ${new Date(data.generated_at).toLocaleTimeString()}</span>
       </div>
       ${renderSavings(routes, amount, from)}
       ${routes.map(r => renderRoute(r, from, to)).join('')}
-      <div class="mt-4 text-center text-xs ${footerText}">
-        Coinnect shows routes — it never executes transfers or holds funds.
-        Each exchange handles its own KYC.
+      <div class="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
+        Coinnect shows routes — it never executes transfers or holds funds. Each exchange handles its own KYC.
       </div>`;
   } catch(e) {
     document.getElementById('results').innerHTML = `
-      <div class="text-center py-8 ${errBg} border rounded-xl">
+      <div class="text-center py-8 text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl">
         <div class="text-2xl mb-2">⚠️</div>
         <div class="text-sm">${e.message}</div>
-        <div class="text-xs mt-1">This corridor may not be supported yet</div>
+        <div class="text-xs mt-1 text-gray-400 dark:text-gray-500">This corridor may not be supported yet</div>
       </div>`;
   } finally {
     document.getElementById('searchBtn').disabled = false;
   }
 }
 
-window.onload = () => { initThemeIcon(); getQuote(); };
+window.onload = () => { updateThemeIcon(); getQuote(); };
 </script>
 </body>
 </html>
