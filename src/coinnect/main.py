@@ -2,10 +2,16 @@
 Coinnect API — entry point
 """
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from coinnect.api.routes import router
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(
     title="Coinnect API",
@@ -29,14 +35,9 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/", include_in_schema=False)
 async def root():
-    return {
-        "name": "Coinnect",
-        "tagline": "The open routing layer for global money",
-        "docs": "/docs",
-        "quote": "/v1/quote?from=USD&to=NGN&amount=500",
-        "source": "https://coinnect.bot",
-    }
+    return FileResponse(STATIC_DIR / "index.html")
