@@ -1,7 +1,7 @@
 # Coinnect: The Open Route Guide for Global Money
 
 **Version:** 0.3 (Draft — March 2026)
-**Author:** Miguel Valencia Villaseñor
+**Author:** [Miguel V.](https://www.linkedin.com/in/miguelvalencia/)
 **Domain:** coinnect.bot
 **Status:** Pre-launch white paper
 
@@ -51,7 +51,7 @@ The deeper problem isn't just cost — it's fragmentation. Global money doesn't 
 - **UPI** (India) — a government protocol with 400 million users across PhonePe, Paytm, Google Pay
 - **Alipay / WeChat Pay** (China) — over a billion users combined, accessible only with a Chinese bank account
 - **Wave** (West Africa) — Senegal, Mali, Côte d'Ivoire, growing fast
-- **Airtm, El Dorado** (Latin America) — digital dollar P2P networks built to work around local currency instability
+- **El Dorado** (Latin America) — digital dollar P2P network built to work around local currency instability
 
 Each of these is a planet with its own gravity. A freelancer in Venezuela can't pay a supplier in Kenya directly. A family in the Philippines can't receive from a relative in Bangladesh without going through three intermediaries, each taking a cut.
 
@@ -261,9 +261,7 @@ Coinnect never holds funds, never processes payments, and never collects user id
 
 ## 7. The Founder
 
-Miguel Valencia Villaseñor was Chief Operations Officer at Airtm for seven years — one of Latin America's largest digital dollar platforms. He left in April 2025.
-
-He built Coinnect because the problem is real, the solution is simple, and nobody was building it without a business model attached.
+[Miguel V.](https://www.linkedin.com/in/miguelvalencia/) built Coinnect because the problem is real, the solution is simple, and nobody was building it without a business model attached.
 
 His public donation wallet is listed on coinnect.bot. His compensation is capped by the founding statutes and published quarterly. He has no equity to sell, no investors to answer to, and no exit to plan.
 

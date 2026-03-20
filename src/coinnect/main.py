@@ -46,24 +46,9 @@ async def root():
 
 @app.get("/whitepaper", include_in_schema=False)
 async def whitepaper():
-    md = (DOCS_DIR / "whitepaper.md").read_text()
-    # Basic markdown → HTML (no extra dependency)
-    import re
-    lines = md.split("\n")
-    html_lines = []
-    for line in lines:
-        if line.startswith("# "): line = f"<h1>{line[2:]}</h1>"
-        elif line.startswith("## "): line = f"<h2>{line[3:]}</h2>"
-        elif line.startswith("### "): line = f"<h3>{line[4:]}</h3>"
-        elif line.startswith("---"): line = "<hr>"
-        elif line.startswith("- "): line = f"<li>{line[2:]}</li>"
-        elif line == "": line = "<br>"
-        else: line = f"<p>{line}</p>"
-        # inline: bold, code
-        line = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', line)
-        line = re.sub(r'`(.+?)`', r'<code>\1</code>', line)
-        html_lines.append(line)
-    body = "\n".join(html_lines)
+    import markdown as md_lib
+    text = (DOCS_DIR / "whitepaper.md").read_text()
+    body = md_lib.markdown(text, extensions=["tables", "fenced_code", "nl2br"])
     return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,13 +57,22 @@ async def whitepaper():
   <title>Coinnect Whitepaper</title>
   <style>
     body {{ max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; font-family: Georgia, serif; line-height: 1.7; color: #1a1a1a; }}
-    h1,h2,h3 {{ font-family: system-ui, sans-serif; }}
-    h1 {{ font-size: 2rem; border-bottom: 2px solid #06b6d4; padding-bottom: .5rem; }}
+    h1,h2,h3 {{ font-family: system-ui, sans-serif; margin-top: 2rem; }}
+    h1 {{ font-size: 2rem; border-bottom: 2px solid #06b6d4; padding-bottom: .5rem; margin-top: 0; }}
     h2 {{ font-size: 1.4rem; margin-top: 2.5rem; color: #0891b2; }}
+    h3 {{ font-size: 1.1rem; color: #374151; }}
     code {{ background: #f1f5f9; padding: .1em .4em; border-radius: 3px; font-size: .9em; }}
+    pre {{ background: #f1f5f9; padding: 1rem; border-radius: 6px; overflow-x: auto; }}
+    pre code {{ background: none; padding: 0; }}
     hr {{ border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }}
-    a {{ color: #06b6d4; }} li {{ margin: .3rem 0; }}
-    .back {{ display: inline-block; margin-bottom: 2rem; font-family: system-ui; font-size: .9rem; }}
+    a {{ color: #06b6d4; }}
+    li {{ margin: .3rem 0; }}
+    table {{ border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-family: system-ui; font-size: .9rem; }}
+    th {{ background: #0891b2; color: white; text-align: left; padding: .5rem .75rem; }}
+    td {{ padding: .5rem .75rem; border-bottom: 1px solid #e2e8f0; }}
+    tr:nth-child(even) td {{ background: #f8fafc; }}
+    .back {{ display: inline-block; margin-bottom: 2rem; font-family: system-ui; font-size: .9rem; text-decoration: none; color: #6b7280; }}
+    .back:hover {{ color: #06b6d4; }}
   </style>
 </head>
 <body>
