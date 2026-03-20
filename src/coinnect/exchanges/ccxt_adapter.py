@@ -14,11 +14,12 @@ from coinnect.routing.engine import Edge
 logger = logging.getLogger(__name__)
 
 # Exchanges we support at launch
+# Note: only exchanges where ccxt.fetchTickers() works reliably
 SUPPORTED_EXCHANGES = {
     "kraken":   {"class": ccxt.kraken,   "fee_pct": 0.26},
     "binance":  {"class": ccxt.binance,  "fee_pct": 0.10},
     "coinbase": {"class": ccxt.coinbase, "fee_pct": 0.60},
-    "bitso":    {"class": ccxt.bitso,    "fee_pct": 0.65},
+    # bitso: fetchTickers() not supported by CCXT — added via manual pairs below
 }
 
 # Stablecoin used as routing intermediary
@@ -76,6 +77,31 @@ async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
     return edges
 
 
+async def get_bitso_edges() -> list[Edge]:
+    """Bitso: fetch specific MXN pairs manually (fetchTickers not supported)."""
+    edges = []
+    pairs = [("BTC/MXN", 0.65), ("ETH/MXN", 0.65), ("USDC/MXN", 0.65), ("USDT/MXN", 0.65)]
+    exchange = ccxt.bitso({"enableRateLimit": True})
+    try:
+        for symbol, fee in pairs:
+            try:
+                ticker = await exchange.fetch_ticker(symbol)
+                bid, ask = ticker.get("bid"), ticker.get("ask")
+                if bid and ask:
+                    base, quote = symbol.split("/")
+                    spread_pct = ((ask - bid) / ask) * 100
+                    total = round(fee + spread_pct, 3)
+                    edges += [
+                        Edge(base, quote, "Bitso", total, 15, f"Sell {base} for {quote} on Bitso"),
+                        Edge(quote, base, "Bitso", total, 15, f"Buy {base} with {quote} on Bitso"),
+                    ]
+            except Exception:
+                pass
+    finally:
+        await exchange.close()
+    return edges
+
+
 async def get_all_edges(force_refresh: bool = False) -> list[Edge]:
     """Return cached edges, refreshing if stale."""
     now = datetime.now(UTC).timestamp()
@@ -88,7 +114,8 @@ async def get_all_edges(force_refresh: bool = False) -> list[Edge]:
     tasks = [
         fetch_edges_from_exchange(name, config)
         for name, config in SUPPORTED_EXCHANGES.items()
-    ]
+    ] + [get_bitso_edges()]
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     edges = []
@@ -98,5 +125,5 @@ async def get_all_edges(force_refresh: bool = False) -> list[Edge]:
 
     _cache["edges"] = edges
     _cache["updated_at"] = now
-    logger.info(f"Loaded {len(edges)} edges from {len(SUPPORTED_EXCHANGES)} exchanges")
+    logger.info(f"Loaded {len(edges)} edges from {len(SUPPORTED_EXCHANGES)+1} exchanges")
     return edges

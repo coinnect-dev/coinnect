@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 
 from coinnect.exchanges.ccxt_adapter import get_all_edges, SUPPORTED_EXCHANGES
-from coinnect.exchanges.wise_adapter import get_wise_edges
+from coinnect.exchanges.wise_adapter import get_wise_edges, get_traditional_edges
 from coinnect.routing.engine import build_quote, QuoteResult
 
 router = APIRouter(prefix="/v1")
@@ -66,11 +66,12 @@ async def quote(
     from_ = from_.upper()
     to = to.upper()
 
-    crypto_edges, wise_edges = await asyncio.gather(
+    crypto_edges, wise_edges, trad_edges = await asyncio.gather(
         get_all_edges(),
         get_wise_edges(),
+        get_traditional_edges(),
     )
-    all_edges = crypto_edges + wise_edges
+    all_edges = crypto_edges + wise_edges + trad_edges
 
     if not all_edges:
         raise HTTPException(503, "Exchange data temporarily unavailable")
