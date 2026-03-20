@@ -1,6 +1,6 @@
 """
-Wise API adapter — fiat-to-fiat corridors.
-Uses Wise's public price comparison endpoint (no auth required for quotes).
+Wise adapter — fiat-to-fiat corridors with live exchange rates.
+Rates from open.er-api.com (free, no auth).
 """
 
 import logging
@@ -9,8 +9,7 @@ from coinnect.routing.engine import Edge
 
 logger = logging.getLogger(__name__)
 
-# Wise public comparison endpoint (no auth required)
-WISE_COMPARE_URL = "https://wise.com/gb/send-money/compare"
+RATES_URL = "https://open.er-api.com/v6/latest/{base}"
 
 # Fee + spread estimates per corridor — sourced from wise.com/pricing (updated manually)
 # Format: (from, to, fee_pct, estimated_minutes)
@@ -49,6 +48,14 @@ WISE_CORRIDORS: list[tuple] = [
     ("AUD", "PHP",  2.20, 60),
     ("AUD", "INR",  2.00, 60),
     ("CAD", "PHP",  2.30, 60),
+    ("MXN", "USD",  2.80, 60),
+    ("MXN", "EUR",  3.00, 60),
+    ("BRL", "USD",  3.20, 60),
+    ("COP", "USD",  3.00, 60),
+    ("INR", "USD",  2.20, 60),
+    ("PHP", "USD",  2.50, 60),
+    ("NGN", "USD",  4.00, 120),
+    ("KES", "USD",  3.50, 120),
 ]
 
 # Western Union / MoneyGram — approximate fees for comparison baseline
@@ -68,18 +75,51 @@ TRADITIONAL_CORRIDORS: list[tuple] = [
     ("USD", "BRL",  "Western Union", 5.80, 30),
 ]
 
+# Rate cache keyed by base currency
+_rate_cache: dict[str, dict] = {}
+
+
+async def _fetch_rates(base: str, client: httpx.AsyncClient) -> dict[str, float]:
+    """Fetch live exchange rates for a base currency."""
+    if base in _rate_cache:
+        return _rate_cache[base]
+    try:
+        r = await client.get(RATES_URL.format(base=base), timeout=5)
+        data = r.json()
+        if data.get("result") == "success":
+            rates = data.get("rates", {})
+            _rate_cache[base] = rates
+            return rates
+    except Exception as e:
+        logger.warning(f"Failed to fetch rates for {base}: {e}")
+    return {}
+
 
 async def get_wise_edges() -> list[Edge]:
-    """Return Wise fiat corridor edges using known fee schedule."""
+    """Return Wise fiat corridor edges with live exchange rates."""
     edges = []
+    bases_needed = {from_ for from_, _, _, _ in WISE_CORRIDORS}
+
+    async with httpx.AsyncClient() as client:
+        import asyncio
+        rate_maps = dict(zip(
+            bases_needed,
+            await asyncio.gather(*[_fetch_rates(b, client) for b in bases_needed])
+        ))
+
     for from_, to_, fee, minutes in WISE_CORRIDORS:
+        rates = rate_maps.get(from_, {})
+        rate = rates.get(to_, 1.0)
+        if rate == 0:
+            rate = 1.0
         edges.append(Edge(
             from_currency=from_,
             to_currency=to_,
             via="Wise",
             fee_pct=fee,
             estimated_minutes=minutes,
-            instructions=f"Send {from_} via Wise — recipient gets {to_} in ~{minutes//60 or 1}h",
+            instructions=f"Send {from_} via Wise — recipient gets {to_} in ~{max(1, minutes//60)}h",
+            exchange_rate=rate,
         ))
     return edges
 
@@ -87,7 +127,20 @@ async def get_wise_edges() -> list[Edge]:
 async def get_traditional_edges() -> list[Edge]:
     """Return traditional remittance edges as comparison baseline."""
     edges = []
+    bases_needed = {from_ for from_, _, _, _, _ in TRADITIONAL_CORRIDORS}
+
+    async with httpx.AsyncClient() as client:
+        import asyncio
+        rate_maps = dict(zip(
+            bases_needed,
+            await asyncio.gather(*[_fetch_rates(b, client) for b in bases_needed])
+        ))
+
     for from_, to_, service, fee, minutes in TRADITIONAL_CORRIDORS:
+        rates = rate_maps.get(from_, {})
+        rate = rates.get(to_, 1.0)
+        if rate == 0:
+            rate = 1.0
         edges.append(Edge(
             from_currency=from_,
             to_currency=to_,
@@ -95,5 +148,6 @@ async def get_traditional_edges() -> list[Edge]:
             fee_pct=fee,
             estimated_minutes=minutes,
             instructions=f"Send via {service} — fees approx {fee}% of amount",
+            exchange_rate=rate,
         ))
     return edges

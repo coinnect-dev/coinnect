@@ -49,6 +49,7 @@ class Edge:
     fee_pct: float     # total cost as percentage (fee + spread)
     estimated_minutes: int
     instructions: str = ""
+    exchange_rate: float = 1.0  # units of to_currency per 1 from_currency
 
 
 def build_graph(edges: list[Edge]) -> dict[str, list[Edge]]:
@@ -91,7 +92,7 @@ def _dijkstra(
             continue
 
         for edge in graph.get(curr, []):
-            new_amount = curr_amount * (1 - edge.fee_pct / 100)
+            new_amount = curr_amount * edge.exchange_rate * (1 - edge.fee_pct / 100)
             new_priority = priority + (edge.fee_pct if optimize == "cost" else edge.estimated_minutes)
             counter += 1
             heapq.heappush(heap, (
