@@ -64,7 +64,7 @@ def find_routes(
     start: str,
     end: str,
     amount: float,
-    max_routes: int = 3,
+    max_routes: int = 8,
     max_steps: int = 3,
 ) -> list[tuple[float, float, list[Edge]]]:
     """
@@ -117,10 +117,44 @@ def build_quote(
     graph = build_graph(edges)
     raw_routes = find_routes(graph, from_currency, to_currency, amount)
 
-    routes = []
-    labels = ["Cheapest", "Balanced", "Fastest"]
+    if not raw_routes:
+        return QuoteResult(
+            from_currency=from_currency,
+            to_currency=to_currency,
+            amount=amount,
+            generated_at=datetime.now(UTC),
+            routes=[],
+        )
 
-    for i, (total_cost, received, path) in enumerate(raw_routes):
+    # Identify special routes
+    cheapest_idx = min(range(len(raw_routes)), key=lambda i: raw_routes[i][0])
+    fastest_idx = min(range(len(raw_routes)), key=lambda i: sum(e.estimated_minutes for e in raw_routes[i][2]))
+
+    # Balanced: best normalized cost*0.6 + time*0.4 score, excluding already-labeled
+    max_cost = max(r[0] for r in raw_routes) or 1
+    max_time = max(sum(e.estimated_minutes for e in r[2]) for r in raw_routes) or 1
+
+    def balance_score(i):
+        cost_n = raw_routes[i][0] / max_cost
+        time_n = sum(e.estimated_minutes for e in raw_routes[i][2]) / max_time
+        return cost_n * 0.6 + time_n * 0.4
+
+    used = {cheapest_idx, fastest_idx}
+    remaining = [i for i in range(len(raw_routes)) if i not in used]
+    balanced_idx = min(remaining, key=balance_score) if remaining else cheapest_idx
+
+    # Assign labels: featured first, then extras
+    featured_order = []
+    for idx in [cheapest_idx, balanced_idx, fastest_idx]:
+        if idx not in [x[0] for x in featured_order]:
+            featured_order.append((idx, ["Cheapest", "Balanced", "Fastest"][len(featured_order)]))
+
+    extra_indices = [i for i in range(len(raw_routes)) if i not in {x[0] for x in featured_order}]
+    all_ordered = featured_order + [(i, f"Option {j+4}") for j, i in enumerate(extra_indices)]
+
+    routes = []
+    for rank, (raw_idx, label) in enumerate(all_ordered, start=1):
+        total_cost, received, path = raw_routes[raw_idx]
         total_minutes = sum(e.estimated_minutes for e in path)
         steps = [
             Step(
@@ -135,8 +169,8 @@ def build_quote(
             for j, e in enumerate(path)
         ]
         routes.append(Route(
-            rank=i + 1,
-            label=labels[i] if i < len(labels) else f"Route {i+1}",
+            rank=rank,
+            label=label,
             total_cost_pct=round(total_cost, 2),
             total_time_minutes=total_minutes,
             you_send=amount,
