@@ -51,7 +51,7 @@ async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
             total_cost = round(fee + spread_pct, 3)
             minutes = 10 if name in ("binance", "kraken") else 20
 
-            # base → quote
+            # base → quote  (sell base at bid price)
             edges.append(Edge(
                 from_currency=base,
                 to_currency=quote,
@@ -59,8 +59,9 @@ async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
                 fee_pct=total_cost,
                 estimated_minutes=minutes,
                 instructions=f"Sell {base} for {quote} on {name.capitalize()}",
+                exchange_rate=bid,
             ))
-            # quote → base
+            # quote → base  (buy base at ask price → 1 quote buys 1/ask base)
             edges.append(Edge(
                 from_currency=quote,
                 to_currency=base,
@@ -68,6 +69,7 @@ async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
                 fee_pct=total_cost,
                 estimated_minutes=minutes,
                 instructions=f"Buy {base} with {quote} on {name.capitalize()}",
+                exchange_rate=1.0 / ask,
             ))
     except Exception as e:
         logger.warning(f"Failed to fetch from {name}: {e}")
@@ -92,8 +94,8 @@ async def get_bitso_edges() -> list[Edge]:
                     spread_pct = ((ask - bid) / ask) * 100
                     total = round(fee + spread_pct, 3)
                     edges += [
-                        Edge(base, quote, "Bitso", total, 15, f"Sell {base} for {quote} on Bitso"),
-                        Edge(quote, base, "Bitso", total, 15, f"Buy {base} with {quote} on Bitso"),
+                        Edge(base, quote, "Bitso", total, 15, f"Sell {base} for {quote} on Bitso", exchange_rate=bid),
+                        Edge(quote, base, "Bitso", total, 15, f"Buy {base} with {quote} on Bitso", exchange_rate=1.0/ask),
                     ]
             except Exception:
                 pass
