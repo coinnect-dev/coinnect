@@ -426,12 +426,11 @@ function applyLocaleDefaults(){
   const localCur=getLocalCurrency();
   const fromSel=document.getElementById('from');
   const toSel=document.getElementById('to');
-  // Default: BTC → local currency
-  fromSel.value='BTC';
-  // Find local currency in to selector
+  // Default: USD → local currency, $100
+  fromSel.value='USD';
   const opt=[...toSel.options].find(o=>o.value===localCur);
   if(opt)toSel.value=localCur;
-  document.getElementById('amount').value='1';
+  document.getElementById('amount').value='100';
 }
 
 // ── Filters ────────────────────────────────────────────────────────────────
