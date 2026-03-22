@@ -41,7 +41,7 @@ The founding maintainer (Miguel Valencia, `@miguelvalenciav`) is entitled to a s
 
 **Cap rule:** The maintainer salary shall not exceed **10% of total annual organizational revenue** in any given year. If revenue is insufficient, the unpaid portion accrues as deferred compensation to be paid when revenue allows, with no interest.
 
-**Growth rule:** The target salary scales with organizational size, benchmarked against the compensation of the executive director of a non-profit organization of equivalent budget and impact. At the scale of a major open internet foundation (annual budget > USD 50M), the target salary may reach USD 200,000/year. Adjustments require a public governance decision with at least 30 days of community notice.
+**Growth rule:** The target salary scales with organizational size, benchmarked against the compensation of the executive director of a non-profit organization of equivalent budget and impact. Adjustments require a public governance decision with at least 30 days of community notice.
 
 **Inflation / cost-of-living:** Salary may be adjusted annually by CPI or equivalent cost-of-living index, with no governance vote required, up to a maximum of 8% per year.
 
