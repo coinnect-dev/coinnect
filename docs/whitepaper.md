@@ -368,15 +368,13 @@ Coinnect does not collect personal information. Quote requests include only curr
 
 ## 9. Roadmap
 
-| Phase | Timeline | Milestone |
-|-------|----------|-----------|
-| Launch | Q1 2026 ✓ | 8 live exchanges, 19 remittance providers, MCP server, open data API |
-| Trust & Accuracy | April 2026 | More LIVE providers, community rate verification, deep-links, delivery filters |
-| Community | May-June 2026 | x402 micropayments (USDC/Base), MTP (Machine Tipping Protocol), Pro API tier |
-| Ecosystem | Q3-Q4 2026 | Stellar anchors, DEX aggregators, MRP v1.0 formal spec, PyPI/npm SDKs |
-| Global | 2027 | 50+ providers, 100+ currencies, legal entity, working group |
+| Phase | Focus |
+|-------|-------|
+| Now ✅ | Live beta — 8 exchanges, 19 remittance providers, API, MCP, open data |
+| Next | More live-rate providers, community rate verification, delivery filters |
+| Later | x402 micropayments, Machine Tipping Protocol, Stellar anchors, SDKs |
 
-Full roadmap with detailed milestones: [`docs/ROADMAP.md`](./ROADMAP.md)
+This is a beta. Priorities shift based on user feedback. See [`ROADMAP.md`](./ROADMAP.md) for details.
 
 ---
 
