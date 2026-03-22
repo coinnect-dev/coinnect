@@ -1,6 +1,7 @@
 """
 Wise adapter — fiat-to-fiat corridors with live exchange rates.
-Rates from open.er-api.com (free, no auth).
+Exchange rates from Wise API (public /v1/rates endpoint) with fallback
+to open.er-api.com when Wise is unavailable.
 """
 
 import logging
@@ -10,6 +11,8 @@ from coinnect.routing.engine import Edge
 logger = logging.getLogger(__name__)
 
 RATES_URL = "https://open.er-api.com/v6/latest/{base}"
+WISE_RATES_URL = "https://wise.com/rates/live"
+WISE_HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
 # Fee + spread estimates per corridor — sourced from wise.com/pricing (updated manually)
 # Format: (from, to, fee_pct, estimated_minutes)
@@ -81,6 +84,10 @@ import time
 _rate_cache: dict[str, tuple[float, dict]] = {}  # base → (timestamp, rates)
 _RATE_CACHE_TTL = 300  # 5 minutes
 
+# Wise-specific rate cache keyed by "FROM-TO" pair
+_wise_rate_cache: dict[str, tuple[float, float]] = {}  # "USD-MXN" → (timestamp, rate)
+_WISE_RATE_CACHE_TTL = 300  # 5 minutes
+
 
 async def _fetch_rates(base: str, client: httpx.AsyncClient) -> dict[str, float]:
     """Fetch live exchange rates for a base currency."""
@@ -103,23 +110,78 @@ async def _fetch_rates(base: str, client: httpx.AsyncClient) -> dict[str, float]
     return {}
 
 
+async def _fetch_wise_rate(
+    from_c: str, to_c: str, client: httpx.AsyncClient
+) -> float | None:
+    """Fetch live exchange rate from Wise public API. Returns rate or None."""
+    key = f"{from_c}-{to_c}"
+    now = time.monotonic()
+    if key in _wise_rate_cache:
+        cached_at, rate = _wise_rate_cache[key]
+        if now - cached_at < _WISE_RATE_CACHE_TTL:
+            return rate
+    try:
+        r = await client.get(
+            WISE_RATES_URL,
+            params={"source": from_c, "target": to_c},
+            headers=WISE_HEADERS,
+            timeout=5,
+        )
+        data = r.json()
+        # Response: {"source":"USD","target":"MXN","value":17.9156,"time":...}
+        if isinstance(data, dict) and "value" in data:
+            rate = float(data["value"])
+            if rate > 0:
+                _wise_rate_cache[key] = (now, rate)
+                logger.debug("Wise live rate %s→%s: %s", from_c, to_c, rate)
+                return rate
+        logger.warning("Unexpected Wise rates response for %s→%s: %s", from_c, to_c, data)
+    except Exception as e:
+        logger.warning("Failed to fetch Wise rate for %s→%s: %s", from_c, to_c, e)
+        # Return stale cache if available
+        if key in _wise_rate_cache:
+            return _wise_rate_cache[key][1]
+    return None
+
+
 async def get_wise_edges() -> list[Edge]:
-    """Return Wise fiat corridor edges with live exchange rates."""
+    """Return Wise fiat corridor edges with live exchange rates.
+
+    Fetches rates from the Wise public API first. For any corridor where the
+    Wise API doesn't return a rate, falls back to open.er-api.com.
+    """
+    import asyncio
+
     edges = []
-    bases_needed = {from_ for from_, _, _, _ in WISE_CORRIDORS}
+    corridors = [(from_, to_, fee, minutes) for from_, to_, fee, minutes in WISE_CORRIDORS]
 
     async with httpx.AsyncClient() as client:
-        import asyncio
-        rate_maps = dict(zip(
-            bases_needed,
-            await asyncio.gather(*[_fetch_rates(b, client) for b in bases_needed])
-        ))
+        # 1. Try Wise live rates for all corridors (in parallel)
+        wise_rates: list[float | None] = await asyncio.gather(
+            *[_fetch_wise_rate(from_, to_, client) for from_, to_, _, _ in corridors]
+        )
 
-    for from_, to_, fee, minutes in WISE_CORRIDORS:
-        rates = rate_maps.get(from_, {})
-        rate = rates.get(to_, 1.0)
-        if rate == 0:
-            rate = 1.0
+        # 2. For corridors where Wise API failed, fetch fallback rates from open.er-api.com
+        fallback_bases = set()
+        for i, rate in enumerate(wise_rates):
+            if rate is None:
+                fallback_bases.add(corridors[i][0])
+
+        fallback_maps: dict[str, dict] = {}
+        if fallback_bases:
+            fetched = await asyncio.gather(
+                *[_fetch_rates(b, client) for b in fallback_bases]
+            )
+            fallback_maps = dict(zip(fallback_bases, fetched))
+
+    for i, (from_, to_, fee, minutes) in enumerate(corridors):
+        rate = wise_rates[i]
+        if rate is None:
+            # Fallback to open.er-api.com
+            rate = fallback_maps.get(from_, {}).get(to_, 1.0)
+            if rate == 0:
+                rate = 1.0
+            logger.debug("Using fallback rate for %s→%s: %s", from_, to_, rate)
         edges.append(Edge(
             from_currency=from_,
             to_currency=to_,
