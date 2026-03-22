@@ -111,7 +111,7 @@ app = FastAPI(
         "**Non-profit. No affiliate fees. No custody. Free forever.**\n\n"
         "**For AI agents:** call `/v1/quote` as a tool with `from`, `to`, and `amount` parameters. "
         "Or use the MCP server (`python -m coinnect.mcp_server`) for Claude/MCP-compatible agents.\n\n"
-        "Rate limits: 20 req/day anonymous (no key) · 1,000/day with free key · "
+        "Rate limits: 20 req/day / 50/hr anonymous (beta) · 1,000/day free key · "
         "5,000/day agent key · see coinnect.bot/#pricing"
     ),
     version="2026.03.21.1",
