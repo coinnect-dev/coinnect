@@ -238,6 +238,82 @@ async def history(
     }
 
 
+@router.get("/snapshot/daily", summary="Full daily rate snapshot (CSV) — open data")
+async def snapshot_daily(
+    date: str | None = Query(None, description="YYYY-MM-DD, defaults to today UTC"),
+):
+    """
+    Download a full-day CSV snapshot of best-route rates for all tracked corridors.
+
+    Each row = one 3-minute capture: corridor, amount, best cost %, received amount, provider path.
+
+    Free, no key required. Intended for researchers, bots, and bulk analysis.
+    Publish the data: cite as Coinnect Open Rate Data (coinnect.bot).
+    """
+    import io, csv
+    from coinnect.db.history import DB_PATH, _connect, _normalize_ts
+
+    if date:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(400, "date must be YYYY-MM-DD")
+        day = date
+    else:
+        day = datetime.now(UTC).strftime("%Y-%m-%d")
+
+    ts = _normalize_ts("captured_at")
+    with _connect() as conn:
+        rows = conn.execute(f"""
+            SELECT captured_at, from_currency, to_currency, amount,
+                   best_cost_pct, best_time_min, they_receive, best_via
+            FROM rate_snapshots
+            WHERE substr({ts}, 1, 10) = ?
+            ORDER BY captured_at ASC
+        """, (day,)).fetchall()
+
+    if not rows:
+        raise HTTPException(404, f"No data for {day} yet. Snapshots are captured every 3 minutes for key corridors.")
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["captured_at_utc","from_currency","to_currency","amount","best_cost_pct","best_time_min","they_receive","best_via"])
+    for r in rows:
+        w.writerow([r["captured_at"], r["from_currency"], r["to_currency"], r["amount"],
+                    r["best_cost_pct"], r["best_time_min"], r["they_receive"], r["best_via"]])
+
+    from fastapi.responses import Response
+    filename = f"coinnect-rates-{day}.csv"
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/snapshot/meta", summary="Available daily snapshots — open data")
+async def snapshot_meta():
+    """List available dates with row counts. Use with /v1/snapshot/daily?date=YYYY-MM-DD."""
+    from coinnect.db.history import _connect, _normalize_ts
+    ts = _normalize_ts("captured_at")
+    with _connect() as conn:
+        rows = conn.execute(f"""
+            SELECT substr({ts}, 1, 10) as day, COUNT(*) as rows
+            FROM rate_snapshots
+            GROUP BY day
+            ORDER BY day DESC
+            LIMIT 90
+        """).fetchall()
+    return {
+        "dataset": "Coinnect Open Rate Data",
+        "description": "Best-route fee% and received amount for key corridors, captured every 3 minutes.",
+        "license": "CC-BY 4.0",
+        "cite_as": "Coinnect (coinnect.bot) Open Rate Data",
+        "download": "/v1/snapshot/daily?date=YYYY-MM-DD",
+        "available_days": [{"date": r["day"], "rows": r["rows"]} for r in rows],
+    }
+
+
 @router.get("/health", summary="API health check")
 async def health():
     from coinnect.db.history import DB_PATH
