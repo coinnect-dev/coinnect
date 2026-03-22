@@ -688,18 +688,22 @@
   </div>
 </section>
 <script>
-(function(){
-  const live=['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Buda'];
-  const reference=['CoinGecko','Frankfurter (ECB)','Bluelytics (AR)','CriptoYa (AR)','BCB PTAX (BR)','TRM (CO)','LiraRate (LB)'];
-  const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Binance P2P','Western Union','MoneyGram'];
-  function renderProviders(names,containerId){
-    const el=document.getElementById(containerId);
-    el.innerHTML=names.map(n=>`<span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5">${exchangeLogo(n,14)}<span>${esc(n)}</span></span>`).join('');
-  }
-  renderProviders(live,'providersLive');
-  renderProviders(reference,'providersReference');
-  renderProviders(estimated,'providersEstimated');
-})();
+document.addEventListener('DOMContentLoaded',function(){
+  // Wait for exchangeLogo and esc to be defined
+  setTimeout(function(){
+    const live=['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Buda'];
+    const reference=['CoinGecko','Frankfurter (ECB)','Bluelytics (AR)','CriptoYa (AR)','BCB PTAX (BR)','TRM (CO)','LiraRate (LB)'];
+    const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Binance P2P','Western Union','MoneyGram'];
+    function renderProviders(names,containerId){
+      const el=document.getElementById(containerId);
+      if(!el)return;
+      el.innerHTML=names.map(n=>`<span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5">${typeof exchangeLogo==='function'?exchangeLogo(n,14):''}<span>${typeof esc==='function'?esc(n):n}</span></span>`).join('');
+    }
+    renderProviders(live,'providersLive');
+    renderProviders(reference,'providersReference');
+    renderProviders(estimated,'providersEstimated');
+  },100);
+});
 </script>
 
 <footer class="text-xs text-gray-400 dark:text-gray-600 py-8 border-t border-gray-100 dark:border-gray-800">
