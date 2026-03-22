@@ -205,6 +205,28 @@ def get_provider_history(from_currency: str, to_currency: str, minutes_back: int
     return {v: filtered[v] for v in sorted_vias[:8]}
 
 
+def get_snapshot_by_id(snapshot_id: int) -> dict | None:
+    """Return a single snapshot row including full routes_json."""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            """SELECT id, captured_at, from_currency, to_currency, amount,
+                      best_cost_pct, best_time_min, they_receive, best_via, routes_json
+               FROM rate_snapshots WHERE id = ?""",
+            (snapshot_id,)
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        try:
+            d["routes"] = json.loads(d.pop("routes_json"))
+        except Exception:
+            d["routes"] = []
+        return d
+    finally:
+        conn.close()
+
+
 def prune_old(keep_days: int = 30) -> int:
     """Delete snapshots older than keep_days. Returns rows deleted."""
     conn = _connect()

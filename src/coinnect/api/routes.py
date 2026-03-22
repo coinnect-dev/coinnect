@@ -318,6 +318,22 @@ async def snapshot_daily(
     )
 
 
+@router.get("/snapshot/{snapshot_id}", summary="Permalink for a specific rate snapshot")
+async def snapshot_permalink(snapshot_id: int):
+    """
+    Returns the full route data for a specific snapshot ID.
+
+    Use this to deep-link a specific rate comparison: `/rates/{id}` renders a
+    human-readable page. The snapshot is immutable — it records exactly what
+    rates were available at capture time (UTC).
+    """
+    from coinnect.db.history import get_snapshot_by_id
+    snap = get_snapshot_by_id(snapshot_id)
+    if not snap:
+        raise HTTPException(404, f"Snapshot #{snapshot_id} not found.")
+    return snap
+
+
 @router.get("/snapshot/meta", summary="Available daily snapshots — open data")
 async def snapshot_meta():
     """List available dates with row counts. Use with /v1/snapshot/daily?date=YYYY-MM-DD."""
@@ -347,7 +363,7 @@ async def health():
     return {
         "ok": True,
         "status": "live",
-        "version": "2026.03.21.1",
+        "version": "2026.03.22.1",
         "exchanges_online": len(SUPPORTED_EXCHANGES) + 2,
         "history_db": str(DB_PATH),
         "checked_at": datetime.now(UTC).isoformat(),
