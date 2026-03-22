@@ -157,6 +157,7 @@ Every 3-minute refresh stores a snapshot for 18 tracked corridors in SQLite. Thi
 GET  /v1/quote                 Ranked routes for a transfer
 GET  /v1/history               Time-series best rate for a corridor
 GET  /v1/history/providers     Per-provider rate history for a corridor
+GET  /v1/snapshot/{id}         Permalink for a specific rate snapshot
 GET  /v1/snapshot/daily        Full-day CSV export (CC-BY 4.0, no key needed)
 GET  /v1/snapshot/meta         Available snapshot dates
 GET  /v1/exchanges             List all integrated providers
@@ -167,6 +168,8 @@ GET  /v1/keys/usage            Today's usage for a key
 GET  /v1/suggestions           Community provider suggestions
 POST /v1/suggestions           Submit a new suggestion
 ```
+
+Human-readable snapshots at `coinnect.bot/rates/{id}` — shareable, archivable, CC-BY 4.0.
 
 Full OpenAPI specification at `/docs`.
 
@@ -205,15 +208,77 @@ A password-protected admin panel at `/admin` provides search analytics, provider
 
 ---
 
-## 4. Why Non-Profit
+## 4. x402 — Machine-to-Machine Payments for API Access
 
-### 4.1 The alignment problem
+### 4.1 The problem with free tiers
+
+Free API tiers have a structural flaw: they require account creation, email verification, abuse monitoring, and a support system. They punish honest users (rate limits, quotas) and reward abusers (throwaway accounts). For an AI agent operating autonomously, even generating an API key is friction.
+
+The x402 protocol solves this. It extends HTTP with a payment layer: instead of a 401 Unauthorized, a server returns a 402 Payment Required with a machine-readable price. The client pays automatically in USDC on Base L2 (Ethereum Layer 2), and the server unlocks the response. No accounts. No keys. No friction.
+
+### 4.2 How it works
+
+```
+Agent → GET /v1/quote?from=USD&to=NGN&amount=500
+Server ← 402 Payment Required
+         X-Payment-Required: {amount: "0.001", currency: "USDC", network: "base",
+                               recipient: "0xf0813041b9b017a88f28B8600E73a695E2B02e0A",
+                               description: "Coinnect quote — 1 request"}
+Agent → GET /v1/quote?from=USD&to=NGN&amount=500
+         X-Payment: <signed USDC Base transaction>
+Server ← 200 OK + route data
+```
+
+Each request costs approximately **$0.001 USDC** (~0.1 cents). A typical AI agent session making 100 queries costs $0.10 — comparable to a fraction of a cent per search in electricity. On Base L2, each transaction costs less than $0.001 in gas.
+
+### 4.3 Why Base L2?
+
+- **Gas fees:** $0.0003–0.001 per transaction (vs. $2–20 on Ethereum mainnet)
+- **Settlement:** ~2 seconds, Ethereum-secured
+- **USDC:** native on Base, issued by Circle — no bridge risk
+- **Wallet compatibility:** MetaMask, Coinbase Wallet, any EVM wallet
+
+Our receiving address (`0xf0813041b9b017a88f28B8600E73a695E2B02e0A`) is an EVM address — the same one that accepts ETH, USDC, BNB, and DAI donations. It works on Base natively; no separate setup is needed.
+
+### 4.4 x402 tiers on Coinnect
+
+| Access mode | How | Cost | Limit |
+|-------------|-----|------|-------|
+| Browser (anonymous) | IP-based | Free | 20/day, 50/hr |
+| Free key | POST /v1/keys | Free | 1,000/day |
+| Agent key | Request at coinnect.bot | Free | 5,000/day |
+| x402 (micropayment) | Auto-pay $0.001/req | $0.001/req | Unlimited |
+| Pro key | Contact | Subscription | 50,000/day |
+
+x402 is designed for fully autonomous AI agents that operate without human oversight. They pay as they go, wallets permitting, with no account management required.
+
+### 4.5 Mexico-specific note
+
+If you are operating from Mexico and want to top up a Base L2 wallet:
+
+1. **Coinbase (recommended):** Available in Mexico since 2023. Buy USDC directly with MXN via SPEI or bank transfer. No MSB license required on your end — you're a retail buyer. Withdraw USDC to Base L2 within the same app.
+2. **Bitso → Coinbase:** Convert MXN → USDC on Bitso (native Mexican exchange), then send to a Coinbase-linked Base address or any Base-compatible wallet.
+3. **Wallet:** MetaMask supports Base natively. Switch network to "Base" and your existing address (`0xf0813…`) receives and sends USDC on Base.
+
+Since Coinnect is purely an informational service (no money transmission), operating from Mexico requires no special financial licensing. x402 income would be classified as digital services revenue — taxable as RESICO or general regime depending on your setup.
+
+### 4.6 Current status
+
+x402 is in the Coinnect roadmap for Q3 2026. The receiving address is already configured. Implementation requires integrating the [x402-python](https://github.com/coinbase/x402) middleware (FastAPI-compatible) into the `/v1/quote` route and deploying with a Base RPC endpoint.
+
+The [Coinbase x402 SDK](https://github.com/coinbase/x402) is MIT-licensed and maintained by Coinbase. It handles payment verification, replay prevention, and automatic response unlocking.
+
+---
+
+## 5. Why Non-Profit
+
+### 5.1 The alignment problem
 
 Every for-profit comparison platform faces the same structural problem: the business model eventually compromises the product. Affiliate commissions, promoted listings, premium placements — these aren't malicious choices, they're business necessities. But they introduce bias into what should be a purely informational service.
 
 A non-profit doesn't have this problem. The only metric that matters is accuracy.
 
-### 4.2 Sustainability
+### 5.2 Sustainability
 
 Coinnect is funded entirely by voluntary donations from users who save money using the platform. If we save you $20 on a transfer, a $1 donation is a 2000% return for you and keeps the service running for everyone.
 
@@ -221,17 +286,17 @@ No advertising. No affiliate fees. No investor expectations. No exit.
 
 Open Collective (fiscal host: Open Source Collective) accepts donations in fiat and crypto. The project treasury uses a Gnosis Safe multisig on Polygon.
 
-### 4.3 Transparent compensation
+### 5.3 Transparent compensation
 
 The founder's compensation and all operational expenses are published publicly in [SUSTAINABILITY.md](https://github.com/coinnect-dev/coinnect/blob/main/docs/SUSTAINABILITY.md). The founding statutes cap founder compensation at 10% of total annual budget, starting at $2,500/month and scaling only with organizational revenue. Financial reports are published quarterly.
 
-### 4.4 Infrastructure cost
+### 5.4 Infrastructure cost
 
 The current deployment runs on a single Linux server: FastAPI, three SQLite databases, and a static frontend. No serverless, no CDN required at current scale. As traffic grows, the architecture is trivially horizontally scalable: the quote engine is stateless, SQLite history can migrate to libSQL/Turso for edge distribution, and the frontend can move to any CDN.
 
 ---
 
-## 5. Providers — Inclusion Criteria
+## 6. Providers — Inclusion Criteria
 
 1. **Publicly documented pricing** — real-time API or published fee tables
 2. **Regulated in at least one jurisdiction** — reduces counterparty risk
@@ -241,7 +306,7 @@ We do not charge providers to be listed. We do not accept payment for rankings. 
 
 Providers without a live public API are included with fees from published pricing pages, clearly labeled as **~est.** in route instructions.
 
-### 5.1 Integrated providers (March 2026)
+### 6.1 Integrated providers (March 2026)
 
 **Crypto exchanges (live rates via CCXT):** Binance, Kraken, Coinbase, Bitso
 
@@ -271,7 +336,7 @@ Western Union and MoneyGram are included as baselines. When Coinnect shows a USD
 
 ---
 
-## 6. Disclaimer & Rate Accuracy
+## 7. Disclaimer & Rate Accuracy
 
 Rates displayed on Coinnect are sourced from provider APIs and published pricing pages. Live-rate providers refresh every 3 minutes. Estimated-fee providers (labeled **~est.**) use manually verified ranges.
 
@@ -279,9 +344,9 @@ Rates displayed on Coinnect are sourced from provider APIs and published pricing
 
 ---
 
-## 7. Legal & Regulatory
+## 8. Legal & Regulatory
 
-### 7.1 What Coinnect is not
+### 8.1 What Coinnect is not
 
 - A money transfer operator (MTO)
 - A payment processor
@@ -289,30 +354,30 @@ Rates displayed on Coinnect are sourced from provider APIs and published pricing
 - A financial advisor
 - A custodian of any kind
 
-### 7.2 Regulatory position
+### 8.2 Regulatory position
 
 A service that provides publicly available pricing information and routing recommendations — without executing, facilitating, or touching transactions — does not require a money services business (MSB) license in most jurisdictions.
 
 This mirrors the legal position of Google Flights (shows prices without being an airline) or Monito (compares fees without being a remittance service).
 
-### 7.3 Data privacy
+### 8.3 Data privacy
 
 Coinnect does not collect personal information. Quote requests include only currency types and amounts. Analytics logs capture aggregate usage (corridor, amount range, source type) with no user identity, wallet addresses, or IP addresses in persistent storage. GA4 analytics can be opted out via `/?notrack`.
 
 ---
 
-## 8. Roadmap
+## 9. Roadmap
 
 | Phase | Timeline | Milestone |
 |-------|----------|-----------|
-| Public beta | Q1 2026 ✓ | GitHub public, open data API, rate history |
-| Community | Q3 2026 | Provider suggestion board, user reviews |
+| Public beta | Q1 2026 ✓ | GitHub public, open data API, rate history, snapshot permalinks |
+| Community | Q2 2026 | x402 pay-per-use API (USDC/Base), PWA, provider suggestion board |
 | Ecosystem | Q4 2026 | Stellar anchors (M-Pesa, Wave, GCash), `pip install coinnect-tool` |
 | Global | 2027 | 30+ providers, 60+ currencies, Africa + Asia full coverage |
 
 ---
 
-## 9. The Founder
+## 10. The Founder
 
 [Miguel V.](https://www.linkedin.com/in/miguelvalenciav/) built Coinnect because the problem is real, the solution is simple, and nobody was building it without a business model attached.
 
@@ -320,7 +385,7 @@ His compensation is capped by the founding statutes and published quarterly. He 
 
 ---
 
-## 10. Vision
+## 11. Vision
 
 Before GPS, every driver carried a road atlas. It didn't drive. It didn't own the roads. It had no preference for which highway you took. You trusted it precisely because it had no stake in your route — it just knew every path and showed you all of them.
 
