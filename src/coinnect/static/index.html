@@ -210,7 +210,7 @@
           </optgroup>
         </select>
       </div>
-      <div class="text-gray-400 pb-2.5 text-lg">→</div>
+      <button onclick="swapCurrencies()" title="Swap currencies" class="pb-2.5 text-gray-400 hover:text-cyan-500 transition-colors text-xl leading-none" aria-label="Swap from/to">⇄</button>
       <div>
         <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_to">To</label>
         <select id="to" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
@@ -752,15 +752,33 @@ function flag(c){return FLAGS[c]||''}
 function isCryptoExchange(via){return CRYPTO_EXCHANGES.has(via)}
 function routeUsesCrypto(r){return r.steps.some(s=>isCryptoExchange(s.via)||CRYPTO_SET.has(s.from_currency)||CRYPTO_SET.has(s.to_currency))}
 
-function fmtNum(n){
+function fmtNum(n,currency){
   if(!n&&n!==0)return'—';
-  if(Math.abs(n)>=1e9)return(n/1e9).toFixed(2)+'B';
-  if(Math.abs(n)>=1e6)return(n/1e6).toFixed(2)+'M';
-  if(Math.abs(n)>=1000)return n.toLocaleString('en',{maximumFractionDigits:2});
+  // Crypto: always show full precision
+  const CRYPTO=new Set(['BTC','ETH','SOL','XRP','USDC','USDT','LTC','BCH']);
+  if(currency&&CRYPTO.has(currency)){
+    if(Math.abs(n)<0.0001)return n.toFixed(8).replace(/0+$/,'');
+    if(Math.abs(n)<0.01)return n.toFixed(6).replace(/0+$/,'');
+    if(Math.abs(n)<1)return n.toFixed(4).replace(/0+$/,'');
+    return n.toLocaleString('en',{maximumFractionDigits:8,minimumFractionDigits:0});
+  }
+  // Fiat: always show full integer (no B/M abbreviation — 762,450 not 0.76M)
+  if(Math.abs(n)>=1000)return Math.round(n).toLocaleString('en');
   if(Math.abs(n)<0.0001)return n.toFixed(8).replace(/0+$/,'');
   if(Math.abs(n)<0.01)return n.toFixed(6).replace(/0+$/,'');
   if(Math.abs(n)<1)return n.toFixed(4).replace(/0+$/,'');
   return n.toLocaleString('en',{maximumFractionDigits:2});
+}
+
+function swapCurrencies(){
+  const f=document.getElementById('from');
+  const t=document.getElementById('to');
+  const tmp=f.value;
+  // Try to set from to current to value (may not exist in from options)
+  const fromOpt=[...f.options].find(o=>o.value===t.value);
+  const toOpt=[...t.options].find(o=>o.value===tmp);
+  if(fromOpt)f.value=t.value;
+  if(toOpt)t.value=tmp;
 }
 
 function fmtRate(send,receive,fromC,toC){
@@ -837,17 +855,17 @@ function renderTable(routes,from,to){
     const effectiveRate=r.they_receive/r.you_send;
     // Format: show as "1 FROM = X.XX TO"
     const rateStr=effectiveRate>=1000
-      ? `1 = ${fmtNum(Math.round(effectiveRate))}`
+      ? `1 = ${Math.round(effectiveRate).toLocaleString('en')}`
       : effectiveRate>=1
       ? `1 = ${effectiveRate.toFixed(4)}`
-      : `1 = ${effectiveRate.toFixed(6)}`;
+      : `1 = ${effectiveRate.toFixed(8).replace(/0+$/,'')}`;
     const featured=isFeatured(r);
     const badge=featured?`<span class="inline-block ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${r.label==='Cheapest'?'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400':'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'}">${r.label}</span>`:'';
     return`<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${featured?'font-medium':''}">
       <td class="px-4 py-3 text-gray-400">${r.rank}</td>
       <td class="px-4 py-3 text-gray-900 dark:text-white">${viaLabel}${legBadge}${badge}</td>
       <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-white">${rateStr} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
-      <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-300">${fmtNum(r.they_receive)} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
+      <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-300">${fmtNum(r.they_receive,r.they_receive_currency)} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
       <td class="px-4 py-3 text-right text-xs ${r.total_cost_pct<1.5?'text-emerald-600 dark:text-emerald-400':r.total_cost_pct<3?'text-amber-600 dark:text-amber-400':'text-red-500'}">${r.total_cost_pct.toFixed(2)}%</td>
       <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">${fmtMin(r.total_time_minutes)}</td>
     </tr>`;
@@ -1271,10 +1289,10 @@ function transferBox(r,from,to){
     </div>`;
 }
 
-function renderFeaturedCard(r,from,to){
+function renderFeaturedCard(r,from,to,insideTied=false){
   const emoji=FEATURED[r.label]||'';
   const isBest=r.rank===1;
-  const border=isBest?'border-cyan-300 dark:border-cyan-600/50 ring-1 ring-cyan-200 dark:ring-cyan-800/50':'border-gray-200 dark:border-gray-700';
+  const border=insideTied?'border-gray-100 dark:border-gray-800':isBest?'border-cyan-300 dark:border-cyan-600/50 ring-1 ring-cyan-200 dark:ring-cyan-800/50':'border-gray-200 dark:border-gray-700';
   const viaList=[...new Set(r.steps.map(s=>s.via))];
   return`
     <div class="bg-white dark:bg-gray-900 border ${border} rounded-2xl overflow-hidden">
@@ -1316,10 +1334,10 @@ function renderCompactRow(r,from,to){
         <div class="flex-1 flex items-center gap-1.5 font-medium text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(viaList,16)}</div>
         <div class="flex items-center gap-6">
           <div class="text-right hidden md:block">
-            <div class="text-xs font-mono text-gray-500">${fmtNum(r.you_send)} <span class="text-gray-400">${from}</span></div>
+            <div class="text-xs font-mono text-gray-500">${fmtNum(r.you_send,from)} <span class="text-gray-400">${from}</span></div>
           </div>
           <div class="text-right min-w-[120px]">
-            <div class="font-mono font-semibold text-cyan-700 dark:text-cyan-300">${fmtNum(r.they_receive)} <span class="text-gray-400 font-normal text-xs">${to}</span></div>
+            <div class="font-mono font-semibold text-cyan-700 dark:text-cyan-300">${fmtNum(r.they_receive,to)} <span class="text-gray-400 font-normal text-xs">${to}</span></div>
             <div class="text-xs text-gray-400">${r.total_cost_pct.toFixed(2)}% · ${fmtTime(r.total_time_minutes)}</div>
           </div>
         </div>
@@ -1329,11 +1347,11 @@ function renderCompactRow(r,from,to){
         <div class="grid grid-cols-1 sm:grid-cols-2 sm:divide-x divide-gray-100 dark:divide-gray-800">
           <div class="px-5 py-3">
             <div class="text-xs text-gray-400 mb-0.5">${t('you_send')}</div>
-            <div class="font-mono font-bold text-gray-900 dark:text-white">${fmtNum(r.you_send)} <span class="text-gray-400 text-sm font-normal">${from}</span></div>
+            <div class="font-mono font-bold text-gray-900 dark:text-white">${fmtNum(r.you_send,from)} <span class="text-gray-400 text-sm font-normal">${from}</span></div>
           </div>
           <div class="px-5 py-3">
             <div class="text-xs text-gray-400 mb-0.5">${t('they_receive')}</div>
-            <div class="font-mono font-bold text-cyan-700 dark:text-cyan-300">${fmtNum(r.they_receive)} <span class="text-gray-400 text-sm font-normal">${to}</span></div>
+            <div class="font-mono font-bold text-cyan-700 dark:text-cyan-300">${fmtNum(r.they_receive,to)} <span class="text-gray-400 text-sm font-normal">${to}</span></div>
           </div>
         </div>
         <div class="px-5 py-2 bg-gray-50 dark:bg-gray-800/40 text-xs font-mono text-gray-500">${t('rate')} ${rate}</div>
@@ -1424,10 +1442,33 @@ function renderResults(routes,from,to){
     ageText.textContent=ageSec<10?t('live_rates'):t('rates_ago').replace('{sec}',ageSec);
   }
 
+  // Group tied cheapest routes into one card; randomize their order
+  const TIE=0.1;
+  const cheapest=featured.find(r=>r.label==='Cheapest');
+  const tiedCheapest=cheapest
+    ? featured.filter(r=>Math.abs(r.total_cost_pct-cheapest.total_cost_pct)<=TIE)
+    : [];
+  const nonTied=featured.filter(r=>!tiedCheapest.includes(r));
+  // Shuffle tied group so no provider always appears first
+  const shuffled=[...tiedCheapest].sort(()=>Math.random()-0.5);
+
+  const tiedBlock=shuffled.length>1
+    ? `<div class="sm:col-span-${Math.min(shuffled.length,2)} relative">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <span class="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow">⚖ Best rate — ${shuffled.length} tied at ${cheapest.total_cost_pct.toFixed(2)}%</span>
+        </div>
+        <div class="pt-3 grid grid-cols-1 sm:grid-cols-${Math.min(shuffled.length,2)} gap-3 border-2 border-emerald-400 dark:border-emerald-600 rounded-2xl p-3 bg-emerald-50/30 dark:bg-emerald-950/20">
+          ${shuffled.map(r=>renderFeaturedCard(r,from,to,true)).join('')}
+        </div>
+      </div>`
+    : shuffled.map(r=>renderFeaturedCard(r,from,to)).join('');
+
+  const featuredHtml=[tiedBlock,...nonTied.map(r=>renderFeaturedCard(r,from,to))].join('');
+
   document.getElementById('results').innerHTML=`
     ${renderSavings(filtered,parseFloat(document.getElementById('amount').value),from)}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-      ${featured.map(r=>renderFeaturedCard(r,from,to)).join('')}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 pt-2">
+      ${featuredHtml}
     </div>
     ${extras.length?`
       <div>
