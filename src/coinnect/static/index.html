@@ -344,7 +344,7 @@
     <div id="providerCompareSection" class="hidden mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-2 mb-2">
         <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Compare providers</span>
-        <span class="text-xs text-gray-400">— fee over time for this corridor</span>
+        <span class="text-xs text-gray-400">— effective rate over time for this corridor</span>
       </div>
       <div id="providerCheckboxes" class="flex flex-wrap gap-x-3 gap-y-1.5 mb-3"></div>
       <div id="multiChartWrap" class="hidden">
@@ -1170,37 +1170,43 @@ function renderProviderChart(){
   const vias=[..._checkedProviders];
   const allVias=Object.keys(_providerData);
   const series=vias.map(via=>{
-    const pts=(_providerData[via]||[]).map(p=>({t:new Date(p.captured_at).getTime(),pct:p.cost_pct}));
+    const pts=(_providerData[via]||[]).map(p=>({
+      t:new Date(p.captured_at).getTime(),
+      val:p.they_receive||0,  // effective rate (how much recipient gets)
+      pct:p.cost_pct
+    }));
     const colorIdx=allVias.indexOf(via);
     return{via,pts,col:PROVIDER_COLORS[colorIdx%PROVIDER_COLORS.length]};
-  }).filter(s=>s.pts.length>=2);
+  }).filter(s=>s.pts.length>=2&&s.pts.some(p=>p.val>0));
 
   if(!series.length){wrap.classList.add('hidden');return;}
 
   const allT=series.flatMap(s=>s.pts.map(p=>p.t));
-  const allP=series.flatMap(s=>s.pts.map(p=>p.pct));
+  const allP=series.flatMap(s=>s.pts.map(p=>p.val));
   const minT=Math.min(...allT),maxT=Math.max(...allT);
   const minP=Math.min(...allP),maxP=Math.max(...allP);
-  const rangeP=(maxP-minP)||0.5;
+  const rangeP=(maxP-minP)||1;
 
   const W=chartEl.clientWidth||700,H=160;
   const px=t=>((t-minT)/(maxT-minT||1))*W;
   const py=p=>H-((p-minP)/rangeP)*(H-14)-6;
 
   const lines=series.map(s=>{
-    const pts=s.pts.map(p=>`${px(p.t).toFixed(1)},${py(p.pct).toFixed(1)}`).join(' ');
+    const pts=s.pts.map(p=>`${px(p.t).toFixed(1)},${py(p.val).toFixed(1)}`).join(' ');
     const last=s.pts[s.pts.length-1];
     return`<polyline points="${pts}" fill="none" stroke="${s.col}" stroke-width="2" stroke-linejoin="round"/>
-      <circle cx="${px(last.t).toFixed(1)}" cy="${py(last.pct).toFixed(1)}" r="3.5" fill="${s.col}"/>`;
+      <circle cx="${px(last.t).toFixed(1)}" cy="${py(last.val).toFixed(1)}" r="3.5" fill="${s.col}"/>`;
   }).join('');
 
+  // Y-axis: show effective rate, not percentage
+  const fmtY=v=>v>=1000?Math.round(v).toLocaleString('en'):v>=1?v.toFixed(2):v.toFixed(6);
   const yTicks=[minP,(minP+maxP)/2,maxP].map(v=>`
-    <text x="3" y="${py(v).toFixed(1)}" font-size="9" fill="#9ca3af" dominant-baseline="middle">${v.toFixed(2)}%</text>`).join('');
+    <text x="3" y="${py(v).toFixed(1)}" font-size="9" fill="#9ca3af" dominant-baseline="middle">${fmtY(v)}</text>`).join('');
 
   chartEl.innerHTML=`<svg class="w-full" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${lines}${yTicks}</svg>`;
   legend.innerHTML=series.map(s=>{
     const last=s.pts[s.pts.length-1];
-    return`<span class="inline-flex items-center gap-1" style="color:${s.col}">${exchangeLogo(s.via,11)} <span class="font-mono text-xs">${s.via} ${last.pct.toFixed(2)}%</span></span>`;
+    return`<span class="inline-flex items-center gap-1" style="color:${s.col}">${exchangeLogo(s.via,11)} <span class="font-mono text-xs">${esc(s.via)} ${fmtY(last.val)} (${last.pct.toFixed(2)}%)</span></span>`;
   }).join('')
 }
 

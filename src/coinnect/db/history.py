@@ -182,22 +182,32 @@ def get_provider_history(from_currency: str, to_currency: str, minutes_back: int
     finally:
         conn.close()
 
-    # Build per-provider series
+    # Build per-provider series — keep only the cheapest route per provider per snapshot
     series: dict[str, list[dict]] = {}
     for row in rows:
         try:
             routes = json.loads(row["routes_json"])
         except Exception:
             continue
+        # Deduplicate: for each base provider name, keep only cheapest route
+        best_by_provider: dict[str, dict] = {}
         for r in routes:
             via = r.get("via", "")
             if not via:
                 continue
-            if via not in series:
-                series[via] = []
-            series[via].append({
+            # Normalize: "Binance+Binance" and "Binance" both map to "Binance"
+            base_provider = via.split("+")[0].strip()
+            existing = best_by_provider.get(base_provider)
+            if existing is None or r.get("total_cost_pct", 99) < existing.get("total_cost_pct", 99):
+                best_by_provider[base_provider] = r
+
+        for base_provider, r in best_by_provider.items():
+            if base_provider not in series:
+                series[base_provider] = []
+            series[base_provider].append({
                 "captured_at": row["captured_at"],
                 "cost_pct": r.get("total_cost_pct", 0),
+                "they_receive": r.get("they_receive", 0),
             })
 
     # Keep only providers with enough data points, sort by avg cost
