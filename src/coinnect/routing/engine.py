@@ -88,7 +88,11 @@ def _dijkstra(
         visited_states[state] = priority
 
         if curr == end and path:
-            total_cost = sum(e.fee_pct for e in path)
+            # Compound cost: 1 - product((1 - fee_i/100)) — per MRP spec
+            product = 1.0
+            for e in path:
+                product *= (1 - e.fee_pct / 100)
+            total_cost = (1 - product) * 100
             results.append((total_cost, curr_amount, path))
             continue
 

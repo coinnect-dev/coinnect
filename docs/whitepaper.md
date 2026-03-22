@@ -32,7 +32,7 @@ This is the core problem Coinnect solves: **not the cost of moving money, but th
 | Service | Scope | Model | Neutral? |
 |---------|-------|-------|---------|
 | Monito.com | Global fiat remittance | For-profit, affiliate commissions | No — paid per referral |
-| Yadio.io | LatAm P2P crypto rates | For-profit, price tracker | No — single-step, no routing |
+| Yadio.io | LatAm P2P crypto rates | For-profit, price tracker | Partial — single-step only |
 | Wise | Direct fiat transfer | For-profit, they are a route | No — also a listed route |
 | Google "send money" | Surface-level | Commercial agreements | No |
 | Coinnect | Global, fiat + crypto + P2P | Non-profit, donation-funded | **Yes** |
@@ -93,7 +93,7 @@ The internet moves data through routers. Routers don't read your emails. They ju
 
 Coinnect is the router for money. It doesn't touch the transfer. It finds the path.
 
-**The value is in the information, not the transaction.** Because Coinnect never touches transactions, it needs no money transmitter license, holds no regulatory risk, and has no reason — structural or financial — to favor any ecosystem.
+**The value is in the information, not the transaction.** Because Coinnect never touches transactions, it needs no money transmitter license and carries minimal regulatory risk under current interpretations, and has no reason — structural or financial — to favor any ecosystem.
 
 ### 2.3 For humans, machines, and self-hosters
 
@@ -131,7 +131,7 @@ Two-phase approach:
 1. **Direct routes** — all single-step provider edges for the corridor, ranked by cost.
 2. **Multi-hop routes** — two Dijkstra passes (cost-optimized, time-optimized) find paths like USD → USDC via Coinbase → NGN via Yellow Card.
 
-Results are merged, deduplicated by path signature, and returned as up to 12 ranked routes. Routes within 0.1% of each other are shown as tied.
+Results are merged, deduplicated by path signature, and returned as up to 30 ranked routes. Routes within 0.1% of each other are shown as tied.
 
 ### 3.2 Rate refresh
 
@@ -292,7 +292,7 @@ The founder's compensation and all operational expenses are published publicly i
 
 ### 5.4 Infrastructure cost
 
-The current deployment runs on a single Linux server: FastAPI, three SQLite databases, and a static frontend. No serverless, no CDN required at current scale. As traffic grows, the architecture is trivially horizontally scalable: the quote engine is stateless, SQLite history can migrate to libSQL/Turso for edge distribution, and the frontend can move to any CDN.
+The current deployment runs on a single Linux server: FastAPI, three SQLite databases, and a static frontend. No serverless, no CDN required at current scale. As traffic grows, the architecture is designed for straightforward horizontal scaling: the quote engine is stateless, SQLite history can migrate to libSQL/Turso for edge distribution, and the frontend can move to any CDN.
 
 ---
 
