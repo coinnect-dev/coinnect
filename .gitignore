@@ -7,3 +7,4 @@ __pycache__/
 dist/
 .pytest_cache/
 data/history.db
+docs/internal-outreach-strategy.md
