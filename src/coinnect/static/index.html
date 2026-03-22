@@ -143,14 +143,9 @@
       </div>
     </div>
 
-    <!-- Search form -->
+    <!-- Search form — From → To → Amount (Kayak-style) -->
     <div class="flex flex-wrap gap-3 items-end justify-center">
-      <div>
-        <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_amount">Amount</label>
-        <input id="amount" type="number" value="1" min="0.00001" step="any"
-          class="w-28 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white text-base font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
-      </div>
-      <div>
+      <div class="flex-1 min-w-[140px] max-w-[200px]">
         <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_from">From</label>
         <select id="from" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
           <optgroup label="Crypto">
@@ -208,7 +203,7 @@
         </select>
       </div>
       <button onclick="swapCurrencies()" title="Swap currencies" class="pb-2.5 text-gray-400 hover:text-cyan-500 transition-colors text-xl leading-none" aria-label="Swap from/to">⇄</button>
-      <div>
+      <div class="flex-1 min-w-[140px] max-w-[200px]">
         <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_to">To</label>
         <select id="to" class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500">
           <optgroup label="Latin America">
@@ -276,6 +271,11 @@
             <option value="ETH">Ξ ETH</option>
           </optgroup>
         </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_amount">Amount</label>
+        <input id="amount" type="number" value="1" min="0.00001" step="any"
+          class="w-28 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white text-base font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
       </div>
       <button id="searchBtn" onclick="getQuote()"
         class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-lg transition-all text-sm shadow-sm" data-i18n="btn_find">
