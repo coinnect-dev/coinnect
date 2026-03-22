@@ -123,7 +123,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://coinnect.bot", "http://localhost:8100"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )

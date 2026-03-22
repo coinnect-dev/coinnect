@@ -6,6 +6,27 @@
   <title>Coinnect — The free open map for global money</title>
   <meta name="description" content="Find the cheapest path to move money anywhere. Free API for humans and AI agents. Non-profit, no affiliate fees.">
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+
+  <!-- Open Graph / Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://coinnect.bot">
+  <meta property="og:title" content="Coinnect — The free open map for global money">
+  <meta property="og:description" content="Compare every way to send money across borders. 25+ providers, real-time rates. Free, open source, no affiliate fees.">
+  <meta property="og:image" content="https://coinnect.bot/static/logo.svg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coinnect — The free open map for global money">
+  <meta name="twitter:description" content="Compare every way to send money across borders. Free, open source, no affiliate fees.">
+
+  <!-- Canonical + hreflang -->
+  <link rel="canonical" href="https://coinnect.bot/">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Coinnect","url":"https://coinnect.bot","description":"Free open-source money routing engine. Compare 25+ providers to find the cheapest way to send money internationally.","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+  </script>
+
   <!-- Prevent theme flash -->
   <script>if(localStorage.theme==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');</script>
 
@@ -74,8 +95,8 @@
     <nav class="hidden md:flex items-center gap-1">
       <a href="/docs" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">API docs</a>
       <a href="/whitepaper" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Whitepaper</a>
-      <a href="#pricing" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'});return false;" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><s>Pricing</s> <span class="text-xs text-green-500 font-medium">free</span></a>
-      <a href="#" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">GitHub</a>
+      <a href="#pricing" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'});return false;" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Pricing: $0 <span class="text-xs text-green-500 font-medium">free</span></a>
+      <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">GitHub</a>
       <a href="#donate" onclick="document.getElementById('donateSection').scrollIntoView({behavior:'smooth'});return false;"
          class="text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-3 py-1.5 rounded-lg transition-all ml-1">
         ❤️ Support
@@ -274,7 +295,7 @@
       </div>
       <div>
         <label class="block text-xs text-gray-400 mb-1 uppercase tracking-wide" data-i18n="label_amount">Amount</label>
-        <input id="amount" type="number" value="1" min="0.00001" step="any"
+        <input id="amount" type="number" value="100" min="0.00001" step="any"
           class="w-28 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white text-base font-mono focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500">
       </div>
       <button id="searchBtn" onclick="getQuote()"
@@ -397,7 +418,7 @@
 <section id="pricing" class="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-5 py-14">
   <div class="max-w-4xl mx-auto">
     <div class="text-center mb-10">
-      <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mb-2" data-i18n-html="pricing_title"><s>Pricing</s></h2>
+      <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mb-2" data-i18n-html="pricing_title">Pricing: $0</h2>
       <p class="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto" data-i18n-html="pricing_sub">
         Free forever for personal use.<sup class="text-cyan-500 font-bold">*</sup>
         No credit card. No sign-up. No affiliate fees — ever.
@@ -497,7 +518,6 @@
     <div class="max-w-xl mx-auto mt-5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-5">
       <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed" data-i18n-html="miguel_p1">This started as my unemployment project. It's still maintained by one person — me, Miguel.</p>
       <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mt-3" data-i18n-html="miguel_p2">If this grew useful to you and you'd like to help connect me with a foundation or institution that supports open financial infrastructure, I'd love to hear from you. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Have a nice day (or night, wherever you are). 🌍</p>
-      <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mt-3" id="miguelPs" data-i18n-html="miguel_ps">P.S. — I'd also love to get involved in a forestry project. I genuinely love nature. If you have a piece of land you'd like to replant, reach out — let's think of a plan to get the resources together. 🌱</p>
     </div>
 
     <!-- Key generator (inline, hidden by default) -->
@@ -583,13 +603,13 @@
       </div>
     </div>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
-      <a href="#"
+      <a href="https://github.com/sponsors/coinnect-dev" target="_blank" rel="noopener"
          class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm shadow-sm">
-        ❤️ Sponsor on GitHub
+        Sponsor on GitHub
       </a>
-      <a href="#"
+      <a href="https://buymeacoffee.com/miguelvalenciav" target="_blank" rel="noopener"
          class="inline-flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-6 py-3 rounded-xl transition-colors text-sm">
-        ☕ Buy me a coffee
+        Buy me a coffee
       </a>
       <a href="/whitepaper" target="_blank"
          class="inline-flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-6 py-3 rounded-xl transition-colors text-sm">
