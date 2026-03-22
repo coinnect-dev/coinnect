@@ -20,6 +20,12 @@ SUPPORTED_EXCHANGES = {
     "binance":  {"class": ccxt.binance,  "fee_pct": 0.10},
     "coinbase": {"class": ccxt.coinbase, "fee_pct": 0.60},
     # bitso: fetchTickers() not supported by CCXT — added via manual pairs below
+    # LatAm & Africa exchanges (free public APIs via CCXT)
+    "luno":           {"class": ccxt.luno,           "fee_pct": 0.10},  # ZAR, NGN, IDR, MYR
+    "mercado":        {"class": ccxt.mercado,        "fee_pct": 0.30},  # BRL (Mercado Bitcoin)
+    # Regulated EU/US exchanges
+    "bitstamp":       {"class": ccxt.bitstamp,       "fee_pct": 0.50},
+    "gemini":         {"class": ccxt.gemini,         "fee_pct": 0.35},
 }
 
 # Stablecoin used as routing intermediary
