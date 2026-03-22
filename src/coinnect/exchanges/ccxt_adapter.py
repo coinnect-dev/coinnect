@@ -22,7 +22,7 @@ SUPPORTED_EXCHANGES = {
     # bitso: fetchTickers() not supported by CCXT — added via manual pairs below
     # LatAm & Africa exchanges (free public APIs via CCXT)
     "luno":           {"class": ccxt.luno,           "fee_pct": 0.10},  # ZAR, NGN, IDR, MYR
-    "mercado":        {"class": ccxt.mercado,        "fee_pct": 0.30},  # BRL (Mercado Bitcoin)
+    # mercado: fetchTickers() not supported by CCXT — needs manual pair handling
     # Regulated EU/US exchanges
     "bitstamp":       {"class": ccxt.bitstamp,       "fee_pct": 0.50},
     "gemini":         {"class": ccxt.gemini,         "fee_pct": 0.35},
