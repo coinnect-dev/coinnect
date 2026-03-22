@@ -36,6 +36,8 @@ async def _refresh_once(force: bool = False) -> int:
         get_bitso_edges, get_buda_edges, get_coingecko_edges,
         get_strike_edges, get_frankfurter_edges, get_currencyapi_edges,
         get_flutterwave_edges,
+        get_bluelytics_edges, get_dolarsi_edges, get_criptoya_edges,
+        get_bcb_edges, get_trm_edges, get_lirarate_edges,
     )
     from coinnect.routing.engine import build_quote
 
@@ -43,6 +45,8 @@ async def _refresh_once(force: bool = False) -> int:
         crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges,
         bitso_edges, buda_edges, cg_edges,
         strike_edges, frank_edges, curapi_edges, fw_edges,
+        bluelytics_edges, dolarsi_edges, criptoya_edges,
+        bcb_edges, trm_edges, lirarate_edges,
     ) = await asyncio.gather(
         get_all_edges(force_refresh=force),
         get_wise_edges(),
@@ -56,11 +60,19 @@ async def _refresh_once(force: bool = False) -> int:
         get_frankfurter_edges(),
         get_currencyapi_edges(),
         get_flutterwave_edges(),
+        get_bluelytics_edges(),
+        get_dolarsi_edges(),
+        get_criptoya_edges(),
+        get_bcb_edges(),
+        get_trm_edges(),
+        get_lirarate_edges(),
     )
     all_edges = (
         crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges
         + bitso_edges + buda_edges + cg_edges
         + strike_edges + frank_edges + curapi_edges + fw_edges
+        + bluelytics_edges + dolarsi_edges + criptoya_edges
+        + bcb_edges + trm_edges + lirarate_edges
     )
 
     if not all_edges:
