@@ -315,11 +315,10 @@
         <tr class="bg-gray-50 dark:bg-gray-800 text-left text-gray-500 dark:text-gray-400 uppercase tracking-wide">
           <th class="px-4 py-3 font-semibold">#</th>
           <th class="px-4 py-3 font-semibold">Provider(s)</th>
+          <th class="px-4 py-3 font-semibold text-right">Exchange rate</th>
           <th class="px-4 py-3 font-semibold text-right">They receive</th>
           <th class="px-4 py-3 font-semibold text-right">Cost</th>
           <th class="px-4 py-3 font-semibold text-right">Time</th>
-          <th class="px-4 py-3 font-semibold text-right">Rate</th>
-          <th class="px-4 py-3 font-semibold text-center">Steps</th>
         </tr>
       </thead>
       <tbody id="resultsTableBody" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody>
@@ -830,18 +829,27 @@ function renderTable(routes,from,to){
   const fmtMin=m=>m<60?`${m}m`:`${Math.round(m/60)}h`;
   const isFeatured=r=>r.label==='Cheapest'||r.label==='Fastest';
   tbody.innerHTML=routes.map(r=>{
-    const via=[...new Set(r.steps.map(s=>s.via))].join(' → ');
-    const rate=(r.they_receive/r.you_send).toFixed(4);
+    // Build via label: show each unique provider, flag multi-leg
+    const vias=[...new Set(r.steps.map(s=>s.via))];
+    const viaLabel=vias.join(' → ');
+    const legBadge=vias.length>1?`<span class="ml-1 text-[10px] font-semibold text-violet-500 bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 rounded px-1">${vias.length} legs</span>`:'';
+    // Effective composite rate: how much destination per 1 unit of source
+    const effectiveRate=r.they_receive/r.you_send;
+    // Format: show as "1 FROM = X.XX TO"
+    const rateStr=effectiveRate>=1000
+      ? `1 = ${fmtNum(Math.round(effectiveRate))}`
+      : effectiveRate>=1
+      ? `1 = ${effectiveRate.toFixed(4)}`
+      : `1 = ${effectiveRate.toFixed(6)}`;
     const featured=isFeatured(r);
     const badge=featured?`<span class="inline-block ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${r.label==='Cheapest'?'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400':'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'}">${r.label}</span>`:'';
     return`<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${featured?'font-medium':''}">
       <td class="px-4 py-3 text-gray-400">${r.rank}</td>
-      <td class="px-4 py-3 text-gray-900 dark:text-white">${via}${badge}</td>
-      <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive)} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
+      <td class="px-4 py-3 text-gray-900 dark:text-white">${viaLabel}${legBadge}${badge}</td>
+      <td class="px-4 py-3 text-right font-mono font-semibold text-gray-900 dark:text-white">${rateStr} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
+      <td class="px-4 py-3 text-right font-mono text-gray-600 dark:text-gray-300">${fmtNum(r.they_receive)} <span class="text-gray-400 font-normal text-xs">${r.they_receive_currency}</span></td>
       <td class="px-4 py-3 text-right text-xs ${r.total_cost_pct<1.5?'text-emerald-600 dark:text-emerald-400':r.total_cost_pct<3?'text-amber-600 dark:text-amber-400':'text-red-500'}">${r.total_cost_pct.toFixed(2)}%</td>
       <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400">${fmtMin(r.total_time_minutes)}</td>
-      <td class="px-4 py-3 text-right text-gray-400 font-mono text-xs">${rate}</td>
-      <td class="px-4 py-3 text-center text-gray-400">${r.steps.length}</td>
     </tr>`;
   }).join('');
 }
