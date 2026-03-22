@@ -32,16 +32,28 @@ async def _refresh_once(force: bool = False) -> int:
     from coinnect.exchanges.wise_adapter import get_wise_edges, get_traditional_edges
     from coinnect.exchanges.yellowcard_adapter import get_yellowcard_edges
     from coinnect.exchanges.remittance_adapter import get_remittance_edges
+    from coinnect.exchanges.direct_api_adapter import (
+        get_bitso_edges, get_buda_edges, get_coingecko_edges,
+    )
     from coinnect.routing.engine import build_quote
 
-    crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges = await asyncio.gather(
+    (
+        crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges,
+        bitso_edges, buda_edges, cg_edges,
+    ) = await asyncio.gather(
         get_all_edges(force_refresh=force),
         get_wise_edges(),
         get_traditional_edges(),
         get_yellowcard_edges(),
         get_remittance_edges(),
+        get_bitso_edges(),
+        get_buda_edges(),
+        get_coingecko_edges(),
     )
-    all_edges = crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges
+    all_edges = (
+        crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges
+        + bitso_edges + buda_edges + cg_edges
+    )
 
     if not all_edges:
         logger.warning("Refresh returned 0 edges")
