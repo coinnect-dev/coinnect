@@ -107,10 +107,10 @@
 
     <!-- Nav -->
     <nav class="hidden md:flex items-center gap-1">
-      <a href="/docs" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">API docs</a>
+      <a href="/docs" onclick="trackEvent('api_docs_clicked',{})" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">API docs</a>
       <a href="/whitepaper" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Whitepaper</a>
       <a href="#pricing" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'});return false;" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Pricing: $0 <span class="text-xs text-green-500 font-medium">free</span></a>
-      <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">GitHub</a>
+      <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'github_nav')" class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">GitHub</a>
       <a href="#donate" onclick="document.getElementById('donateSection').scrollIntoView({behavior:'smooth'});return false;"
          class="text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-3 py-1.5 rounded-lg transition-all ml-1">
         ❤️ Support
@@ -363,6 +363,12 @@
     </div>
   </div>
 
+  <!-- Two-column layout: results left, charts right (Expedia-style) -->
+  <div class="flex flex-col lg:flex-row gap-5">
+
+  <!-- LEFT: Results (wider) -->
+  <div class="flex-1 min-w-0">
+
   <!-- Table view container -->
   <div id="resultsTableWrap" class="hidden mb-5 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
     <table id="resultsTable" class="w-full text-xs">
@@ -380,6 +386,13 @@
     </table>
   </div>
 
+  <div id="results"></div>
+
+  </div><!-- end LEFT results column -->
+
+  <!-- RIGHT: Charts sidebar (stacked) -->
+  <div class="lg:w-80 lg:shrink-0">
+
   <!-- History charts panel -->
   <div id="historyBar" class="hidden mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
     <!-- Header row: title + period buttons -->
@@ -394,8 +407,8 @@
         <button class="hist-period text-xs border border-gray-300 dark:border-gray-700 rounded-full px-2.5 py-1 transition-all text-gray-500 dark:text-gray-400" data-min="525600">1y</button>
       </div>
     </div>
-    <!-- Two charts side by side -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <!-- Charts stacked vertically in sidebar -->
+    <div class="grid grid-cols-1 gap-4">
       <div>
         <div class="flex items-center justify-between mb-1">
           <span id="chartALabel" class="text-xs text-gray-400 font-mono"></span>
@@ -425,7 +438,9 @@
     </div>
   </div>
 
-  <div id="results"></div>
+  </div><!-- end RIGHT charts column -->
+  </div><!-- end two-column layout -->
+
 </div>
 
 <!-- ── Pricing ─────────────────────────────────────────────────────────────── -->
@@ -515,6 +530,7 @@
           <li class="flex gap-2"><span class="text-green-500">✓</span>Docker / systemd ready</li>
         </ul>
         <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener noreferrer"
+          onclick="trackOutbound(this.href,'github_pricing')"
           class="block w-full text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold text-sm py-2.5 rounded-xl transition-colors">
           View on GitHub →
         </a>
@@ -618,10 +634,12 @@
     </div>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
       <a href="https://github.com/sponsors/coinnect-dev" target="_blank" rel="noopener"
+         onclick="trackEvent('donation_link_clicked',{platform:'github_sponsors'});trackOutbound(this.href,'github_sponsors')"
          class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-6 py-3 rounded-xl transition-all text-sm shadow-sm">
         Sponsor on GitHub
       </a>
       <a href="https://buymeacoffee.com/miguelvalenciav" target="_blank" rel="noopener"
+         onclick="trackEvent('donation_link_clicked',{platform:'buymeacoffee'});trackOutbound(this.href,'buymeacoffee')"
          class="inline-flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium px-6 py-3 rounded-xl transition-colors text-sm">
         Buy me a coffee
       </a>
@@ -739,22 +757,22 @@ document.addEventListener('DOMContentLoaded',function(){
       <h4 class="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Project</h4>
       <ul class="space-y-1.5">
         <li><a href="/whitepaper" class="hover:text-cyan-500 transition-colors">Whitepaper</a></li>
-        <li><a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" class="inline-flex items-center gap-1 hover:text-cyan-500 transition-colors">
+        <li><a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'github_footer')" class="inline-flex items-center gap-1 hover:text-cyan-500 transition-colors">
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           GitHub
         </a></li>
         <li><a href="/docs/GOVERNANCE.md" class="hover:text-cyan-500 transition-colors">Governance</a></li>
-        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Roadmap</a></li>
+        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/ROADMAP.md" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'roadmap')" class="hover:text-cyan-500 transition-colors">Roadmap</a></li>
       </ul>
     </div>
     <!-- Column 2: Developers -->
     <div>
       <h4 class="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Developers</h4>
       <ul class="space-y-1.5">
-        <li><a href="/docs" class="hover:text-cyan-500 transition-colors">API docs</a></li>
+        <li><a href="/docs" onclick="trackEvent('api_docs_clicked',{source:'footer'})" class="hover:text-cyan-500 transition-colors">API docs</a></li>
         <li><a href="/llms.txt" class="hover:text-cyan-500 transition-colors">llms.txt</a></li>
-        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/PROTOCOL.md" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Protocol (MRP)</a></li>
-        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/LISTING_STANDARD.md" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Listing standard</a></li>
+        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/PROTOCOL.md" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'protocol')" class="hover:text-cyan-500 transition-colors">Protocol (MRP)</a></li>
+        <li><a href="https://github.com/coinnect-dev/coinnect/blob/main/docs/LISTING_STANDARD.md" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'listing_standard')" class="hover:text-cyan-500 transition-colors">Listing standard</a></li>
       </ul>
     </div>
     <!-- Column 3: Open Data -->
@@ -963,6 +981,7 @@ function swapCurrencies(){
   const toOpt=[...t.options].find(o=>o.value===tmp);
   if(fromOpt)f.value=t.value;
   if(toOpt)t.value=tmp;
+  trackEvent('swap_clicked',{from:f.value,to:t.value});
 }
 
 function fmtRate(send,receive,fromC,toC){
@@ -1688,6 +1707,7 @@ async function getQuote(){
   });
 
   trackEvent('quote_requested',{from_currency:from,to_currency:to,amount,corridor:`${from}_${to}`});
+  trackEvent('search_started',{from:from,to:to,amount:amount,corridor:`${from}_${to}`});
   loading();
   document.getElementById('searchBtn').disabled=true;
 
@@ -1703,12 +1723,25 @@ async function getQuote(){
     renderResults(_allRoutes,from,to);
     if(_activeView==='table')renderTable(_allRoutes,from,to);
 
+    // Track search completion
+    const bestRoute=_allRoutes.length?_allRoutes.reduce((a,b)=>a.total_cost_pct<b.total_cost_pct?a:b):null;
+    const hasLive=_allRoutes.some(r=>r.steps&&r.steps.some(s=>s.source_type==='live'));
+    trackEvent('search_completed',{
+      routes_count:_allRoutes.length,
+      best_fee:bestRoute?bestRoute.total_cost_pct:null,
+      best_provider:bestRoute?bestRoute.steps[0].via:null,
+      has_live_routes:hasLive,
+      corridor:`${from}_${to}`
+    });
+    if(!_allRoutes.length)trackEvent('no_results',{from:from,to:to,amount:amount,corridor:`${from}_${to}`});
+
     // Load history in background (active period or default 15m)
     const activePeriod=document.querySelector('.hist-period.active');
     const histMins=activePeriod?parseInt(activePeriod.dataset.min):15;
     loadHistory(from,to,histMins);
     loadProviderHistory(from,to,histMins);
   }catch(e){
+    trackEvent('no_results',{from:from,to:to,amount:amount,error:e.message});
     document.getElementById('results').innerHTML=`
       <div class="text-center py-12 text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl">
         <div class="text-3xl mb-3">⚠️</div>
@@ -1721,7 +1754,8 @@ async function getQuote(){
 }
 
 function openDonate(platform,amount){
-  void platform; void amount;
+  trackEvent('donation_link_clicked',{platform:platform,amount:amount});
+  trackOutbound(platform==='github'?'https://github.com/sponsors/coinnect-dev':'https://buymeacoffee.com/miguelvalenciav',platform);
 }
 
 function copyAddr(btn,addr){
@@ -1805,6 +1839,39 @@ window.onload=()=>{
       getQuote();
     }
   },500);
+
+  // ── GA4: currency_changed events ────────────────────────────────────────
+  document.getElementById('from').addEventListener('change',function(){
+    trackEvent('currency_changed',{field:'from',value:this.value});
+  });
+  document.getElementById('to').addEventListener('change',function(){
+    trackEvent('currency_changed',{field:'to',value:this.value});
+  });
+
+  // ── GA4: amount_changed (debounced 1s) ──────────────────────────────────
+  document.getElementById('amount').addEventListener('input',function(){
+    clearTimeout(_amountDebounce);
+    const val=this.value;
+    _amountDebounce=setTimeout(()=>{
+      trackEvent('amount_changed',{amount:parseFloat(val)||0});
+    },1000);
+  });
+
+  // ── GA4: scroll depth tracking ──────────────────────────────────────────
+  (function(){
+    const thresholds=[25,50,75,100];
+    const fired=new Set();
+    function checkScroll(){
+      const scrollPct=Math.round((window.scrollY+window.innerHeight)/document.documentElement.scrollHeight*100);
+      thresholds.forEach(t=>{
+        if(scrollPct>=t&&!fired.has(t)){
+          fired.add(t);
+          trackEvent('scroll_depth',{percent:t});
+        }
+      });
+    }
+    window.addEventListener('scroll',checkScroll,{passive:true});
+  })();
 };
 
 // ── Cookie consent ──────────────────────────────────────────────────────────
