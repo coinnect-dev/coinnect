@@ -85,11 +85,12 @@ def _dijkstra(
         priority, _, steps, curr, curr_amount, path = heapq.heappop(heap)
         iterations += 1
 
-        # State: (currency, step_count) — simple and fast.
-        # We allow the same currency at the same step to be revisited only
-        # if reached with a meaningfully better cost (> 0.01% improvement).
-        state = (curr, steps)
-        if state in visited_states and visited_states[state] <= priority + 0.01:
+        # K-shortest-paths: only prune exact duplicates (same currency, same
+        # provider set, same step count). This lets different exchange combinations
+        # through the same intermediate currency all get explored.
+        providers_key = frozenset(e.via for e in path)
+        state = (curr, providers_key)
+        if state in visited_states and visited_states[state] <= priority:
             continue
         visited_states[state] = priority
 
