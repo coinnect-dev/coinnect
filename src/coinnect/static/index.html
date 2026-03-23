@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // Wait for exchangeLogo and esc to be defined
   setTimeout(function(){
     const live=['Binance','Kraken','Coinbase','OKX','Bybit','KuCoin','Bitso','Luno','Bitstamp','Gemini','Bithumb','Bitflyer','BtcTurk','Wise','Buda','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P'];
-    const official=['BCB PTAX (BR)','TRM (CO)','Bluelytics (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)'];
+    const official=['BCB PTAX (BR)','Banxico (MX)','TRM (CO)','Bluelytics (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)'];
     const reference=['CoinGecko','Yadio','Frankfurter (ECB)','FloatRates','CriptoYa (AR)'];
     const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Western Union','MoneyGram','Nala','Taptap Send'];
     function renderProviders(names,containerId){
@@ -2188,9 +2188,19 @@ function copyKey(){
   });
 }
 
+function applyUrlParams(){
+  const p=new URLSearchParams(location.search);
+  const f=p.get('from'), t=p.get('to'), a=p.get('amount');
+  if(f)document.getElementById('from').value=f.toUpperCase();
+  if(t)document.getElementById('to').value=t.toUpperCase();
+  if(a)document.getElementById('amount').value=a;
+  return !!(f||t||a);
+}
+
 window.onload=()=>{
   updateThemeIcon();
   applyLocaleDefaults();
+  if(applyUrlParams())updateAmountCurrency();
   applyLang();
   initTaglineRotator();
   getQuote();

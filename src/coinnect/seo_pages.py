@@ -208,6 +208,36 @@ CURRENCY_NAMES: dict[str, str] = {
 _html_cache: dict[str, tuple[float, str]] = {}
 CACHE_TTL = 180  # 3 minutes
 
+# ── Reference provider filter (keep in sync with api/routes.py) ──────────────
+
+REFERENCE_PROVIDERS = {
+    # FX reference data (not transfer services)
+    "Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)",
+    "Yadio (P2P)", "CoinGecko (market)",
+    # Central bank official rates (reference only, not transfer services)
+    "BCB PTAX (BR)", "Banxico (MX)", "TRM (CO)", "TCMB (TR)", "NBP (PL)", "CNB (CZ)",
+    "NBU (UA)", "NBG (GE)", "BOI (IL)", "BNR (RO)", "NRB (NP)",
+    # Argentina parallel market rates
+    "Blue market (AR)", "Official (AR)", "Dolar Blue (AR)", "MEP (AR)", "CCL (AR)",
+    # Other
+    "Parallel (LB)",
+}
+
+
+def _is_reference_provider(via: str) -> bool:
+    """Check if a provider is reference-only (pure data source, not a transfer service)."""
+    if via in REFERENCE_PROVIDERS:
+        return True
+    # CriptoYa individual exchanges: e.g. "ripio (AR)", "belo (AR)", etc.
+    if via.endswith(" (AR)"):
+        return True
+    return False
+
+
+def _filter_real_edges(edges: list[Edge]) -> list[Edge]:
+    """Remove reference-only providers — they should not appear as user-facing routes."""
+    return [e for e in edges if not _is_reference_provider(e.via)]
+
 
 def _cache_get(key: str) -> str | None:
     if key in _html_cache:
@@ -330,6 +360,9 @@ def render_corridor_page(
     to_name = html.escape(CURRENCY_NAMES.get(to_c, to_c))
     path = f"/send/{from_c.lower()}-to-{to_c.lower()}"
     canonical = f"{BASE_URL}{path}"
+
+    # Filter out reference-only providers (CoinGecko, Yadio, etc.)
+    edges = _filter_real_edges(edges)
 
     # Build quote
     result = build_quote(edges, from_c, to_c, amount)
@@ -544,6 +577,15 @@ def render_corridor_page(
 
   {answer_box}
   {table_html}
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}&amount={amount:g}" class="cta"
+       style="display:inline-block;padding:.7rem 2rem;font-size:1.05rem;border-radius:10px">
+      Try it yourself &mdash; search {html.escape(from_c)} &rarr; {html.escape(to_c)}
+    </a>
+    <p style="font-size:.82rem;color:#94a3b8;margin-top:.5rem">Enter any amount. Live results. No sign-up.</p>
+  </div>
+
   {methodology_html}
   {howto_html}
   {faq_html}
@@ -573,6 +615,9 @@ def render_country_page(
     currency = html.escape(data["currency"])
     path = f"/rates/{country_slug}"
     canonical = f"{BASE_URL}{path}"
+
+    # Filter out reference-only providers (CoinGecko, Yadio, etc.)
+    edges = _filter_real_edges(edges)
 
     # Build quotes for all corridors
     sections_html = ""

@@ -31,6 +31,7 @@ _bluelytics_cache: dict = {"edges": [], "ts": 0.0}
 _dolarsi_cache: dict = {"edges": [], "ts": 0.0}
 _criptoya_cache: dict = {"edges": [], "ts": 0.0}
 _bcb_cache: dict = {"edges": [], "ts": 0.0}
+_banxico_cache: dict = {"edges": [], "ts": 0.0}
 _trm_cache: dict = {"edges": [], "ts": 0.0}
 _lirarate_cache: dict = {"edges": [], "ts": 0.0}
 _yadio_cache: dict = {"edges": [], "ts": 0.0}
@@ -63,6 +64,7 @@ BLUELYTICS_TTL = 900    # 15 minutes
 DOLARSI_TTL = 900       # 15 minutes
 CRIPTOYA_TTL = 300      # 5 minutes
 BCB_TTL = 3600          # 60 minutes (updates once daily)
+BANXICO_TTL = 3600      # 60 minutes (updates once daily)
 TRM_TTL = 3600          # 60 minutes
 LIRARATE_TTL = 1800     # 30 minutes
 YADIO_TTL = 300         # 5 minutes
@@ -778,6 +780,67 @@ async def get_bcb_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"BCB adapter failed: {e}")
         return _bcb_cache["edges"]
+
+    return edges
+
+
+# ── Banxico (Mexico official rate) ─────────────────────────────────────────
+
+
+async def get_banxico_edges() -> list[Edge]:
+    """Fetch official USD/MXN FIX rate from Banco de México (SIE API).
+
+    Requires BMX_TOKEN env var (free token from banxico.org.mx/SieAPIRest/).
+    Series SF43718 = Tipo de cambio pesos por dólar E.U.A. (FIX).
+    """
+    now = time.monotonic()
+    if _banxico_cache["edges"] and (now - _banxico_cache["ts"]) < BANXICO_TTL:
+        return _banxico_cache["edges"]
+
+    edges: list[Edge] = []
+    token = os.environ.get("BMX_TOKEN", "")
+    if not token:
+        logger.warning("Banxico: BMX_TOKEN not set — skipping")
+        return _banxico_cache["edges"]
+
+    try:
+        url = (
+            "https://www.banxico.org.mx/SieAPIRest/service/v1/"
+            "series/SF43718/datos/oportuno"
+        )
+        headers = {**HEADERS, "Bmx-Token": token, "Accept": "application/json"}
+        async with httpx.AsyncClient(headers=headers, timeout=15) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response shape:
+        # {"bmx":{"series":[{"idSerie":"SF43718","titulo":"...","datos":[{"fecha":"dd/mm/yyyy","dato":"19.1234"}]}]}}
+        series = data.get("bmx", {}).get("series", [])
+        if series:
+            datos = series[0].get("datos", [])
+            if datos:
+                dato = datos[-1].get("dato", "")
+                # dato can be "N/E" on non-business days
+                if dato and dato != "N/E":
+                    rate = float(dato.replace(",", ""))
+                    if rate > 0:
+                        edges.append(Edge(
+                            from_currency="USD",
+                            to_currency="MXN",
+                            via="Banxico (MX)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="Banco de México official FIX rate — reference only",
+                            exchange_rate=rate,
+                        ))
+
+        _banxico_cache["edges"] = edges
+        _banxico_cache["ts"] = now
+        logger.info(f"Banxico: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"Banxico adapter failed: {e}")
+        return _banxico_cache["edges"]
 
     return edges
 

@@ -65,7 +65,7 @@ async def admin_integrations(x_admin_key: str | None = Header(None)):
         _bitso_cache, _buda_cache, _coingecko_cache, _valr_cache,
         _coindcx_cache, _wazirx_cache, _satoshitango_cache,
         _floatrates_cache, _yadio_cache, _bluelytics_cache,
-        _criptoya_cache, _bcb_cache, _trm_cache,
+        _criptoya_cache, _bcb_cache, _banxico_cache, _trm_cache,
         _frankfurter_cache, _currencyapi_cache, _binance_p2p_cache,
         _uphold_cache,
     )
@@ -115,6 +115,7 @@ async def admin_integrations(x_admin_key: str | None = Header(None)):
         "bluelytics": cache_status(_bluelytics_cache),
         "criptoya": cache_status(_criptoya_cache),
         "bcb_ptax": cache_status(_bcb_cache),
+        "banxico": cache_status(_banxico_cache),
         "trm_colombia": cache_status(_trm_cache),
     }
     return {"integrations": integrations}

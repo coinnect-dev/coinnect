@@ -145,7 +145,7 @@ async def quote(
         "Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)",
         "Yadio (P2P)", "CoinGecko (market)",
         # Central bank official rates (reference only, not transfer services)
-        "BCB PTAX (BR)", "TRM (CO)", "TCMB (TR)", "NBP (PL)", "CNB (CZ)",
+        "BCB PTAX (BR)", "Banxico (MX)", "TRM (CO)", "TCMB (TR)", "NBP (PL)", "CNB (CZ)",
         "NBU (UA)", "NBG (GE)", "BOI (IL)", "BNR (RO)", "NRB (NP)",
         # Argentina parallel market rates
         "Blue market (AR)", "Official (AR)", "Dolar Blue (AR)", "MEP (AR)", "CCL (AR)",
