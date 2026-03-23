@@ -78,11 +78,15 @@ def _dijkstra(
     heap = [(0.0, counter, 0, start, amount, [])]
     results = []
     visited_states: dict[tuple, float] = {}
+    max_iterations = 50_000  # safety cap to prevent runaway search
 
-    while heap and len(results) < max_routes:
+    while heap and len(results) < max_routes and counter < max_iterations:
         priority, _, steps, curr, curr_amount, path = heapq.heappop(heap)
 
-        state = (curr, steps)
+        # State includes which providers were used — allows different exchange
+        # combinations to reach the same currency at the same step count
+        providers_key = frozenset(e.via for e in path)
+        state = (curr, steps, providers_key)
         if state in visited_states and visited_states[state] <= priority:
             continue
         visited_states[state] = priority
