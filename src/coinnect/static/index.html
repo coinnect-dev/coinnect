@@ -1886,14 +1886,48 @@ function renderResults(routes,from,to){
   const shuffled=[...tiedCheapest].sort(()=>Math.random()-0.5);
 
   const tiedBlock=shuffled.length>1
-    ? `<div class="relative">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
-          <span class="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow">${t('tag_cheapest')||'Cheapest'} — ${shuffled.length} options at ${cheapest.total_cost_pct.toFixed(2)}%</span>
-        </div>
-        <div class="pt-4 flex flex-col gap-2 border-2 border-emerald-400 dark:border-emerald-600 rounded-2xl p-3 bg-emerald-50/30 dark:bg-emerald-950/20">
-          ${shuffled.map(r=>renderFeaturedCard(r,from,to,true)).join('')}
-        </div>
-      </div>`
+    ? (()=>{
+        // First tied route gets a featured card, rest shown as compact rows
+        const first=shuffled[0];
+        const rest=shuffled.slice(1);
+        const restVisible=rest.slice(0,2);
+        const restHidden=rest.slice(2);
+        const compactRows=restVisible.map(r=>{
+          const vl=[...new Set(r.steps.map(s=>s.via))];
+          const amountVal=parseFloat(document.getElementById('amount').value);
+          return`<div class="flex items-center gap-3 px-4 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 last:border-b-0">
+            <span class="text-emerald-500 text-xs font-bold">=</span>
+            <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(vl,14)}</div>
+            <div class="text-right">
+              <span class="font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive,to)}</span>
+              <span class="text-gray-400 text-xs ml-1">${to}</span>
+            </div>
+            <span class="text-xs text-gray-400">${fmtFee(r,amountVal,from)}</span>
+          </div>`;
+        }).join('');
+        const hiddenRows=restHidden.length?`
+          <div id="tiedMore" class="hidden">${restHidden.map(r=>{
+            const vl=[...new Set(r.steps.map(s=>s.via))];
+            const amountVal=parseFloat(document.getElementById('amount').value);
+            return`<div class="flex items-center gap-3 px-4 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 last:border-b-0">
+              <span class="text-emerald-500 text-xs font-bold">=</span>
+              <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(vl,14)}</div>
+              <div class="text-right">
+                <span class="font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive,to)}</span>
+                <span class="text-gray-400 text-xs ml-1">${to}</span>
+              </div>
+              <span class="text-xs text-gray-400">${fmtFee(r,amountVal,from)}</span>
+            </div>`;
+          }).join('')}</div>
+          <button onclick="document.getElementById('tiedMore').classList.remove('hidden');this.remove();" class="w-full py-1.5 text-[10px] text-emerald-500 hover:text-emerald-600 transition-colors">+ ${restHidden.length} more tied</button>`:'';
+        return`<div>
+          ${renderFeaturedCard(first,from,to)}
+          <div class="mt-1 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl overflow-hidden">
+            <div class="px-4 py-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium border-b border-emerald-100 dark:border-emerald-900/40">${shuffled.length-1} more at same cost (${cheapest.total_cost_pct.toFixed(2)}%)</div>
+            ${compactRows}${hiddenRows}
+          </div>
+        </div>`;
+      })()
     : shuffled.map(r=>renderFeaturedCard(r,from,to)).join('');
 
   const featuredHtml=[tiedBlock,...nonTied.map(r=>renderFeaturedCard(r,from,to))].join('');
