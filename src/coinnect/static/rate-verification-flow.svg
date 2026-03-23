@@ -1,0 +1,111 @@
+<svg width="800" height="520" viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#06b6d4"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#059669"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#9ca3af"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="520" rx="16" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="400" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Rate Verification &amp; Calibration Flow</text>
+  <text x="400" y="54" text-anchor="middle" font-size="11" fill="#9ca3af">How Coinnect improves estimated rates through community verification</text>
+
+  <!-- === TOP ROW: Sources === -->
+
+  <!-- Human -->
+  <rect x="40" y="80" width="140" height="70" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="110" y="106" text-anchor="middle" font-size="11" font-weight="600" fill="#111827">Human User</text>
+  <text x="110" y="122" text-anchor="middle" font-size="9" fill="#6b7280">Sees ESTIMATED route</text>
+  <text x="110" y="136" text-anchor="middle" font-size="9" fill="#06b6d4">Clicks "Report real rate"</text>
+
+  <!-- Bot -->
+  <rect x="220" y="80" width="140" height="70" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="290" y="106" text-anchor="middle" font-size="11" font-weight="600" fill="#111827">AI Agent / Bot</text>
+  <text x="290" y="122" text-anchor="middle" font-size="9" fill="#6b7280">Discovers via MCP/API</text>
+  <text x="290" y="136" text-anchor="middle" font-size="9" fill="#06b6d4">Claims quest bounty</text>
+
+  <!-- Quest Board -->
+  <rect x="400" y="80" width="160" height="70" rx="12" fill="#ecfeff" stroke="#06b6d4" stroke-width="1.5"/>
+  <text x="480" y="100" text-anchor="middle" font-size="11" font-weight="600" fill="#0891b2">Quest Board</text>
+  <text x="480" y="116" text-anchor="middle" font-size="9" fill="#6b7280">GET /v1/quests</text>
+  <text x="480" y="132" text-anchor="middle" font-size="9" fill="#6b7280">Auto-generated hourly</text>
+  <text x="480" y="144" text-anchor="middle" font-size="9" fill="#059669">Reward: ~$0.001/verification</text>
+
+  <!-- World Bank -->
+  <rect x="600" y="80" width="160" height="70" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="680" y="106" text-anchor="middle" font-size="11" font-weight="600" fill="#111827">World Bank RPW</text>
+  <text x="680" y="122" text-anchor="middle" font-size="9" fill="#6b7280">Quarterly benchmark</text>
+  <text x="680" y="136" text-anchor="middle" font-size="9" fill="#6b7280">365 corridors × 40 providers</text>
+
+  <!-- === Arrows to Verify === -->
+  <line x1="110" y1="150" x2="310" y2="210" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="290" y1="150" x2="330" y2="210" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="480" y1="150" x2="380" y2="210" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="680" y1="150" x2="420" y2="210" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-gray)"/>
+
+  <!-- === MIDDLE: Verification Endpoint === -->
+  <rect x="260" y="210" width="220" height="60" rx="12" fill="#06b6d4" stroke="none"/>
+  <text x="370" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#ffffff">POST /v1/verify</text>
+  <text x="370" y="252" text-anchor="middle" font-size="9" fill="#cffafe">{from, to, provider, rate, fee_pct}</text>
+
+  <!-- Arrow down to DB -->
+  <line x1="370" y1="270" x2="370" y2="310" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- === DB: rate_reports === -->
+  <rect x="280" y="310" width="180" height="50" rx="10" fill="#f0fdfa" stroke="#059669" stroke-width="1.5"/>
+  <text x="370" y="332" text-anchor="middle" font-size="11" font-weight="600" fill="#059669">rate_reports (SQLite)</text>
+  <text x="370" y="348" text-anchor="middle" font-size="9" fill="#6b7280">Aggregated by corridor + provider</text>
+
+  <!-- === Arrow to Calibration === -->
+  <line x1="370" y1="360" x2="370" y2="400" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+  <!-- === CALIBRATION ENGINE === -->
+  <rect x="220" y="400" width="300" height="70" rx="12" fill="#f0fdf4" stroke="#059669" stroke-width="1.5"/>
+  <text x="370" y="422" text-anchor="middle" font-size="11" font-weight="600" fill="#059669">Adaptive Calibration Engine</text>
+  <text x="370" y="440" text-anchor="middle" font-size="10" fill="#374151" font-family="monospace">adjusted = α × observed + (1-α) × estimate</text>
+  <text x="370" y="456" text-anchor="middle" font-size="9" fill="#6b7280">α = 0.3 · Runs on each rate refresh (3 min)</text>
+  <text x="370" y="468" text-anchor="middle" font-size="9" fill="#6b7280">Outliers filtered · Confidence bands tracked</text>
+
+  <!-- === Arrow to Output === -->
+  <line x1="370" y1="470" x2="370" y2="498" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+  <!-- === OUTPUT === -->
+  <rect x="250" y="492" width="240" height="24" rx="6" fill="#059669"/>
+  <text x="370" y="508" text-anchor="middle" font-size="10" font-weight="600" fill="#ffffff">ESTIMATED → CALIBRATED (higher accuracy score)</text>
+
+  <!-- === Side: Cost breakdown === -->
+  <rect x="580" y="310" width="180" height="100" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="670" y="332" text-anchor="middle" font-size="10" font-weight="600" fill="#111827">Estimated Cost</text>
+  <line x1="600" y1="340" x2="740" y2="340" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="600" y="358" font-size="9" fill="#6b7280">Quest reward per verification</text>
+  <text x="735" y="358" text-anchor="end" font-size="9" font-weight="600" fill="#111827">$0.001</text>
+  <text x="600" y="376" font-size="9" fill="#6b7280">Verifications per corridor/day</text>
+  <text x="735" y="376" text-anchor="end" font-size="9" font-weight="600" fill="#111827">~10</text>
+  <text x="600" y="394" font-size="9" fill="#6b7280">Total daily cost (100 corridors)</text>
+  <text x="735" y="394" text-anchor="end" font-size="9" font-weight="600" fill="#059669">~$1.00</text>
+
+  <!-- Arrow from DB to cost -->
+  <line x1="460" y1="335" x2="578" y2="335" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-gray)"/>
+
+  <!-- === Side: Accuracy improvement === -->
+  <rect x="580" y="430" width="180" height="60" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="670" y="450" text-anchor="middle" font-size="10" font-weight="600" fill="#111827">Accuracy Over Time</text>
+  <text x="670" y="468" text-anchor="middle" font-size="9" fill="#6b7280">Day 1: score 0.40 (static est.)</text>
+  <text x="670" y="482" text-anchor="middle" font-size="9" fill="#059669">Day 30: score 0.85 (calibrated)</text>
+
+  <!-- Legend -->
+  <rect x="40" y="175" width="8" height="8" rx="2" fill="#06b6d4"/>
+  <text x="54" y="183" font-size="8" fill="#6b7280">Data input</text>
+  <rect x="110" y="175" width="8" height="8" rx="2" fill="#059669"/>
+  <text x="124" y="183" font-size="8" fill="#6b7280">Calibration</text>
+  <rect x="180" y="175" width="8" height="8" rx="2" fill="#9ca3af"/>
+  <text x="194" y="183" font-size="8" fill="#6b7280">Quarterly import</text>
+</svg>

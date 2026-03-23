@@ -38,6 +38,7 @@ _coindcx_cache: dict = {"edges": [], "ts": 0.0}
 _wazirx_cache: dict = {"edges": [], "ts": 0.0}
 _satoshitango_cache: dict = {"edges": [], "ts": 0.0}
 _floatrates_cache: dict = {"edges": [], "ts": 0.0}
+_binance_p2p_cache: dict = {"edges": [], "ts": 0.0}
 
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
@@ -58,6 +59,7 @@ COINDCX_TTL = 180       # 3 minutes
 WAZIRX_TTL = 180        # 3 minutes
 SATOSHITANGO_TTL = 300  # 5 minutes
 FLOATRATES_TTL = 3600   # 60 minutes (daily data)
+BINANCE_P2P_TTL = 300   # 5 minutes
 
 HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
@@ -1190,5 +1192,115 @@ async def get_floatrates_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"FloatRates adapter failed: {e}")
         return _floatrates_cache["edges"]
+
+    return edges
+
+
+# ── Binance P2P (live rates) ─────────────────────────────────────────────
+
+BINANCE_P2P_FIATS = ["MXN", "ARS", "NGN", "COP", "VES", "BRL", "KES", "GHS", "PKR", "BDT", "TRY", "UAH"]
+BINANCE_P2P_URL = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+BINANCE_P2P_HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+}
+
+
+def _median(values: list[float]) -> float:
+    """Return the median of a sorted list of floats."""
+    if not values:
+        return 0.0
+    s = sorted(values)
+    n = len(s)
+    if n % 2 == 1:
+        return s[n // 2]
+    return (s[n // 2 - 1] + s[n // 2]) / 2
+
+
+async def _fetch_binance_p2p_prices(
+    client: httpx.AsyncClient, fiat: str, trade_type: str,
+) -> float | None:
+    """Fetch top-5 P2P prices for a fiat/tradeType and return the median price."""
+    try:
+        body = {
+            "fiat": fiat,
+            "page": 1,
+            "rows": 5,
+            "tradeType": trade_type,
+            "asset": "USDT",
+            "payTypes": [],
+            "publisherType": None,
+        }
+        resp = await client.post(BINANCE_P2P_URL, json=body)
+        resp.raise_for_status()
+        data = resp.json()
+
+        prices = []
+        for item in data.get("data", []):
+            adv = item.get("adv", {})
+            price = adv.get("price")
+            if price:
+                prices.append(float(price))
+
+        if not prices:
+            return None
+        return _median(prices)
+    except Exception as e:
+        logger.debug(f"Binance P2P {fiat} {trade_type} failed: {e}")
+        return None
+
+
+async def get_binance_p2p_edges() -> list[Edge]:
+    """Fetch live P2P USDT rates from Binance for emerging market currencies."""
+    now = time.monotonic()
+    if _binance_p2p_cache["edges"] and (now - _binance_p2p_cache["ts"]) < BINANCE_P2P_TTL:
+        return _binance_p2p_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=BINANCE_P2P_HEADERS, timeout=20) as client:
+            # Fetch BUY and SELL prices for all fiats in parallel
+            tasks = []
+            for fiat in BINANCE_P2P_FIATS:
+                tasks.append(_fetch_binance_p2p_prices(client, fiat, "BUY"))
+                tasks.append(_fetch_binance_p2p_prices(client, fiat, "SELL"))
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # results: [MXN_BUY, MXN_SELL, ARS_BUY, ARS_SELL, ...]
+        for i, fiat in enumerate(BINANCE_P2P_FIATS):
+            buy_price = results[i * 2] if not isinstance(results[i * 2], Exception) else None
+            sell_price = results[i * 2 + 1] if not isinstance(results[i * 2 + 1], Exception) else None
+
+            # BUY price = price users pay in FIAT to buy USDT → FIAT→USDT edge
+            if buy_price and buy_price > 0:
+                edges.append(Edge(
+                    from_currency=fiat,
+                    to_currency="USDT",
+                    via="Binance P2P (live)",
+                    fee_pct=0.0,
+                    estimated_minutes=30,
+                    instructions=f"Buy USDT with {fiat} on Binance P2P",
+                    exchange_rate=1.0 / buy_price,
+                ))
+
+            # SELL price = price users get in FIAT for selling USDT → USDT→FIAT edge
+            if sell_price and sell_price > 0:
+                edges.append(Edge(
+                    from_currency="USDT",
+                    to_currency=fiat,
+                    via="Binance P2P (live)",
+                    fee_pct=0.0,
+                    estimated_minutes=30,
+                    instructions=f"Sell USDT for {fiat} on Binance P2P",
+                    exchange_rate=sell_price,
+                ))
+
+        _binance_p2p_cache["edges"] = edges
+        _binance_p2p_cache["ts"] = now
+        logger.info(f"Binance P2P: loaded {len(edges)} edges for {len(BINANCE_P2P_FIATS)} fiats")
+    except Exception as e:
+        logger.warning(f"Binance P2P adapter failed: {e}")
+        return _binance_p2p_cache["edges"]
 
     return edges

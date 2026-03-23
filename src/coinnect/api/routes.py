@@ -86,11 +86,17 @@ class RouteOut(BaseModel):
     steps: list[StepOut]
 
 
+class AmountRange(BaseModel):
+    min: float
+    max: float | None
+
+
 class QuoteOut(BaseModel):
     from_currency: str
     to_currency: str
     amount: float
     generated_at: datetime
+    amount_range: AmountRange | None = None
     routes: list[RouteOut]
 
 
@@ -131,19 +137,31 @@ async def quote(
 
     # ── Fetch edges & build quote ────────────────────────────────────────────
     from coinnect.exchanges.remittance_adapter import get_remittance_edges
-    crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges = await asyncio.gather(
+    from coinnect.exchanges.direct_api_adapter import get_binance_p2p_edges
+    crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges, bp2p_edges = await asyncio.gather(
         get_all_edges(),
         get_wise_edges(),
         get_traditional_edges(),
         get_yellowcard_edges(),
         get_remittance_edges(),
+        get_binance_p2p_edges(),
     )
-    all_edges = crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges
+    all_edges = crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges + bp2p_edges
 
     if not all_edges:
         raise HTTPException(503, "Exchange data temporarily unavailable")
 
     result = build_quote(all_edges, from_, to, amount)
+
+    # Compute valid amount range for this corridor
+    valid_edges = [e for e in all_edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
+    if valid_edges:
+        range_min = min(e.min_amount for e in valid_edges)
+        max_amounts_positive = [e.max_amount for e in valid_edges if e.max_amount > 0]
+        range_max = max(max_amounts_positive) if max_amounts_positive else None
+        amount_range = AmountRange(min=range_min, max=range_max)
+    else:
+        amount_range = None
 
     if not result.routes:
         raise HTTPException(
@@ -161,6 +179,7 @@ async def quote(
         to_currency=result.to_currency,
         amount=result.amount,
         generated_at=result.generated_at,
+        amount_range=amount_range,
         routes=[
             RouteOut(
                 rank=r.rank,

@@ -44,6 +44,7 @@ async def _refresh_once(force: bool = False) -> int:
         get_bcb_edges, get_trm_edges, get_lirarate_edges,
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
+        get_binance_p2p_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     from coinnect.routing.engine import build_quote
@@ -56,6 +57,7 @@ async def _refresh_once(force: bool = False) -> int:
         bcb_edges, trm_edges, lirarate_edges,
         yadio_edges, valr_edges, coindcx_edges,
         wazirx_edges, satoshitango_edges, floatrates_edges,
+        binance_p2p_edges,
         calc_edges,
     ) = await asyncio.gather(
         get_all_edges(force_refresh=force),
@@ -82,6 +84,7 @@ async def _refresh_once(force: bool = False) -> int:
         get_wazirx_edges(),
         get_satoshitango_edges(),
         get_floatrates_edges(),
+        get_binance_p2p_edges(),
         get_calculator_edges(),
     )
     all_edges = (
@@ -92,6 +95,7 @@ async def _refresh_once(force: bool = False) -> int:
         + bcb_edges + trm_edges + lirarate_edges
         + yadio_edges + valr_edges + coindcx_edges
         + wazirx_edges + satoshitango_edges + floatrates_edges
+        + binance_p2p_edges
         + calc_edges
     )
 
@@ -275,6 +279,7 @@ async def _get_all_edges_cached() -> list:
         get_bcb_edges, get_trm_edges, get_lirarate_edges,
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
+        get_binance_p2p_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     results = await asyncio.gather(
@@ -302,6 +307,7 @@ async def _get_all_edges_cached() -> list:
         get_wazirx_edges(),
         get_satoshitango_edges(),
         get_floatrates_edges(),
+        get_binance_p2p_edges(),
         get_calculator_edges(),
     )
     all_edges = []
