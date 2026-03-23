@@ -695,10 +695,10 @@
     <p class="text-xs text-gray-400 mb-4">Every search checks all sources. No affiliate fees, no hidden markup.</p>
     <!-- Legend -->
     <div class="flex flex-wrap gap-3 mb-5 text-[10px] text-gray-500 dark:text-gray-400">
-      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500"></span> <strong>LIVE</strong> — Exchange API</span>
-      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-gray-400"></span> <strong>OFFICIAL</strong> — Central bank / monitor</span>
-      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-gray-300"></span> <strong>CALCULATED</strong> — Derived from live data</span>
-      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-gray-300"></span> <strong>ESTIMATED</strong> — Published fee tables</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <strong>LIVE RATE</strong> — Exchange API, refreshed ~3 min</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span> <strong>OFFICIAL</strong> — Central bank / country rate</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500"></span> <strong>REFERENCE</strong> — Market data aggregator</span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> <strong>ESTIMATED</strong> — Published fee tables</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
       <!-- Live -->
@@ -828,13 +828,15 @@ const API='';
 function esc(s){if(s==null)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
 
 // ── Live vs estimated provider badges ─────────────────────────────────────
-const LIVE_PROVIDERS=new Set(['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Yellow Card','Buda','Flutterwave','Strike','OKX','Bybit','KuCoin','Gate.io','Bitget','MEXC','HTX','Crypto.com','Bithumb','Bitflyer','BtcTurk','IndependentReserve','WhiteBIT','Exmo','VALR','CoinDCX','WazirX','SatoshiTango']);
-const REF_PROVIDERS=new Set(['CoinGecko (market)','ECB (reference)','Market rate','Blue market (AR)','Official (AR)','Dolar Blue (AR)','MEP (AR)','CCL (AR)','BCB PTAX (BR)','TRM (CO)','Parallel (LB)','Yadio (P2P)','FloatRates']);
+// Badge categories
+const LIVE_PROVIDERS=new Set(['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Yellow Card','Buda','Flutterwave','Strike','OKX','Bybit','KuCoin','Gate.io','Bitget','MEXC','HTX','Crypto.com','Bithumb','Bitflyer','BtcTurk','IndependentReserve','WhiteBIT','Exmo','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P (live)']);
+const OFFICIAL_COUNTRY=new Set(['BCB PTAX (BR)','TRM (CO)','Blue market (AR)','Official (AR)','Dolar Blue (AR)','MEP (AR)','CCL (AR)','Parallel (LB)']);
+const REF_PROVIDERS=new Set(['CoinGecko (market)','ECB (reference)','Market rate','Yadio (P2P)','FloatRates']);
 function rateBadge(via){
-  if(LIVE_PROVIDERS.has(via))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">LIVE</span>';
-  if(REF_PROVIDERS.has(via)||via.endsWith('(AR)'))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">OFFICIAL</span>';
-  if(via.includes('+'))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">CALCULATED</span>';
-  return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">ESTIMATED</span>';
+  if(LIVE_PROVIDERS.has(via))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">LIVE ~3m</span>';
+  if(OFFICIAL_COUNTRY.has(via)||via.endsWith('(AR)'))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-800">OFFICIAL</span>';
+  if(REF_PROVIDERS.has(via))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800">REFERENCE</span>';
+  return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">ESTIMATED</span>';
 }
 function viaBadges(steps){return[...new Set(steps.map(s=>s.via))].map(v=>rateBadge(v)).join('');}
 
