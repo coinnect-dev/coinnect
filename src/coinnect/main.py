@@ -201,7 +201,7 @@ app = FastAPI(
         "Rate limits: 20 req/day / 50/hr anonymous (beta) · 1,000/day free key · "
         "5,000/day agent key · see coinnect.bot/#pricing"
     ),
-    version="2026.03.23",
+    version="2026.03.23.1",
     contact={"name": "Coinnect", "url": "https://coinnect.bot"},
     license_info={"name": "MIT"},
     lifespan=lifespan,

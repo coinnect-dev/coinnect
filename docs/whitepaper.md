@@ -1,6 +1,6 @@
 # Coinnect: The Open Route Guide for Global Money
 
-**Version:** 2026.03.23
+**Version:** 0.6 (March 2026)
 **Author:** Miguel
 **Domain:** coinnect.bot · **Status:** Live — public beta
 **Code:** [github.com/coinnect-dev/coinnect](https://github.com/coinnect-dev/coinnect) · MIT License
@@ -160,16 +160,16 @@ Results are merged, deduplicated by path signature, and returned as up to 30 ran
 
 ### 3.2 Rate refresh
 
-Exchange rates refresh every 3 minutes via a background asyncio task, pulling from 22+ live data sources:
+Exchange rates refresh every 3 minutes via a background asyncio task, pulling from 30+ live data sources:
 
-- **CCXT** — live order book data from Binance, Kraken, Coinbase, Bitso, Luno, Bitstamp, Gemini, OKX, Bybit, KuCoin
+- **CCXT (21 exchanges)** — live order book data from Binance, Kraken, Coinbase, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com, Luno, Bitstamp, Gemini, Bithumb, Bitflyer, BtcTurk, IndependentReserve, WhiteBIT
 - **Binance P2P (live)** — real-time P2P USDT rates for 12 emerging market currencies (MXN, ARS, NGN, COP, VES, BRL, KES, GHS, PKR, BDT, TRY, UAH)
 - **Wise API** — live fiat rates for 80+ currencies
-- **Yellow Card API** — live Africa crypto→fiat rates
-- **Direct exchange APIs** — Bitso, Buda, Strike, VALR, CoinDCX, WazirX, SatoshiTango, Flutterwave
-- **Regional rate sources** — Bluelytics, DolarSi, CriptoYa (Argentina), BCB (Brazil), TRM (Colombia), LiraRate (Turkey), Yadio (LatAm P2P)
-- **FX reference** — Frankfurter (ECB), CoinGecko, FloatRates, fawazahmed0 CDN
-- **Published fee tables** — 15+ remittance providers (labeled `~est.`)
+- **Direct exchange APIs** — Bitso (LatAm), Buda (Chile/Colombia/Peru), VALR (South Africa), CoinDCX (India), WazirX (India), SatoshiTango (Argentina)
+- **Central bank official rates (9)** — BCB (Brazil), TRM (Colombia), Bluelytics (Argentina), TCMB (Turkey), NBP (Poland), CNB (Czech Republic), NBU (Ukraine), NBG (Georgia), BOI (Israel), BNR (Romania)
+- **Reference rates** — CoinGecko, Yadio (LatAm P2P), Frankfurter (ECB), FloatRates, CurrencyAPI, CriptoYa (Argentina)
+- **Calculator** — x-rates.com
+- **Published fee tables** — 21 remittance providers (labeled `~est.`)
 
 ### 3.3 Rate history & open data
 
@@ -210,13 +210,13 @@ Full OpenAPI specification at `/docs`.
 - Rate counting is in-memory (O(1) per request)
 - Lost key? Generate a new one. No recovery, no support ticket.
 
-| Tier | Requests/day | Requests/hour |
-|------|-------------|--------------|
-| Anonymous (no key) | 20 | 50 (beta) |
-| Free key | 1,000 | 100 |
-| Agent 🤖 | 5,000 | 200 |
-| Pro | 50,000 | 2,000 |
-| Self-hosted | unlimited | unlimited |
+| Tier | Requests/day | Notes |
+|------|-------------|-------|
+| Anonymous (no key) | 20 | IP-based |
+| Personal (free key) | 1,000 | No signup required |
+| Pro / Bots | 5,000 | Free during beta; paid plans when demand grows |
+| x402 micropayment | Unlimited | $0.002/request, USDC on Base L2 |
+| Self-hosted | Unlimited | Run your own instance |
 
 ### 3.6 Machine-readable by design
 
@@ -252,7 +252,7 @@ The x402 protocol solves this. It extends HTTP with a payment layer: instead of 
 ```
 Agent → GET /v1/quote?from=USD&to=NGN&amount=500
 Server ← 402 Payment Required
-         X-Payment-Required: {amount: "0.001", currency: "USDC", network: "base",
+         X-Payment-Required: {amount: "0.002", currency: "USDC", network: "base",
                                recipient: "0xf0813041b9b017a88f28B8600E73a695E2B02e0A",
                                description: "Coinnect quote — 1 request"}
 Agent → GET /v1/quote?from=USD&to=NGN&amount=500
@@ -260,7 +260,7 @@ Agent → GET /v1/quote?from=USD&to=NGN&amount=500
 Server ← 200 OK + route data
 ```
 
-Each request costs approximately **$0.001 USDC** (~0.1 cents). A typical AI agent session making 100 queries costs $0.10 — comparable to a fraction of a cent per search in electricity. On Base L2, each transaction costs less than $0.001 in gas.
+Each request costs **$0.002 USDC** (~0.2 cents). A typical AI agent session making 100 queries costs $0.20 — comparable to a fraction of a cent per search in electricity. On Base L2, each transaction costs less than $0.001 in gas.
 
 ### 4.3 Why Base L2?
 
@@ -275,17 +275,17 @@ Our receiving address (`0xf0813041b9b017a88f28B8600E73a695E2B02e0A`) is an EVM a
 
 | Access mode | How | Cost | Limit |
 |-------------|-----|------|-------|
-| Browser (anonymous) | IP-based | Free | 20/day, 50/hr |
-| Free key | POST /v1/keys | Free | 1,000/day |
-| Agent key | Request at coinnect.bot | Free | 5,000/day |
-| x402 (micropayment) | Auto-pay $0.001/req | $0.001/req | Unlimited |
-| Pro key | Contact | Subscription | 50,000/day |
+| Browser (anonymous) | IP-based | Free | 20/day |
+| Personal key | POST /v1/keys | Free | 1,000/day |
+| Pro / Bot key | POST /v1/keys | Free (beta) | 5,000/day |
+| x402 (micropayment) | Auto-pay $0.002/req | $0.002/req | Unlimited |
+| Self-hosted | Clone + run | Free | Unlimited |
 
 x402 is designed for fully autonomous AI agents that operate without human oversight. They pay as they go, wallets permitting, with no account management required.
 
 ### 4.5 Current status
 
-x402 is in the Coinnect roadmap for Q3 2026. The receiving address is already configured. Implementation requires integrating the [x402-python](https://github.com/coinbase/x402) middleware (FastAPI-compatible) into the `/v1/quote` route and deploying with a Base RPC endpoint.
+x402 is **live** on Coinnect. The [x402-python](https://github.com/coinbase/x402) middleware (FastAPI-compatible) is deployed on the `/v1/quote` route, accepting USDC on Base L2 at **$0.002 per request**. Any agent that sends a valid x402 payment header bypasses all rate limits — no key required.
 
 The [Coinbase x402 SDK](https://github.com/coinbase/x402) is MIT-licensed and maintained by Coinbase. It handles payment verification, replay prevention, and automatic response unlocking.
 
@@ -301,7 +301,9 @@ A non-profit doesn't have this problem. The only metric that matters is accuracy
 
 ### 5.2 Sustainability
 
-Coinnect is funded entirely by voluntary donations from users who save money using the platform. If we save you $20 on a transfer, a $1 donation is a 2000% return for you and keeps the service running for everyone.
+Coinnect is **free for personal use**. If usage patterns change or costs require it, paid tiers may be introduced for high-volume commercial use — with a minimum 90-day notice before any change takes effect.
+
+The project is funded by voluntary donations from users who save money using the platform, and by x402 micropayments from autonomous agents. If we save you $20 on a transfer, a $1 donation is a 2000% return for you and keeps the service running for everyone.
 
 No advertising. No affiliate fees. No investor expectations. No exit.
 
@@ -329,28 +331,31 @@ Providers without a live public API are included with fees from published pricin
 
 ### 6.1 Integrated providers (March 2026)
 
-**Crypto exchanges (live rates via CCXT):** Binance, Kraken, Coinbase, Bitso, Luno (Africa), Bitstamp (EU), Gemini (US), OKX, Bybit, KuCoin
+**Crypto exchanges (21 live via CCXT):** Binance, Kraken, Coinbase, OKX, Bybit, KuCoin, Gate, Bitget, MEXC, HTX, Crypto.com, Luno, Bitstamp, Gemini, Bithumb, Bitflyer, BtcTurk, IndependentReserve, WhiteBIT
 
-**Crypto exchanges (live rates via direct API):** Bitso (LatAm), Buda (Chile/Colombia/Peru), VALR (South Africa), CoinDCX (India), WazirX (India), SatoshiTango (Argentina), Strike (Lightning Network)
+**Crypto exchanges (live via direct API):** Bitso (LatAm), Buda (Chile/Colombia/Peru), VALR (South Africa), CoinDCX (India), WazirX (India), SatoshiTango (Argentina)
 
 **P2P live rates:** Binance P2P (12 emerging market currencies: MXN, ARS, NGN, COP, VES, BRL, KES, GHS, PKR, BDT, TRY, UAH), Yadio (LatAm P2P)
 
-**Fiat/crypto bridges (live APIs):** Wise (80+ currencies), Yellow Card (Africa, 8 countries), Flutterwave (African corridors)
+**Fiat transfer (live API):** Wise (80+ currencies)
 
-**Regional rate sources:** Bluelytics & DolarSi (Argentina parallel rates), CriptoYa (Argentine crypto exchanges), BCB (Brazil central bank), TRM (Colombia), LiraRate (Turkey)
+**Central bank official rates (9):** BCB (Brazil), TRM (Colombia), Bluelytics (Argentina blue rate), TCMB (Turkey), NBP (Poland), CNB (Czech Republic), NBU (Ukraine), NBG (Georgia), BOI (Israel), BNR (Romania)
 
-**FX reference rates:** Frankfurter (ECB), CoinGecko, FloatRates, fawazahmed0 CDN
+**Reference rates:** CoinGecko, Frankfurter (ECB), FloatRates, CurrencyAPI, CriptoYa (Argentina), x-rates.com
 
 **Community verification:** Users and bots can report real rates via `POST /v1/verify`. Open quests at `GET /v1/quests` incentivize coverage of under-observed corridors. Reports feed the adaptive fee calibration system (Section 11).
 
-**Remittance (published fee estimates):**
+**Remittance (21 providers, published fee estimates):**
 
 | Provider | Coverage | Est. fee range |
 |----------|----------|----------------|
 | Remitly | 170+ countries | 1.2–3.8% |
+| Wise | 80+ currencies | 0.4–1.5% |
 | WorldRemit | 130+ countries | 2.2–4.2% |
 | Ria | 165+ countries | 2.8–4.5% |
 | Sendwave | Africa, W. Africa | 1.5–2.0% |
+| Nala | East Africa, UK corridors | 0.5–1.5% |
+| Taptap Send | Africa, UK/EU/US corridors | 0.5–1.2% |
 | Xoom (PayPal) | 160+ countries | 2.8–5.0% |
 | Paysend | 160+ countries | 2.0–3.6% |
 | OFX | Major currencies | 0.5–0.7% |
@@ -360,6 +365,9 @@ Providers without a live public API are included with fees from published pricin
 | Global66 | LatAm | 1.0–2.5% |
 | Atlantic Money | EU corridors | 0.4–0.6% |
 | Intermex | USA→LatAm | 2.5–4.0% |
+| Flutterwave | African corridors | 1.5–3.0% |
+| Yellow Card | Africa crypto→fiat | 1.0–2.5% |
+| Azimo | EU→Global | 1.5–3.0% |
 | Western Union | ~200 countries | 3.0–8.0% |
 | MoneyGram | ~200 countries | 3.0–7.0% |
 
@@ -401,9 +409,9 @@ Coinnect does not collect personal information. Quote requests include only curr
 
 | Phase | Focus |
 |-------|-------|
-| Now ✅ | Live beta — 22+ live data sources, 15 remittance providers, Binance P2P, API, MCP, open data, community rate verification & quests |
-| Next | More live-rate providers, delivery filters, accuracy scoring |
-| Later | x402 micropayments, Machine Tipping Protocol, Stellar anchors, SDKs |
+| Now | 21 CCXT exchanges, 21 remittance providers, 9 central banks, x402 live, quests, MCP, Telegram bot, 50+ SEO pages, Hugging Face dataset |
+| Next | More live-rate providers, community verification at scale, delivery method filters |
+| Later | MTP ([mtp.bot](https://mtp.bot)), Stellar anchors, SDKs |
 
 This is a beta. Priorities shift based on user feedback. See [`ROADMAP.md`](./ROADMAP.md) for details.
 
@@ -519,4 +527,4 @@ Eventually: machines consult it automatically, and money moves at its natural co
 
 ---
 
-*Version 2026.03.23 · feedback: miguel@coinnect.bot*
+*Version 0.6 (March 2026) · feedback: miguel@coinnect.bot*
