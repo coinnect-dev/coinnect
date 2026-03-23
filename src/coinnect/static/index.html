@@ -1604,7 +1604,7 @@ function renderFeaturedCard(r,from,to,insideTied=false){
       <div class="flex items-center justify-between px-5 py-4">
         <div class="flex items-center gap-2.5">
           ${viaWithLogos(viaList,18)}
-          ${isBest?`<span class="text-xs bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 font-medium">${t('best_badge')}</span>`:''}
+          ${isBest?`<span class="text-xs bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 font-medium">${t('tag_cheapest')}</span>`:''}
         </div>
         <div class="text-right">
           <div class="text-xl font-bold font-mono ${isBest?'text-emerald-600 dark:text-emerald-400':'text-gray-900 dark:text-white'}">${fmtNum(r.they_receive,to)} <span class="text-sm font-normal text-gray-400">${to}</span></div>

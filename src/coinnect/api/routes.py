@@ -160,12 +160,29 @@ async def quote(
         get_bluelytics_edges(), get_criptoya_edges(), get_bcb_edges(),
         get_trm_edges(), get_binance_p2p_edges(), get_calculator_edges(),
     )
+    # Reference-only providers — used for bridge routing but filtered from direct results
+    REFERENCE_PROVIDERS = {"Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)"}
+
     all_edges = [e for group in results for e in group]
 
-    if not all_edges:
+    # Split: reference edges only used as intermediate hops, not as direct single-step routes
+    real_edges = [e for e in all_edges if e.via not in REFERENCE_PROVIDERS]
+    bridge_edges = [e for e in all_edges if e.via in REFERENCE_PROVIDERS]
+
+    if not real_edges:
         raise HTTPException(503, "Exchange data temporarily unavailable")
 
-    result = build_quote(all_edges, from_, to, amount)
+    # Include bridge edges for multi-hop routing but they won't win as single-step direct routes
+    # because real providers always have them beat on direct corridors
+    result = build_quote(real_edges + bridge_edges, from_, to, amount)
+
+    # Filter out routes where ALL steps are reference-only (no real provider involved)
+    if result.routes:
+        result.routes = [r for r in result.routes
+            if any(s.via not in REFERENCE_PROVIDERS for s in r.steps)]
+        # Re-rank
+        for i, r in enumerate(result.routes):
+            r.rank = i + 1
 
     # Compute valid amount range for this corridor
     valid_edges = [e for e in all_edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
