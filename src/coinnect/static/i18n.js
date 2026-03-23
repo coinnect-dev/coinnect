@@ -1084,13 +1084,15 @@ function setLang(code){
 function applyLang(){
   // data-i18n → textContent
   document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const v=t(el.dataset.i18n);
-    if(v)el.textContent=v;
+    const k=el.dataset.i18n;
+    const v=t(k);
+    if(v&&v!==k)el.textContent=v;
   });
   // data-i18n-html → innerHTML
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{
-    const v=t(el.dataset.i18nHtml);
-    if(v)el.innerHTML=v;
+    const k=el.dataset.i18nHtml;
+    const v=t(k);
+    if(v&&v!==k)el.innerHTML=v;
   });
   // Update lang picker label
   const btn=document.getElementById('langBtn');
