@@ -181,10 +181,15 @@ async def quote(
     # because real providers always have them beat on direct corridors
     result = build_quote(real_edges + bridge_edges, from_, to, amount)
 
-    # Filter out routes where ALL steps are reference-only (no real provider involved)
+    # Filter routes:
+    # 1. Remove routes where ALL steps are reference-only
+    # 2. Remove routes where first or last step is a reference provider
+    #    (you can't "start" or "end" a real transfer at x-rates.com or CoinGecko)
     if result.routes:
         result.routes = [r for r in result.routes
-            if any(s.via not in REFERENCE_PROVIDERS for s in r.steps)]
+            if (any(s.via not in REFERENCE_PROVIDERS for s in r.steps)
+                and r.steps[0].via not in REFERENCE_PROVIDERS
+                and r.steps[-1].via not in REFERENCE_PROVIDERS)]
         # Re-rank and reassign labels
         if result.routes:
             result.routes[0].label = "Cheapest"
