@@ -79,14 +79,24 @@ TRADITIONAL_CORRIDORS: list[tuple] = [
 ]
 
 # Rate cache keyed by base currency, with TTL
+import asyncio
 import time
 
-_rate_cache: dict[str, tuple[float, dict]] = {}  # base → (timestamp, rates)
+_rate_cache: dict[str, tuple[float, dict]] = {}  # base -> (timestamp, rates)
 _RATE_CACHE_TTL = 300  # 5 minutes
 
 # Wise-specific rate cache keyed by "FROM-TO" pair
-_wise_rate_cache: dict[str, tuple[float, float]] = {}  # "USD-MXN" → (timestamp, rate)
+_wise_rate_cache: dict[str, tuple[float, float]] = {}  # "USD-MXN" -> (timestamp, rate)
 _WISE_RATE_CACHE_TTL = 300  # 5 minutes
+
+# Track whether we've already logged a Wise block warning this cycle
+_wise_block_warned: bool = False
+_wise_block_warned_at: float = 0.0
+_WISE_BLOCK_WARN_INTERVAL = 300  # Only warn once every 5 minutes
+
+# Rate limiting for Wise API: batch size and delay
+_WISE_BATCH_SIZE = 5
+_WISE_BATCH_DELAY = 0.5  # seconds between batches
 
 
 async def _fetch_rates(base: str, client: httpx.AsyncClient) -> dict[str, float]:
@@ -113,7 +123,12 @@ async def _fetch_rates(base: str, client: httpx.AsyncClient) -> dict[str, float]
 async def _fetch_wise_rate(
     from_c: str, to_c: str, client: httpx.AsyncClient
 ) -> float | None:
-    """Fetch live exchange rate from Wise public API. Returns rate or None."""
+    """Fetch live exchange rate from Wise public API. Returns rate or None.
+
+    When Wise returns a block response, logs a single warning (not per-corridor)
+    and returns None so the fallback FX rate kicks in.
+    """
+    global _wise_block_warned, _wise_block_warned_at
     key = f"{from_c}-{to_c}"
     now = time.monotonic()
     if key in _wise_rate_cache:
@@ -133,11 +148,23 @@ async def _fetch_wise_rate(
             rate = float(data["value"])
             if rate > 0:
                 _wise_rate_cache[key] = (now, rate)
-                logger.debug("Wise live rate %s→%s: %s", from_c, to_c, rate)
+                logger.debug("Wise live rate %s->%s: %s", from_c, to_c, rate)
                 return rate
-        logger.warning("Unexpected Wise rates response for %s→%s: %s", from_c, to_c, data)
+
+        # Detect block response: {"response": "block"} or any non-rate response
+        is_block = isinstance(data, dict) and data.get("response") == "block"
+        if is_block or (isinstance(data, dict) and "value" not in data):
+            # Log only once per warn interval to avoid spamming logs for all 38 corridors
+            if not _wise_block_warned or (now - _wise_block_warned_at > _WISE_BLOCK_WARN_INTERVAL):
+                reason = "blocked by Wise API" if is_block else f"unexpected response: {data}"
+                logger.warning("Wise API %s -- all corridors will use fallback FX rates", reason)
+                _wise_block_warned = True
+                _wise_block_warned_at = now
+            return None
+
+        logger.warning("Unexpected Wise rates response for %s->%s: %s", from_c, to_c, data)
     except Exception as e:
-        logger.warning("Failed to fetch Wise rate for %s→%s: %s", from_c, to_c, e)
+        logger.warning("Failed to fetch Wise rate for %s->%s: %s", from_c, to_c, e)
         # Return stale cache if available
         if key in _wise_rate_cache:
             return _wise_rate_cache[key][1]
@@ -147,19 +174,25 @@ async def _fetch_wise_rate(
 async def get_wise_edges() -> list[Edge]:
     """Return Wise fiat corridor edges with live exchange rates.
 
-    Fetches rates from the Wise public API first. For any corridor where the
+    Fetches rates from the Wise public API first, in batches of 5 with 0.5s
+    delay between batches to avoid rate limiting. For any corridor where the
     Wise API doesn't return a rate, falls back to open.er-api.com.
     """
-    import asyncio
-
     edges = []
     corridors = [(from_, to_, fee, minutes) for from_, to_, fee, minutes in WISE_CORRIDORS]
 
     async with httpx.AsyncClient() as client:
-        # 1. Try Wise live rates for all corridors (in parallel)
-        wise_rates: list[float | None] = await asyncio.gather(
-            *[_fetch_wise_rate(from_, to_, client) for from_, to_, _, _ in corridors]
-        )
+        # 1. Try Wise live rates for all corridors (batched to avoid rate limiting)
+        wise_rates: list[float | None] = []
+        for batch_start in range(0, len(corridors), _WISE_BATCH_SIZE):
+            batch = corridors[batch_start:batch_start + _WISE_BATCH_SIZE]
+            batch_results = await asyncio.gather(
+                *[_fetch_wise_rate(from_, to_, client) for from_, to_, _, _ in batch]
+            )
+            wise_rates.extend(batch_results)
+            # Delay between batches (but not after the last batch)
+            if batch_start + _WISE_BATCH_SIZE < len(corridors):
+                await asyncio.sleep(_WISE_BATCH_DELAY)
 
         # 2. For corridors where Wise API failed, fetch fallback rates from open.er-api.com
         fallback_bases = set()
@@ -181,14 +214,14 @@ async def get_wise_edges() -> list[Edge]:
             rate = fallback_maps.get(from_, {}).get(to_, 1.0)
             if rate == 0:
                 rate = 1.0
-            logger.debug("Using fallback rate for %s→%s: %s", from_, to_, rate)
+            logger.debug("Using fallback rate for %s->%s: %s", from_, to_, rate)
         edges.append(Edge(
             from_currency=from_,
             to_currency=to_,
             via="Wise",
             fee_pct=fee,
             estimated_minutes=minutes,
-            instructions=f"Send {from_} via Wise — recipient gets {to_} in ~{max(1, minutes//60)}h",
+            instructions=f"Send {from_} via Wise -- recipient gets {to_} in ~{max(1, minutes//60)}h",
             exchange_rate=rate,
         ))
     return edges
@@ -200,7 +233,6 @@ async def get_traditional_edges() -> list[Edge]:
     bases_needed = {from_ for from_, _, _, _, _ in TRADITIONAL_CORRIDORS}
 
     async with httpx.AsyncClient() as client:
-        import asyncio
         rate_maps = dict(zip(
             bases_needed,
             await asyncio.gather(*[_fetch_rates(b, client) for b in bases_needed])
@@ -217,7 +249,7 @@ async def get_traditional_edges() -> list[Edge]:
             via=service,
             fee_pct=fee,
             estimated_minutes=minutes,
-            instructions=f"Send via {service} — fees approx {fee}% of amount",
+            instructions=f"Send via {service} -- fees approx {fee}% of amount",
             exchange_rate=rate,
         ))
     return edges

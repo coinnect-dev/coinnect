@@ -143,8 +143,8 @@ def find_routes(
     direct.sort(key=lambda x: x[0])
 
     # 2. Multi-step routes via Dijkstra (max_steps >= 2)
-    by_cost = _dijkstra(graph, start, end, amount, optimize="cost", max_routes=5, max_steps=max_steps)
-    by_time = _dijkstra(graph, start, end, amount, optimize="time", max_routes=3, max_steps=max_steps)
+    by_cost = _dijkstra(graph, start, end, amount, optimize="cost", max_routes=8, max_steps=max_steps)
+    by_time = _dijkstra(graph, start, end, amount, optimize="time", max_routes=5, max_steps=max_steps)
     multi_step = [r for r in by_cost + by_time if len(r[2]) > 1]
 
     # 3. Merge, deduplicating by path signature

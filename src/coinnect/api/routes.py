@@ -160,7 +160,9 @@ async def quote(
         get_bluelytics_edges(), get_criptoya_edges(), get_bcb_edges(),
         get_trm_edges(), get_binance_p2p_edges(), get_calculator_edges(),
     )
-    # Reference-only providers — used for bridge routing but filtered from direct results
+    # Reference-only providers — pure data sources, NOT real transfer services.
+    # These should only appear as MIDDLE steps in multi-hop routes.
+    # CriptoYa individual exchange names use the "(AR)" suffix pattern.
     REFERENCE_PROVIDERS = {
         "Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)",
         "Yadio (P2P)", "CoinGecko (market)", "Blue market (AR)", "Official (AR)",
@@ -168,11 +170,27 @@ async def quote(
         "Parallel (LB)",
     }
 
+    def _is_reference_provider(via: str) -> bool:
+        """Check if a provider is reference-only (pure data source, not a transfer service).
+
+        Matches explicit REFERENCE_PROVIDERS set plus CriptoYa individual exchange
+        names which use the '(AR)' suffix pattern (Argentine exchange aggregator data,
+        not direct transfer services).
+        """
+        if via in REFERENCE_PROVIDERS:
+            return True
+        # CriptoYa individual exchanges: e.g. "ripio (AR)", "belo (AR)", etc.
+        # These are aggregated price data, not direct transfer endpoints.
+        # Exclude known real providers that happen to have (AR) suffix.
+        if via.endswith(" (AR)") and via not in REFERENCE_PROVIDERS:
+            return True
+        return False
+
     all_edges = [e for group in results for e in group]
 
     # Split: reference edges only used as intermediate hops, not as direct single-step routes
-    real_edges = [e for e in all_edges if e.via not in REFERENCE_PROVIDERS]
-    bridge_edges = [e for e in all_edges if e.via in REFERENCE_PROVIDERS]
+    real_edges = [e for e in all_edges if not _is_reference_provider(e.via)]
+    bridge_edges = [e for e in all_edges if _is_reference_provider(e.via)]
 
     if not real_edges:
         raise HTTPException(503, "Exchange data temporarily unavailable")
@@ -182,14 +200,16 @@ async def quote(
     result = build_quote(real_edges + bridge_edges, from_, to, amount)
 
     # Filter routes:
-    # 1. Remove routes where ALL steps are reference-only
-    # 2. Remove routes where first or last step is a reference provider
-    #    (you can't "start" or "end" a real transfer at x-rates.com or CoinGecko)
+    # A route is valid if:
+    # 1. First step uses a real provider (where you can actually send money)
+    # 2. Last step uses a real provider (where recipient actually receives)
+    # 3. At least one step uses a non-reference provider
+    # Reference providers may appear as MIDDLE steps in multi-hop routes.
     if result.routes:
         result.routes = [r for r in result.routes
-            if (any(s.via not in REFERENCE_PROVIDERS for s in r.steps)
-                and r.steps[0].via not in REFERENCE_PROVIDERS
-                and r.steps[-1].via not in REFERENCE_PROVIDERS)]
+            if (not _is_reference_provider(r.steps[0].via)
+                and not _is_reference_provider(r.steps[-1].via)
+                and any(not _is_reference_provider(s.via) for s in r.steps))]
         # Re-rank and reassign labels
         if result.routes:
             result.routes[0].label = "Cheapest"
