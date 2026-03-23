@@ -59,6 +59,25 @@ WISE_CORRIDORS: list[tuple] = [
     ("PHP", "USD",  2.50, 60),
     ("NGN", "USD",  4.00, 120),
     ("KES", "USD",  3.50, 120),
+    # Reverse corridors — sending FROM developing countries
+    ("INR", "GBP",  2.80, 60),
+    ("INR", "EUR",  2.80, 60),
+    ("INR", "AUD",  2.80, 60),
+    ("PHP", "GBP",  2.80, 60),
+    ("PHP", "AUD",  2.80, 60),
+    ("NGN", "GBP",  3.50, 120),
+    ("KES", "GBP",  3.00, 120),
+    ("TRY", "EUR",  2.50, 60),
+    ("TRY", "GBP",  2.50, 60),
+    ("IDR", "USD",  3.00, 60),
+    ("VND", "USD",  3.00, 60),
+    ("THB", "USD",  2.50, 60),
+    ("BDT", "USD",  3.50, 120),
+    ("PKR", "USD",  3.50, 120),
+    ("ARS", "EUR",  4.50, 60),
+    ("COP", "EUR",  3.00, 60),
+    ("ZAR", "GBP",  2.80, 60),
+    ("ZAR", "EUR",  2.80, 60),
 ]
 
 # Western Union / MoneyGram — approximate fees for comparison baseline

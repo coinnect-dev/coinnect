@@ -50,6 +50,10 @@ REMITLY_CORRIDORS: list[tuple] = [
     ("EUR", "PHP",  2.20, 1440,  "Remitly Economy — bank deposit"),
     ("EUR", "NGN",  3.80, 2880,  "Remitly Economy — bank deposit"),
     ("EUR", "INR",  1.60, 1440,  "Remitly Economy — bank deposit"),
+    # Reverse corridors — sending FROM developing countries
+    ("INR", "USD",  2.50, 1440,  "Remitly — bank withdrawal, India to USA"),
+    ("PHP", "USD",  2.50, 1440,  "Remitly — bank withdrawal, Philippines to USA"),
+    ("MXN", "USD",  2.50, 1440,  "Remitly — bank withdrawal, Mexico to USA"),
 ]
 
 WORLDREMIT_CORRIDORS: list[tuple] = [
@@ -69,6 +73,11 @@ WORLDREMIT_CORRIDORS: list[tuple] = [
     ("GBP", "KES",  3.40, 1440,  "WorldRemit — M-Pesa or bank"),
     ("GBP", "PHP",  2.90, 1440,  "WorldRemit — bank deposit"),
     ("EUR", "NGN",  4.20, 2880,  "WorldRemit — bank deposit"),
+    # Reverse corridors — sending FROM developing countries
+    ("NGN", "GBP",  4.00, 2880,  "WorldRemit — bank deposit, Nigeria to UK"),
+    ("KES", "GBP",  3.50, 1440,  "WorldRemit — bank deposit, Kenya to UK"),
+    ("GHS", "GBP",  4.00, 2880,  "WorldRemit — bank deposit, Ghana to UK"),
+    ("PHP", "GBP",  3.00, 1440,  "WorldRemit — bank deposit, Philippines to UK"),
 ]
 
 RIA_CORRIDORS: list[tuple] = [
@@ -85,6 +94,10 @@ RIA_CORRIDORS: list[tuple] = [
     ("EUR", "MXN",  3.50, 30,   "Ria — cash pickup or bank deposit"),
     ("EUR", "PHP",  3.60, 30,   "Ria — cash pickup or bank deposit"),
     ("GBP", "PHP",  3.40, 30,   "Ria — cash pickup or bank deposit"),
+    # Reverse corridors — sending FROM developing countries
+    ("MXN", "USD",  3.50, 60,   "Ria — bank deposit, Mexico to USA"),
+    ("PHP", "USD",  3.80, 60,   "Ria — bank deposit, Philippines to USA"),
+    ("INR", "USD",  3.20, 1440, "Ria — bank deposit, India to USA"),
 ]
 
 SENDWAVE_CORRIDORS: list[tuple] = [
@@ -114,6 +127,10 @@ XOOM_CORRIDORS: list[tuple] = [
     ("USD", "IDR",  4.50, 1440, "Xoom (PayPal) — bank deposit"),
     ("USD", "BDT",  4.00, 2880, "Xoom (PayPal) — bank deposit"),
     ("USD", "PKR",  4.50, 2880, "Xoom (PayPal) — bank deposit"),
+    # Reverse corridors — sending FROM developing countries
+    ("INR", "USD",  3.50, 1440, "Xoom (PayPal) — bank deposit, India to USA"),
+    ("PHP", "USD",  4.00, 60,   "Xoom (PayPal) — bank deposit, Philippines to USA"),
+    ("MXN", "USD",  4.50, 60,   "Xoom (PayPal) — bank deposit, Mexico to USA"),
 ]
 
 PAYSEND_CORRIDORS: list[tuple] = [
@@ -129,6 +146,9 @@ PAYSEND_CORRIDORS: list[tuple] = [
     ("USD", "KES",  3.20, 1440, "Paysend — bank or mobile money"),
     ("USD", "GHS",  3.50, 1440, "Paysend — bank delivery"),
     ("USD", "UGX",  3.60, 1440, "Paysend — mobile money"),
+    # Reverse corridors — sending FROM developing countries
+    ("INR", "GBP",  2.50, 30,   "Paysend — card delivery, India to UK"),
+    ("PHP", "GBP",  2.80, 30,   "Paysend — card delivery, Philippines to UK"),
 ]
 
 OFX_CORRIDORS: list[tuple] = [
@@ -262,6 +282,11 @@ GLOBAL66_CORRIDORS: list[tuple] = [
     ("CLP", "USD",  0.90, 60,   "Global66 — send CLP, receive USD"),
     ("CLP", "EUR",  1.00, 60,   "Global66 — send CLP, receive EUR"),
     ("COP", "USD",  1.10, 60,   "Global66 — send COP, receive USD"),
+    # Reverse corridors — intra-LatAm sending back to USD
+    ("MXN", "USD",  1.50, 60,   "Global66 — bank deposit, Mexico to USA"),
+    ("PEN", "USD",  1.50, 60,   "Global66 — bank deposit, Peru to USA"),
+    ("BRL", "USD",  1.80, 1440, "Global66 — bank deposit, Brazil to USA"),
+    ("ARS", "USD",  2.00, 60,   "Global66 — bank deposit, Argentina to USA"),
 ]
 
 
@@ -468,6 +493,11 @@ NALA_CORRIDORS: list[tuple] = [
     ("USD", "TZS",  2.00, 30,   "Nala — bank or mobile money, Tanzania"),
     ("USD", "UGX",  2.00, 30,   "Nala — mobile money, Uganda"),
     ("USD", "NGN",  2.80, 60,   "Nala — bank deposit, Nigeria"),
+    # Reverse corridors — sending FROM Africa to UK
+    ("KES", "GBP",  2.00, 30,   "Nala — bank deposit, Kenya to UK"),
+    ("TZS", "GBP",  2.50, 30,   "Nala — bank deposit, Tanzania to UK"),
+    ("UGX", "GBP",  2.50, 30,   "Nala — bank deposit, Uganda to UK"),
+    ("NGN", "GBP",  3.00, 60,   "Nala — bank deposit, Nigeria to UK"),
 ]
 
 TAPTAP_SEND_CORRIDORS: list[tuple] = [
@@ -483,6 +513,10 @@ TAPTAP_SEND_CORRIDORS: list[tuple] = [
     ("USD", "GHS",  1.50, 30,   "Taptap Send — mobile money, Ghana"),
     ("EUR", "KES",  1.00, 30,   "Taptap Send — M-Pesa or bank"),
     ("EUR", "NGN",  1.80, 60,   "Taptap Send — bank deposit, Nigeria"),
+    # Reverse corridors — sending FROM Africa to UK
+    ("KES", "GBP",  1.20, 30,   "Taptap Send — bank deposit, Kenya to UK"),
+    ("GHS", "GBP",  1.50, 30,   "Taptap Send — bank deposit, Ghana to UK"),
+    ("UGX", "GBP",  1.50, 30,   "Taptap Send — bank deposit, Uganda to UK"),
 ]
 
 PAYPAL_CORRIDORS: list[tuple] = [
@@ -497,6 +531,11 @@ PAYPAL_CORRIDORS: list[tuple] = [
     ("EUR", "USD",  3.50, 1440, "PayPal — bank deposit or PayPal balance"),
     ("GBP", "EUR",  3.00, 1440, "PayPal — bank deposit or PayPal balance"),
     ("GBP", "USD",  3.50, 1440, "PayPal — bank deposit or PayPal balance"),
+    # Reverse corridors — sending FROM developing countries
+    ("INR", "USD",  4.50, 1440, "PayPal — bank withdrawal, India to USA"),
+    ("PHP", "USD",  4.50, 1440, "PayPal — bank withdrawal, Philippines to USA"),
+    ("MXN", "USD",  5.50, 1440, "PayPal — bank withdrawal, Mexico to USA"),
+    ("BRL", "USD",  5.50, 1440, "PayPal — bank withdrawal, Brazil to USA"),
 ]
 
 PAYONEER_CORRIDORS: list[tuple] = [
@@ -512,6 +551,11 @@ PAYONEER_CORRIDORS: list[tuple] = [
     ("USD", "BDT",  3.00, 1440, "Payoneer — bank withdrawal, Bangladesh"),
     ("EUR", "USD",  2.00, 1440, "Payoneer — bank withdrawal"),
     ("GBP", "USD",  2.00, 1440, "Payoneer — bank withdrawal"),
+    # Reverse corridors — freelancers sending back from developing countries
+    ("INR", "USD",  2.50, 1440, "Payoneer — bank withdrawal, India to USA"),
+    ("PHP", "USD",  3.00, 1440, "Payoneer — bank withdrawal, Philippines to USA"),
+    ("PKR", "USD",  3.00, 1440, "Payoneer — bank withdrawal, Pakistan to USA"),
+    ("BDT", "USD",  3.00, 1440, "Payoneer — bank withdrawal, Bangladesh to USA"),
 ]
 
 UPHOLD_CORRIDORS: list[tuple] = [
