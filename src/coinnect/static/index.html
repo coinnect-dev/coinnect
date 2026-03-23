@@ -1823,13 +1823,21 @@ function renderExtrasWithTies(extras,from,to){
   }
   return groups.map(group=>{
     if(group.length===1) return renderCompactRow(group[0],from,to);
-    // Tied group — show side by side in a 2-col (or more) grid with a "=" badge
-    return`<div class="relative">
-      <div class="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
-        <span class="bg-cyan-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">= tied ${group[0].total_cost_pct.toFixed(2)}%</span>
-      </div>
-      <div class="flex flex-col gap-2 pt-2">
-        ${group.map(r=>renderCompactRow(r,from,to)).join('')}
+    // Tied group — first as compact row, rest as inline chips in same box
+    const first=group[0];
+    const rest=group.slice(1);
+    const chips=rest.map(r=>{
+      const vl=[...new Set(r.steps.map(s=>s.via))];
+      return`<div class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+        ${viaWithLogos(vl,12)}
+        <span class="font-mono font-semibold">${fmtNum(r.they_receive,to)}</span>
+      </div>`;
+    }).join('<span class="text-gray-300 dark:text-gray-600 text-xs">,</span>');
+    return`<div class="bg-cyan-50/40 dark:bg-cyan-950/15 border border-cyan-200 dark:border-cyan-800 rounded-xl overflow-hidden">
+      ${renderCompactRow(first,from,to)}
+      <div class="px-5 py-2 border-t border-cyan-100 dark:border-cyan-900/40 flex items-center gap-2 flex-wrap">
+        <span class="text-[10px] text-cyan-500 font-medium shrink-0">~ ${rest.length} more</span>
+        ${chips}
       </div>
     </div>`;
   }).join('');
@@ -1887,44 +1895,22 @@ function renderResults(routes,from,to){
 
   const tiedBlock=shuffled.length>1
     ? (()=>{
-        // First tied route gets a featured card, rest shown as compact rows
         const first=shuffled[0];
         const rest=shuffled.slice(1);
-        const restVisible=rest.slice(0,2);
-        const restHidden=rest.slice(2);
-        const compactRows=restVisible.map(r=>{
+        // Render tied alternatives as inline chips in a single row
+        const tiedChips=rest.map(r=>{
           const vl=[...new Set(r.steps.map(s=>s.via))];
-          const amountVal=parseFloat(document.getElementById('amount').value);
-          return`<div class="flex items-center gap-3 px-4 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 last:border-b-0">
-            <span class="text-emerald-500 text-xs font-bold">=</span>
-            <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(vl,14)}</div>
-            <div class="text-right">
-              <span class="font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive,to)}</span>
-              <span class="text-gray-400 text-xs ml-1">${to}</span>
-            </div>
-            <span class="text-xs text-gray-400">${fmtFee(r,amountVal,from)}</span>
+          return`<div class="inline-flex items-center gap-1.5 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
+            ${viaWithLogos(vl,14)}
+            <span class="font-mono text-sm font-semibold text-gray-900 dark:text-white ml-1">${fmtNum(r.they_receive,to)}</span>
+            <span class="text-gray-400 text-xs">${to}</span>
           </div>`;
         }).join('');
-        const hiddenRows=restHidden.length?`
-          <div id="tiedMore" class="hidden">${restHidden.map(r=>{
-            const vl=[...new Set(r.steps.map(s=>s.via))];
-            const amountVal=parseFloat(document.getElementById('amount').value);
-            return`<div class="flex items-center gap-3 px-4 py-2.5 border-b border-emerald-100 dark:border-emerald-900/40 last:border-b-0">
-              <span class="text-emerald-500 text-xs font-bold">=</span>
-              <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(vl,14)}</div>
-              <div class="text-right">
-                <span class="font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive,to)}</span>
-                <span class="text-gray-400 text-xs ml-1">${to}</span>
-              </div>
-              <span class="text-xs text-gray-400">${fmtFee(r,amountVal,from)}</span>
-            </div>`;
-          }).join('')}</div>
-          <button onclick="document.getElementById('tiedMore').classList.remove('hidden');this.remove();" class="w-full py-1.5 text-[10px] text-emerald-500 hover:text-emerald-600 transition-colors">+ ${restHidden.length} more tied</button>`:'';
         return`<div>
           ${renderFeaturedCard(first,from,to)}
-          <div class="mt-1 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl overflow-hidden">
-            <div class="px-4 py-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium border-b border-emerald-100 dark:border-emerald-900/40">${shuffled.length-1} more at same cost (${cheapest.total_cost_pct.toFixed(2)}%)</div>
-            ${compactRows}${hiddenRows}
+          <div class="mt-1.5 bg-emerald-50/40 dark:bg-emerald-950/15 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-2.5">
+            <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mb-2">~ ${rest.length} more at ~${cheapest.total_cost_pct.toFixed(2)}%</div>
+            <div class="flex flex-wrap gap-2">${tiedChips}</div>
           </div>
         </div>`;
       })()
