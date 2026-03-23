@@ -325,6 +325,41 @@ async def _get_all_edges_cached() -> list:
     return all_edges
 
 
+@app.get("/explore", include_in_schema=False)
+async def explore_index():
+    """Index page listing all SEO corridor and country pages."""
+    from coinnect.seo_pages import TOP_CORRIDORS, COUNTRY_DATA
+    corridors_html = "\n".join(
+        f'<li><a href="/send/{fc.lower()}-to-{tc.lower()}">{fc} → {tc}</a></li>'
+        for fc, tc in TOP_CORRIDORS
+    )
+    countries_html = "\n".join(
+        f'<li><a href="/rates/{slug}">{data["name"]} ({", ".join(data.get("currencies",[]))})</a></li>'
+        for slug, data in sorted(COUNTRY_DATA.items(), key=lambda x: x[1]["name"])
+    )
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explore — All Corridors &amp; Countries | Coinnect</title>
+<link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+<style>
+body{{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;color:#111827;background:#f9fafb;line-height:1.6}}
+a{{color:#0891b2;text-decoration:none}} a:hover{{text-decoration:underline}}
+h1{{font-size:1.5rem;margin-bottom:.5rem}} h2{{font-size:1.1rem;margin-top:2rem;color:#6b7280}}
+ul{{columns:2;column-gap:2rem;list-style:none;padding:0}} li{{padding:.25rem 0;font-size:.9rem}}
+.back{{display:inline-block;margin-bottom:1rem;font-size:.85rem;color:#6b7280}}
+</style></head><body>
+<a href="/" class="back">← Back to Coinnect</a>
+<h1>Explore All Routes</h1>
+<p style="color:#6b7280;font-size:.9rem">30 corridors and 20 countries with live rate comparisons.</p>
+<h2>Corridors</h2>
+<ul>{corridors_html}</ul>
+<h2>Countries</h2>
+<ul>{countries_html}</ul>
+<p style="margin-top:2rem;font-size:.75rem;color:#9ca3af">Data updates every 3 minutes · <a href="/v1/snapshot/meta">Open data API</a> · <a href="https://huggingface.co/datasets/coinnect-dev/coinnect-rates">Hugging Face</a></p>
+</body></html>""")
+
+
 @app.get("/send/{corridor}", include_in_schema=False)
 async def corridor_page(corridor: str):
     """SEO corridor page: /send/usd-to-mxn"""
