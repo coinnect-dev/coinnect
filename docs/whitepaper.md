@@ -451,7 +451,36 @@ The calibration state is persisted in SQLite and published as part of the open d
 
 ---
 
-## 12. Vision
+## 12. Scalability
+
+### Current architecture
+
+Coinnect runs as a single Python process (FastAPI + SQLite) on a single server. With 4 workers, it handles ~50 requests/second for live quotes and serves static assets via Cloudflare CDN.
+
+This is sufficient for tens of thousands of daily users. The quote engine is stateless — all state lives in SQLite and in-memory edge caches that rebuild every 3 minutes.
+
+### Scaling path
+
+| Load | Architecture | Estimated cost |
+|------|-------------|----------------|
+| 1-50K users/day | Single server (current) | ~$30/month |
+| 50K-500K | Add Cloudflare cache on /v1/quote (60s TTL) | ~$30/month |
+| 500K-5M | Horizontal: 2-3 servers behind load balancer | ~$100-300/month |
+| 5M+ | Edge compute (Cloudflare Workers) + libSQL/Turso for distributed SQLite | ~$500-1000/month |
+
+### Distributed data collection
+
+The most valuable form of distributed computing for Coinnect is not CPU — it's **data collection from diverse geographies**. A node in Nigeria can verify NGN rates more accurately than a server in Mexico. A node in the Philippines can access GCash pricing that may be geo-blocked elsewhere.
+
+Future architecture: volunteer "verifier nodes" that run a lightweight Coinnect agent, collect local rate data, and submit it via the `/v1/verify` endpoint. Contributors earn quest rewards (MTP). This is conceptually similar to how Waze collects traffic data from drivers — distributed sensing, centralized routing.
+
+### Why centralized routing is correct
+
+Unlike blockchain networks where decentralization prevents censorship, money routing benefits from centralization: a single Dijkstra pass over the complete graph always finds the optimal path. Distributing the routing computation would only add latency without improving results. What should be distributed is the data layer, not the compute layer.
+
+---
+
+## 13. Vision
 
 Before GPS, every driver carried a road atlas. It didn't drive. It didn't own the roads. It had no preference for which highway you took. You trusted it precisely because it had no stake in your route — it just knew every path and showed you all of them.
 

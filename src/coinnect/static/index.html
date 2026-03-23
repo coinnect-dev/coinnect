@@ -487,99 +487,87 @@
     <div class="text-center mb-10">
       <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white mb-2" data-i18n-html="pricing_title">Pricing: $0</h2>
       <p class="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto" data-i18n-html="pricing_sub">
-        Free for personal use for personal use.<sup class="text-cyan-500 font-bold">*</sup>
-        No credit card. No sign-up. No affiliate fees — ever.
+        Free for personal use. No credit card. No sign-up. No affiliate fees — ever.
       </p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
-      <!-- Anonymous -->
+      <!-- Personal (Free) -->
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
-        <div class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3" data-i18n="anon">Anonymous</div>
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Free</div>
-        <div class="text-xs text-gray-400 mb-5" data-i18n="anon_sub">No key needed</div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Personal</div>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-3xl font-bold text-gray-900 dark:text-white">$0</span>
+          <span class="text-sm text-gray-400">/ forever</span>
+        </div>
+        <div class="text-xs text-gray-400 mb-5">For individuals comparing rates</div>
         <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-          <li class="flex gap-2"><span class="text-green-500">✓</span>20 searches / day</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>50 / hour (beta limit)</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>All corridors</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Full route detail</li>
-          <li class="flex gap-2"><span class="text-gray-300 dark:text-gray-600">–</span>No usage dashboard</li>
-        </ul>
-        <div class="text-xs text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 font-mono">
-          curl /v1/quote?from=USD&amp;to=MXN
-        </div>
-      </div>
-
-      <!-- Builder (featured) -->
-      <div class="bg-white dark:bg-gray-900 border-2 border-cyan-400 dark:border-cyan-500 rounded-2xl p-6 relative shadow-lg shadow-cyan-500/10">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span class="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full" data-i18n="most_popular">Most popular</span>
-        </div>
-        <div class="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-3" data-i18n="builder">Builder</div>
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Free</div>
-        <div class="text-xs text-gray-400 mb-5" data-i18n="builder_sub">Self-serve key · no signup</div>
-        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
-          <li class="flex gap-2"><span class="text-green-500">✓</span><strong>1,000 searches / day</strong></li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>100 / hour</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>All corridors</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Full route detail</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Usage dashboard</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>GitHub support</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>20 searches / day (no key)</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>1,000 / day (free API key)</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>All corridors + full detail</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Rate history + charts</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>MCP server for AI agents</li>
         </ul>
         <button onclick="showKeyGenerator()"
-          class="w-full bg-cyan-500 hover:bg-cyan-400 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors mb-2">
-          <span data-i18n="get_key">Get free API key →</span>
+          class="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-medium text-sm py-2.5 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors">
+          Get free API key
         </button>
-        <p class="text-center text-xs text-gray-400">
-          <span data-i18n="support_free">Free because of</span>
-          <button onclick="document.getElementById('donateSection').scrollIntoView({behavior:'smooth'})" class="text-cyan-500 hover:underline" data-i18n="donor_link">donor support</button>
-        </p>
       </div>
 
-      <!-- Agent -->
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
-        <div class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Agent</div>
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Free</div>
-        <div class="text-xs text-gray-400 mb-5">For AI bots & automated scripts</div>
-        <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-          <li class="flex gap-2"><span class="text-green-500">✓</span><strong>5,000 searches / day</strong></li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>200 / hour</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>All corridors</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>MCP server access</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Usage dashboard</li>
+      <!-- Pro (featured) -->
+      <div class="bg-white dark:bg-gray-900 border-2 border-cyan-400 dark:border-cyan-500 rounded-2xl p-6 relative shadow-lg shadow-cyan-500/10">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span class="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">For teams & bots</span>
+        </div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-cyan-500 mb-3">Pro</div>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-3xl font-bold text-gray-900 dark:text-white">$29</span>
+          <span class="text-sm text-gray-400">/ month</span>
+        </div>
+        <div class="text-xs text-gray-400 mb-5">For apps, bots & commercial use</div>
+        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span><strong>100,000 searches / day</strong></li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>2,000 / hour</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Rate history 1 year</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Webhooks + alerts</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Priority support</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>SLA 99.5%</li>
         </ul>
-        <a href="mailto:miguel@coinnect.bot?subject=Agent%20key%20request"
-          class="block w-full text-center border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold text-sm py-2.5 rounded-xl transition-colors">
-          Contact for agent key →
+        <a href="mailto:miguel@coinnect.bot?subject=Pro%20plan"
+          class="block w-full text-center bg-cyan-500 hover:bg-cyan-400 text-white font-medium text-sm py-2.5 rounded-xl transition-colors">
+          Contact for Pro access
         </a>
+        <p class="text-center text-[10px] text-gray-400 mt-2">Also: $0.001/request via x402 micropayments (USDC)</p>
       </div>
 
       <!-- Self-hosted -->
       <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
-        <div class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3" data-i18n="selfhost">Self-hosted</div>
-        <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Free</div>
-        <div class="text-xs text-gray-400 mb-5" data-i18n="selfhost_sub">MIT license · deploy anywhere</div>
+        <div class="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Self-hosted</div>
+        <div class="flex items-baseline gap-1 mb-1">
+          <span class="text-3xl font-bold text-gray-900 dark:text-white">$0</span>
+          <span class="text-sm text-gray-400">/ unlimited</span>
+        </div>
+        <div class="text-xs text-gray-400 mb-5">MIT license · your infrastructure</div>
         <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-          <li class="flex gap-2"><span class="text-green-500">✓</span><strong>Unlimited</strong></li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Full source code</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Add your own adapters</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>No telemetry</li>
-          <li class="flex gap-2"><span class="text-green-500">✓</span>Docker / systemd ready</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span><strong>Unlimited requests</strong></li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Full source code</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Add your own adapters</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>No telemetry</li>
+          <li class="flex gap-2"><span class="text-emerald-500">✓</span>Docker ready</li>
         </ul>
-        <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener noreferrer"
+        <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener"
           onclick="trackOutbound(this.href,'github_pricing')"
-          class="block w-full text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold text-sm py-2.5 rounded-xl transition-colors">
-          View on GitHub →
+          class="block w-full text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium text-sm py-2.5 rounded-xl transition-colors">
+          View on GitHub
         </a>
       </div>
 
     </div>
 
-    <!-- Asterisk disclaimer -->
+    <!-- Fair use + scalability note -->
     <p class="text-center text-xs text-gray-400 dark:text-gray-600 max-w-xl mx-auto">
-      <sup class="text-cyan-500 font-bold">*</sup>
-      <span data-i18n="free_forever_note">"Free for personal use" means Coinnect will never charge for the service tiers above. Rate limits exist to prevent abuse and ensure fair access for everyone.</span>
+      Personal use is free while the service exists. Limits may be adjusted with 90 days notice.
+      Source code is always open source (MIT). <a href="/whitepaper" class="text-cyan-500 hover:underline">Read our scalability approach →</a>
     </p>
 
     <!-- Miguel's personal note -->
