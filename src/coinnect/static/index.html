@@ -66,6 +66,32 @@
   <link rel="stylesheet" href="/static/tailwind.css">
 
   <style>
+    :root {
+      --bg: #ffffff;
+      --bg-surface: #f9fafb;
+      --bg-elevated: #ffffff;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent: #0891b2;
+      --accent-light: #ecfeff;
+      --positive: #059669;
+      --border: #e5e7eb;
+      --radius: 12px;
+    }
+    .dark {
+      --bg: #030712;
+      --bg-surface: #111827;
+      --bg-elevated: #1f2937;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #06b6d4;
+      --accent-light: #164e63;
+      --positive: #10b981;
+      --border: #374151;
+      --radius: 12px;
+    }
     body{font-family:'Inter',system-ui,sans-serif;}
     .gradient-text{background:linear-gradient(135deg,#06b6d4,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
     .btc-text{background:linear-gradient(135deg,#F7931A,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
@@ -156,7 +182,7 @@
 
 <!-- ── Hero: dual audience ────────────────────────────────────────────────── -->
 <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-  <div class="max-w-5xl mx-auto px-5 pt-8 pb-6">
+  <div class="max-w-5xl mx-auto px-5 pt-12 pb-8">
 
     <!-- Headline -->
     <div class="text-center mb-5">
@@ -173,10 +199,17 @@
         <span class="opacity-30">|</span>
         <button onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})" class="hover:text-cyan-500 transition-colors">API &amp; MCP for agents</button>
       </div>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-gray-400">
+        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live rates every 3 min</span>
+        <span>22+ exchanges</span>
+        <span>50+ currencies</span>
+        <span>Free forever</span>
+        <span>Open source</span>
+      </div>
     </div>
 
     <!-- Search form — Material Design inspired -->
-    <div class="bg-white dark:bg-gray-800/60 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600 flex flex-wrap items-center divide-x divide-gray-200 dark:divide-gray-600 max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-gray-800/60 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600 flex flex-col sm:flex-row sm:items-center sm:divide-x divide-gray-200 dark:divide-gray-600 max-w-3xl mx-auto">
       <!-- From -->
       <div class="flex-1 min-w-[120px] px-4 py-3">
         <label class="block text-[10px] text-gray-400 uppercase tracking-wider mb-0.5" data-i18n="label_from">From</label>
@@ -236,7 +269,7 @@
         </select>
       </div>
       <!-- Swap -->
-      <button onclick="swapCurrencies()" title="Swap currencies" class="px-3 py-3 text-gray-300 hover:text-cyan-500 transition-colors" aria-label="Swap from/to">↔</button>
+      <button onclick="swapCurrencies()" title="Swap currencies" class="px-3 py-2 sm:py-3 text-gray-300 hover:text-cyan-500 transition-colors self-center" aria-label="Swap from/to"><span class="sm:hidden">↕</span><span class="hidden sm:inline">↔</span></button>
       <!-- To -->
       <div class="flex-1 min-w-[120px] px-4 py-3">
         <label class="block text-[10px] text-gray-400 uppercase tracking-wider mb-0.5" data-i18n="label_to">To</label>
@@ -397,7 +430,12 @@
     <span class="opacity-30">|</span>
     <span>Open source · <a href="https://github.com/coinnect-dev/coinnect" class="underline">verify</a></span>
   </div>
-  <div id="results"></div>
+  <div id="results">
+    <div id="emptyState" class="text-center py-12 text-gray-400 dark:text-gray-600">
+      <p class="text-sm">Select currencies and amount above, then press Search</p>
+      <p class="text-xs mt-1 opacity-60">We'll compare 22+ exchanges and 19 remittance providers in real time</p>
+    </div>
+  </div>
 
   <!-- History charts (collapsible) -->
   <div id="historyBar" class="hidden mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
