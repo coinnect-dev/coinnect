@@ -1327,3 +1327,4 @@ async def get_binance_p2p_edges() -> list[Edge]:
         return _binance_p2p_cache["edges"]
 
     return edges
+# Bridge edges enabled 2026-03-23T17:10
