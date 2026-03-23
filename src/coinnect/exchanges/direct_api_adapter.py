@@ -49,6 +49,8 @@ _nbg_cache: dict = {"edges": [], "ts": 0.0}
 _boi_cache: dict = {"edges": [], "ts": 0.0}
 _bnr_cache: dict = {"edges": [], "ts": 0.0}
 _cbr_cache: dict = {"edges": [], "ts": 0.0}
+_uphold_cache: dict = {"edges": [], "ts": 0.0}
+_ofx_cache: dict = {"edges": [], "ts": 0.0}
 
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
@@ -79,6 +81,8 @@ NBG_TTL = 3600          # 60 minutes (updates once daily)
 BOI_TTL = 3600          # 60 minutes (updates once daily)
 BNR_TTL = 3600          # 60 minutes (updates once daily)
 CBR_TTL = 3600          # 60 minutes (updates once daily)
+UPHOLD_TTL = 300        # 5 minutes
+OFX_TTL = 300           # 5 minutes
 
 HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
@@ -1831,6 +1835,140 @@ async def get_cbr_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"CBR adapter failed: {e}")
         return _cbr_cache["edges"]
+
+    return edges
+
+
+# ── Uphold ──────────────────────────────────────────────────────────────────
+
+UPHOLD_BASE_CURRENCIES = {"USD", "EUR", "GBP"}
+UPHOLD_FEE = 1.20
+
+
+async def get_uphold_edges() -> list[Edge]:
+    """Fetch live rates from Uphold public ticker API (no auth required)."""
+    now = time.monotonic()
+    if _uphold_cache["edges"] and (now - _uphold_cache["ts"]) < UPHOLD_TTL:
+        return _uphold_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get("https://api.uphold.com/v0/ticker")
+            resp.raise_for_status()
+            data = resp.json()
+
+        for ticker in data:
+            pair = ticker.get("pair", "")
+            if len(pair) < 6:
+                continue
+            # Pair format: "USDMXN" — first 3 chars = base, rest = quote
+            base = pair[:3]
+            quote = pair[3:]
+            if base not in UPHOLD_BASE_CURRENCIES:
+                continue
+            ask = float(ticker.get("ask", 0))
+            bid = float(ticker.get("bid", 0))
+            if not ask or not bid:
+                continue
+
+            # base → quote at ask price
+            edges.append(Edge(
+                from_currency=base,
+                to_currency=quote,
+                via="Uphold",
+                fee_pct=UPHOLD_FEE,
+                estimated_minutes=30,
+                instructions=f"Convert {base} to {quote} on Uphold",
+                exchange_rate=ask,
+            ))
+            # quote → base at 1/bid
+            edges.append(Edge(
+                from_currency=quote,
+                to_currency=base,
+                via="Uphold",
+                fee_pct=UPHOLD_FEE,
+                estimated_minutes=30,
+                instructions=f"Convert {quote} to {base} on Uphold",
+                exchange_rate=1.0 / bid,
+            ))
+
+        _uphold_cache["edges"] = edges
+        _uphold_cache["ts"] = now
+        logger.info(f"Uphold: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"Uphold adapter failed: {e}")
+        return _uphold_cache["edges"]
+
+    return edges
+
+
+# ── OFX ─────────────────────────────────────────────────────────────────────
+
+OFX_FEE = 0.50
+
+
+async def get_ofx_edges() -> list[Edge]:
+    """Fetch live rates from OFX Rates API. Requires OFX_API_KEY env var.
+    Register free at https://developer.ofx.com/rates-api
+    """
+    api_key = os.environ.get("OFX_API_KEY")
+    if not api_key:
+        return []
+
+    now = time.monotonic()
+    if _ofx_cache["edges"] and (now - _ofx_cache["ts"]) < OFX_TTL:
+        return _ofx_cache["edges"]
+
+    edges: list[Edge] = []
+    # OFX corridors to query
+    corridors = [
+        ("USD", "MXN"), ("USD", "EUR"), ("USD", "GBP"),
+        ("USD", "AUD"), ("USD", "CAD"), ("USD", "INR"),
+        ("EUR", "GBP"), ("EUR", "USD"), ("GBP", "USD"),
+    ]
+    try:
+        async with httpx.AsyncClient(
+            headers={**HEADERS, "Authorization": f"Bearer {api_key}"},
+            timeout=15,
+        ) as client:
+            for source, dest in corridors:
+                try:
+                    resp = await client.get(
+                        f"https://api.ofx.com/v1/rates?source={source}&destination={dest}"
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    rate = float(data.get("rate", 0) or data.get("Rate", 0))
+                    if not rate:
+                        continue
+                    edges.append(Edge(
+                        from_currency=source,
+                        to_currency=dest,
+                        via="OFX",
+                        fee_pct=OFX_FEE,
+                        estimated_minutes=1440,
+                        instructions=f"Transfer {source} to {dest} via OFX",
+                        exchange_rate=rate,
+                    ))
+                    edges.append(Edge(
+                        from_currency=dest,
+                        to_currency=source,
+                        via="OFX",
+                        fee_pct=OFX_FEE,
+                        estimated_minutes=1440,
+                        instructions=f"Transfer {dest} to {source} via OFX",
+                        exchange_rate=1.0 / rate,
+                    ))
+                except Exception as inner_e:
+                    logger.warning(f"OFX {source}->{dest} failed: {inner_e}")
+
+        _ofx_cache["edges"] = edges
+        _ofx_cache["ts"] = now
+        logger.info(f"OFX: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"OFX adapter failed: {e}")
+        return _ofx_cache["edges"]
 
     return edges
 # Bridge edges enabled 2026-03-23T17:10

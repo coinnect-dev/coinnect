@@ -839,7 +839,7 @@ function esc(s){if(s==null)return'';const d=document.createElement('div');d.text
 
 // ── Live vs estimated provider badges ─────────────────────────────────────
 // Badge categories
-const LIVE_PROVIDERS=new Set(['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Yellow Card','Buda','Flutterwave','Strike','OKX','Bybit','KuCoin','Gate.io','Bitget','MEXC','HTX','Crypto.com','Bithumb','Bitflyer','BtcTurk','IndependentReserve','WhiteBIT','Exmo','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P (live)']);
+const LIVE_PROVIDERS=new Set(['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Yellow Card','Buda','Flutterwave','Strike','OKX','Bybit','KuCoin','Gate.io','Bitget','MEXC','HTX','Crypto.com','Bithumb','Bitflyer','BtcTurk','IndependentReserve','WhiteBIT','Exmo','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P (live)','Uphold','OFX']);
 const OFFICIAL_COUNTRY=new Set(['BCB PTAX (BR)','TRM (CO)','Blue market (AR)','Official (AR)','Dolar Blue (AR)','MEP (AR)','CCL (AR)','Parallel (LB)','TCMB (TR)','NRB (NP)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)']);
 const REF_PROVIDERS=new Set(['CoinGecko (market)','ECB (reference)','Market rate','Yadio (P2P)','FloatRates']);
 function rateBadge(via){
