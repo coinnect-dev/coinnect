@@ -100,6 +100,9 @@ def _dijkstra(
             continue
 
         for edge in graph.get(curr, []):
+            # Skip if this exchange was already used in the path (no circular routes)
+            if any(e.via == edge.via for e in path):
+                continue
             new_amount = curr_amount * edge.exchange_rate * (1 - edge.fee_pct / 100)
             new_priority = priority + (edge.fee_pct if optimize == "cost" else edge.estimated_minutes)
             counter += 1
