@@ -180,9 +180,18 @@ async def quote(
     if result.routes:
         result.routes = [r for r in result.routes
             if any(s.via not in REFERENCE_PROVIDERS for s in r.steps)]
-        # Re-rank
-        for i, r in enumerate(result.routes):
-            r.rank = i + 1
+        # Re-rank and reassign labels
+        if result.routes:
+            result.routes[0].label = "Cheapest"
+            result.routes[0].rank = 1
+            # Find fastest among remaining
+            fastest = min(result.routes, key=lambda r: r.total_time_minutes)
+            if fastest != result.routes[0]:
+                fastest.label = "Fastest"
+            for i, r in enumerate(result.routes):
+                r.rank = i + 1
+                if r.label not in ("Cheapest", "Fastest"):
+                    r.label = f"Option {i + 1}"
 
     # Compute valid amount range for this corridor
     valid_edges = [e for e in all_edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
