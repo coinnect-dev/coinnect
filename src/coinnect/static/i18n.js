@@ -80,6 +80,7 @@ en:{
   miguel_p1:'This started as my unemployment project. It\'s still maintained by one person — me, Miguel.',
   miguel_p2:'If this grew useful to you and you\'d like to help connect me with a foundation or institution that supports open financial infrastructure, I\'d love to hear from you. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Have a nice day (or night, wherever you are). 🌍',
   miguel_ps:'P.S. — I\'d also love to get involved in a forestry project. I genuinely love nature. If you have a piece of land you\'d like to replant, reach out — let\'s think of a plan to get the resources together. 🌱',
+  step_convert:'Convert {from} to {to} via {via}',step_you_give:'You give: {amount} {currency}',step_you_get:'You get: ≈{amount} {currency}',step_fee:'Fee: {fee}%',step_time:'Time: ≈{time}',
 },
 es:{
   nav_api:'API docs',nav_whitepaper:'Libro blanco',nav_pricing:'Precios',nav_support:'❤️ Apoyar',
@@ -142,6 +143,7 @@ es:{
   miguel_p1:'Esto empezó como mi proyecto durante el desempleo. Lo sigo manteniendo yo solo — soy Miguel.',
   miguel_p2:'Si esto te ha sido útil y quieres ayudarme a conectarme con una fundación o institución que apoye la infraestructura financiera abierta, me encantaría saber de ti. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Que tengas un buen día (o noche, donde estés). 🌍',
   miguel_ps:'P.D. — También me encantaría meterme en algún proyecto forestal. Me encanta la naturaleza. Si tienes un terreno que quieras reforestar, escríbeme — y vemos juntos cómo conseguimos los recursos. 🌱',
+  step_convert:'Convertir {from} a {to} en {via}',step_you_give:'Envías: {amount} {currency}',step_you_get:'Recibes: ≈{amount} {currency}',step_fee:'Comisión: {fee}%',step_time:'Tiempo: ≈{time}',
 },
 pt:{
   nav_api:'API docs',nav_whitepaper:'White paper',nav_pricing:'Preços',nav_support:'❤️ Apoiar',
@@ -203,6 +205,7 @@ pt:{
   miguel_p1:'Isso começou como meu projeto durante o desemprego. Ainda é mantido por uma pessoa — eu, Miguel.',
   miguel_p2:'Se isso foi útil para você e quiser me ajudar a conectar com uma fundação ou instituição que apoie infraestrutura financeira aberta, adoraria ouvir de você. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Tenha um bom dia (ou boa noite, onde quer que esteja). 🌍',
   miguel_ps:'P.S. — Também adoraria me envolver em um projeto florestal. Adoro a natureza. Se você tem um terreno que gostaria de reflorestar, entre em contato — vamos pensar juntos em um plano para conseguir os recursos. 🌱',
+  step_convert:'Converter {from} para {to} via {via}',step_you_give:'Você envia: {amount} {currency}',step_you_get:'Você recebe: ≈{amount} {currency}',step_fee:'Taxa: {fee}%',step_time:'Tempo: ≈{time}',
 },
 fr:{
   nav_api:'Docs API',nav_whitepaper:'Livre blanc',nav_pricing:'Tarifs',nav_support:'❤️ Soutenir',
@@ -264,6 +267,7 @@ fr:{
   miguel_p1:'Cela a commencé comme mon projet pendant ma période de chômage. Il est toujours maintenu par une seule personne — moi, Miguel.',
   miguel_p2:'Si cela vous a été utile et que vous souhaitez m\'aider à entrer en contact avec une fondation ou une institution qui soutient l\'infrastructure financière ouverte, j\'adorerais vous entendre. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Bonne journée (ou bonne nuit, où que vous soyez). 🌍',
   miguel_ps:'P.S. — Je rêve aussi de m\'impliquer dans un projet de reboisement. J\'aime profondément la nature. Si vous avez un terrain que vous souhaitez replanter, contactez-moi — réfléchissons ensemble à la façon d\'obtenir les ressources. 🌱',
+  step_convert:'Convertir {from} en {to} via {via}',step_you_give:'Vous envoyez: {amount} {currency}',step_you_get:'Vous recevez: ≈{amount} {currency}',step_fee:'Frais: {fee}%',step_time:'Durée: ≈{time}',
 },
 ar:{
   nav_api:'توثيق API',nav_whitepaper:'الورقة البيضاء',nav_pricing:'الأسعار',nav_support:'❤️ دعم',
@@ -325,6 +329,7 @@ ar:{
   miguel_p1:'بدأ هذا كمشروعي خلال فترة البطالة. لا يزال يُصان من شخص واحد — أنا، ميغيل.',
   miguel_p2:'إن وجدتَه مفيداً وأردتَ مساعدتي في التواصل مع مؤسسة أو هيئة تدعم البنية التحتية المالية المفتوحة، يسعدني أن أسمع منك. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · أتمنى لك يوماً سعيداً (أو ليلة هنيئة، أينما كنت). 🌍',
   miguel_ps:'ملاحظة — أتمنّى أيضاً الانخراط في مشروع تشجير. أحبّ الطبيعة حقاً. إن كان لديك أرض تودّ زراعتها من جديد، تواصل معي — لنفكّر معاً في كيفية تأمين الموارد اللازمة. 🌱',
+  step_convert:'تحويل {from} إلى {to} عبر {via}',step_you_give:'ترسل: {amount} {currency}',step_you_get:'تستلم: ≈{amount} {currency}',step_fee:'رسوم: {fee}%',step_time:'الوقت: ≈{time}',
 },
 hi:{
   nav_api:'API दस्तावेज़',nav_whitepaper:'श्वेत पत्र',nav_pricing:'मूल्य निर्धारण',nav_support:'❤️ समर्थन करें',
@@ -386,6 +391,7 @@ hi:{
   miguel_p1:'यह मेरे बेरोज़गारी के दौरान शुरू हुआ एक प्रोजेक्ट था। अभी भी एक ही इंसान — मैं, Miguel — इसे चला रहा हूँ।',
   miguel_p2:'अगर यह आपके काम आया और आप किसी फाउंडेशन या संस्था से जोड़ने में मदद करना चाहते हैं, तो मुझे खुशी होगी। <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · अच्छा दिन (या रात) हो, जहाँ भी हो। 🌍',
   miguel_ps:'P.S. — मैं वनीकरण के किसी प्रोजेक्ट में भी शामिल होना चाहूँगा। मुझे सच में प्रकृति से बहुत प्यार है। अगर आपके पास कोई ज़मीन है जिसे आप दोबारा हरा-भरा करना चाहते हैं, तो संपर्क करें। 🌱',
+  step_convert:'{from} को {to} में बदलें {via} के ज़रिए',step_you_give:'आप भेजते हैं: {amount} {currency}',step_you_get:'आपको मिलेगा: ≈{amount} {currency}',step_fee:'शुल्क: {fee}%',step_time:'समय: ≈{time}',
 },
 bn:{
   nav_api:'API ডকস',nav_whitepaper:'শ্বেতপত্র',nav_pricing:'মূল্য',nav_support:'❤️ সমর্থন',
@@ -447,6 +453,7 @@ bn:{
   miguel_p1:'এটি আমার বেকারত্বকালীন প্রকল্প হিসেবে শুরু হয়েছিল। এখনও একজনই এটি চালাচ্ছেন — আমি, Miguel।',
   miguel_p2:'যদি এটি আপনার কাজে লেগেছে এবং আপনি আমাকে কোনো ফাউন্ডেশনের সাথে যোগাযোগ করিয়ে দিতে চান, আমি শুনতে চাইব। <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · ভালো দিন (বা রাত) কাটুক। 🌍',
   miguel_ps:'P.S. — আমি একটি বনায়ন প্রকল্পে জড়িত হতেও ভালোবাসব। যদি আপনার কাছে এমন জমি থাকে যেখানে আবার গাছ লাগাতে চান, যোগাযোগ করুন। 🌱',
+  step_convert:'{from} থেকে {to} তে রূপান্তর করুন {via} এর মাধ্যমে',step_you_give:'আপনি পাঠান: {amount} {currency}',step_you_get:'আপনি পাবেন: ≈{amount} {currency}',step_fee:'ফি: {fee}%',step_time:'সময়: ≈{time}',
 },
 id:{
   nav_api:'Dok API',nav_whitepaper:'Makalah',nav_pricing:'Harga',nav_support:'❤️ Dukung',
@@ -508,6 +515,7 @@ id:{
   miguel_p1:'Ini dimulai sebagai proyek saya saat menganggur. Masih dikelola oleh satu orang — saya, Miguel.',
   miguel_p2:'Jika ini berguna bagi Anda dan ingin membantu menghubungkan saya dengan yayasan yang mendukung infrastruktur keuangan terbuka, saya senang mendengarnya. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Semoga harimu (atau malammu) menyenangkan. 🌍',
   miguel_ps:'P.S. — Saya juga ingin sekali terlibat dalam proyek kehutanan. Saya benar-benar mencintai alam. Jika kamu punya lahan yang ingin dihijaukan, hubungi saya. 🌱',
+  step_convert:'Konversi {from} ke {to} melalui {via}',step_you_give:'Anda kirim: {amount} {currency}',step_you_get:'Anda terima: ≈{amount} {currency}',step_fee:'Biaya: {fee}%',step_time:'Waktu: ≈{time}',
 },
 ja:{
   nav_api:'APIドキュメント',nav_whitepaper:'ホワイトペーパー',nav_pricing:'料金',nav_support:'❤️ サポート',
@@ -569,6 +577,7 @@ ja:{
   miguel_p1:'これは失業中に始めたプロジェクトです。今でも一人で — 私、Miguelが — 管理しています。',
   miguel_p2:'もしこれが役に立ち、オープンな金融インフラを支援する財団につないでいただけるなら、ぜひご連絡ください。 <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · どこにいても、良い一日（または夜）を。 🌍',
   miguel_ps:'P.S. — 森林プロジェクトにも関わりたいと思っています。自然が本当に大好きです。再植林したい土地があれば、ぜひ連絡してください。 🌱',
+  step_convert:'{from}を{to}に変換（{via}経由）',step_you_give:'送金額: {amount} {currency}',step_you_get:'受取額: ≈{amount} {currency}',step_fee:'手数料: {fee}%',step_time:'所要時間: ≈{time}',
 },
 de:{
   nav_api:'API Doku',nav_whitepaper:'Whitepaper',nav_pricing:'Preise',nav_support:'❤️ Unterstützen',
@@ -630,6 +639,7 @@ de:{
   miguel_p1:'Das begann als mein Arbeitslosenprojekt. Es wird immer noch von einer Person gepflegt — mir, Miguel.',
   miguel_p2:'Wenn dies für Sie nützlich war und Sie mir helfen möchten, Kontakt zu einer Stiftung herzustellen, die offene Finanzinfrastruktur unterstützt, würde ich mich freuen, von Ihnen zu hören. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Einen schönen Tag (oder Abend), wo auch immer Sie sind. 🌍',
   miguel_ps:'P.S. — Ich würde mich auch sehr gerne an einem Forstprojekt beteiligen. Ich liebe die Natur wirklich. Wenn du ein Stück Land hast, das du wieder bepflanzen möchtest, melde dich. 🌱',
+  step_convert:'{from} in {to} umwandeln über {via}',step_you_give:'Sie senden: {amount} {currency}',step_you_get:'Sie erhalten: ≈{amount} {currency}',step_fee:'Gebühr: {fee}%',step_time:'Dauer: ≈{time}',
 },
 tl:{
   nav_api:'API docs',nav_whitepaper:'Whitepaper',nav_pricing:'Presyo',nav_support:'❤️ Suportahan',
@@ -691,6 +701,7 @@ tl:{
   miguel_p1:'Nagsimula ito bilang aking proyekto noong nawalan ako ng trabaho. Isinasapanatili pa rin ito ng isang tao — ako, si Miguel.',
   miguel_p2:'Kung nakatulong ito at gusto mong tulungan akong makakonekta sa isang pundasyon na sumusuporta sa bukas na imprastraktura sa pananalapi, gustong-gusto kong marinig ka. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Magandang araw (o gabi), saan ka man naroroon. 🌍',
   miguel_ps:'P.S. — Gusto ko ring lubos na makisali sa isang proyektong pangkagubatan. Talagang mahal ko ang kalikasan. Kung mayroon kang lupang gustong muling itaniman, makipag-ugnayan sa akin. 🌱',
+  step_convert:'I-convert ang {from} sa {to} sa pamamagitan ng {via}',step_you_give:'Ipapadala mo: {amount} {currency}',step_you_get:'Matatanggap mo: ≈{amount} {currency}',step_fee:'Bayad: {fee}%',step_time:'Oras: ≈{time}',
 },
 vi:{
   nav_api:'Tài liệu API',nav_whitepaper:'Sách trắng',nav_pricing:'Bảng giá',nav_support:'❤️ Ủng hộ',
@@ -752,6 +763,7 @@ vi:{
   miguel_p1:'Dự án này bắt đầu khi tôi thất nghiệp. Vẫn do một người duy trì — tôi, Miguel.',
   miguel_p2:'Nếu điều này hữu ích và bạn muốn giúp kết nối tôi với một quỹ hỗ trợ cơ sở hạ tầng tài chính mở, tôi rất muốn nghe từ bạn. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Chúc một ngày (hoặc đêm) tốt lành, dù bạn ở đâu. 🌍',
   miguel_ps:'P.S. — Tôi cũng rất muốn tham gia một dự án lâm nghiệp. Tôi thực sự yêu thiên nhiên. Nếu bạn có mảnh đất muốn trồng lại cây, hãy liên hệ. 🌱',
+  step_convert:'Chuyển đổi {from} sang {to} qua {via}',step_you_give:'Bạn gửi: {amount} {currency}',step_you_get:'Bạn nhận: ≈{amount} {currency}',step_fee:'Phí: {fee}%',step_time:'Thời gian: ≈{time}',
 },
 th:{
   nav_api:'เอกสาร API',nav_whitepaper:'เอกสารสีขาว',nav_pricing:'ราคา',nav_support:'❤️ สนับสนุน',
@@ -813,6 +825,7 @@ th:{
   miguel_p1:'โปรเจ็กต์นี้เริ่มต้นจากช่วงที่ฉันตกงาน ยังคงดูแลโดยคนเดียว — ฉัน Miguel',
   miguel_p2:'ถ้าสิ่งนี้เป็นประโยชน์และคุณอยากช่วยเชื่อมฉันกับมูลนิธิที่สนับสนุนโครงสร้างพื้นฐานทางการเงินแบบเปิด ยินดีรับฟัง <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · ขอให้มีวันดี ไม่ว่าจะอยู่ที่ไหน 🌍',
   miguel_ps:'P.S. — ฉันอยากมีส่วนร่วมในโครงการด้านป่าไม้ด้วย ฉันรักธรรมชาติอย่างจริงใจ ถ้าคุณมีที่ดินที่อยากปลูกต้นไม้ใหม่ ติดต่อมาได้เลย 🌱',
+  step_convert:'แปลง {from} เป็น {to} ผ่าน {via}',step_you_give:'คุณส่ง: {amount} {currency}',step_you_get:'คุณได้รับ: ≈{amount} {currency}',step_fee:'ค่าธรรมเนียม: {fee}%',step_time:'เวลา: ≈{time}',
 },
 sw:{
   nav_api:'Nyaraka za API',nav_whitepaper:'Karatasi nyeupe',nav_pricing:'Bei',nav_support:'❤️ Saidia',
@@ -874,6 +887,7 @@ sw:{
   miguel_p1:'Hii ilianza kama mradi wangu wakati wa ukosefu wa kazi. Bado inadumishwa na mtu mmoja — mimi, Miguel.',
   miguel_p2:'Ikiwa imekusaidia na ungependa kunisaidia kuunganika na msingi unaounga mkono miundombinu ya fedha wazi, ningefurahi kusikia kutoka kwako. <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · Siku njema (au usiku mwema), popote ulipo. 🌍',
   miguel_ps:'P.S. — Ningependa pia kushiriki katika mradi wa misitu. Napenda sana asili. Kama una kipande cha ardhi unachotaka kupanda miti tena, nipigie. 🌱',
+  step_convert:'Badilisha {from} kuwa {to} kupitia {via}',step_you_give:'Unatuma: {amount} {currency}',step_you_get:'Unapokea: ≈{amount} {currency}',step_fee:'Ada: {fee}%',step_time:'Muda: ≈{time}',
 },
 ur:{
   nav_api:'API دستاویزات',nav_whitepaper:'وائٹ پیپر',nav_pricing:'قیمتیں',nav_support:'❤️ مدد کریں',
@@ -935,6 +949,7 @@ ur:{
   miguel_p1:'یہ میرے بے روزگاری کے دوران شروع ہوا منصوبہ تھا۔ ابھی بھی ایک ہی شخص اسے چلا رہا ہے — میں، Miguel۔',
   miguel_p2:'اگر یہ آپ کے لیے مفید ثابت ہوا اور آپ مجھے کسی فاؤنڈیشن سے ملوانا چاہتے ہیں جو کھلے مالی ڈھانچے کی حمایت کرتا ہو، تو مجھے خوشی ہوگی۔ <a href="mailto:miguel@coinnect.bot" class="text-cyan-500 hover:underline">miguel@coinnect.bot</a> · اچھا دن (یا رات) ہو، جہاں بھی ہوں۔ 🌍',
   miguel_ps:'P.S. — میں جنگلاتی منصوبے میں بھی شامل ہونا چاہوں گا۔ مجھے فطرت سے سچ میں بہت محبت ہے۔ اگر آپ کے پاس ایسی زمین ہے جسے آپ دوبارہ سرسبز کرنا چاہتے ہیں، رابطہ کریں۔ 🌱',
+  step_convert:'{from} کو {to} میں تبدیل کریں {via} کے ذریعے',step_you_give:'آپ بھیجتے ہیں: {amount} {currency}',step_you_get:'آپ کو ملے گا: ≈{amount} {currency}',step_fee:'فیس: {fee}%',step_time:'وقت: ≈{time}',
 },
 };
 

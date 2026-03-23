@@ -71,6 +71,7 @@ class StepOut(BaseModel):
     fee_pct: float
     estimated_minutes: int
     instructions: str
+    exchange_rate: float = 1.0
     min_amount: float | None = None
     max_amount: float | None = None
 

@@ -1509,22 +1509,33 @@ function renderReqs(steps,to){
 
 function renderSteps(steps,to){
   const classes=classifySteps(steps,to);
+  let runningAmount=parseFloat(document.getElementById('amount').value)||500;
   return steps.map((s,i)=>{
     const isSender=classes[i]==='sender';
     const circleClass=isSender?'bg-blue-100 dark:bg-blue-950/70 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-300':'bg-violet-100 dark:bg-violet-950/70 border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-300';
     const badge=isSender?`<span class="text-[10px] font-semibold text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded px-1 py-px">${t('sender_badge')}</span>`:`<span class="text-[10px] font-semibold text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-800 rounded px-1 py-px">${t('recipient_badge')}</span>`;
+    // Intermediate amount tracking
+    const hasRate=s.exchange_rate&&s.exchange_rate!==1.0;
+    const giveAmount=runningAmount;
+    const giveCurrency=s.from_currency;
+    const getAmount=hasRate?giveAmount*s.exchange_rate*(1-s.fee_pct/100):null;
+    const getCurrency=s.to_currency;
+    if(getAmount!==null)runningAmount=getAmount;
+    // Translated amount strings
+    const amountLine=hasRate?`<div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${t('step_you_give').replace('{amount}',fmtNum(giveAmount,giveCurrency)).replace('{currency}',giveCurrency)} → ${t('step_you_get').replace('{amount}',fmtNum(getAmount,getCurrency)).replace('{currency}',getCurrency)}</div>`:'';
+    const feeTimeLine=`<span class="text-xs text-gray-400">${t('step_fee').replace('{fee}',s.fee_pct)} · ${t('step_time').replace('{time}',fmtTime(s.estimated_minutes))}</span>`;
     return`
     <div class="step-line relative pl-8 pb-3">
       <div class="absolute left-0 top-1 w-6 h-6 rounded-full ${circleClass} border flex items-center justify-center text-xs font-bold">${s.step}</div>
       <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
         <span class="font-mono text-sm text-gray-900 dark:text-white">${flag(s.from_currency)} ${s.from_currency} → ${flag(s.to_currency)} ${s.to_currency}</span>
-        <span class="text-xs text-gray-400">via</span>
+        <span class="text-xs text-gray-400">${t('via_word')}</span>
         ${PROVIDER_URL[s.via]?`<a href="${PROVIDER_URL[s.via]}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 hover:opacity-75 transition-opacity">${exchangeLogo(s.via,12)}${s.via}</a>`:`<span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5">${exchangeLogo(s.via,12)}${s.via}</span>`}
-        <span class="text-xs text-gray-400">${s.fee_pct}% · ${fmtTime(s.estimated_minutes)}</span>
+        ${feeTimeLine}
         ${s.instructions&&s.instructions.includes('~est.')?'<span class="text-[10px] font-semibold text-amber-500 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded px-1 py-px">~est.</span>':''}
         ${badge}
       </div>
-      <div class="text-xs text-gray-400 dark:text-gray-500">${s.instructions}</div>
+      ${amountLine}
     </div>`;
   }).join('');
 }
