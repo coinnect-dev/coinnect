@@ -212,14 +212,12 @@ async def quote(
     # 3. At least one step uses a non-reference provider
     # Reference providers may appear as MIDDLE steps in multi-hop routes.
     if result.routes:
-        # Reference providers can ONLY appear as middle steps, NEVER as first or last.
-        # First step = where YOU send money FROM. Must be a real service.
-        # Last step = where RECIPIENT receives money. Must be a real service.
-        # Middle steps = can use reference rates for FX conversion (bridge).
+        # Reference providers are pure data — they are NOT wallets, NOT services.
+        # They cannot appear in ANY step of a user-facing route.
+        # They only exist internally to help the router bridge exotic FX pairs.
+        # After routing, ALL routes containing reference steps are removed.
         result.routes = [r for r in result.routes
-            if (not _is_reference_provider(r.steps[0].via)
-                and not _is_reference_provider(r.steps[-1].via)
-                and any(not _is_reference_provider(s.via) for s in r.steps)
+            if (all(not _is_reference_provider(s.via) for s in r.steps)
                 and r.they_receive > amount * 0.01)]  # sanity: receive > 1% of send
         # Re-rank and reassign labels
         if result.routes:
