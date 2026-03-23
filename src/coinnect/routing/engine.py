@@ -71,7 +71,7 @@ def _dijkstra(
     amount: float,
     optimize: str = "cost",  # "cost" or "time"
     max_routes: int = 5,
-    max_steps: int = 3,
+    max_steps: int = 4,
 ) -> list[tuple[float, float, list[Edge]]]:
     """Single Dijkstra run optimizing by cost or time."""
     counter = 0
@@ -121,7 +121,7 @@ def find_routes(
     end: str,
     amount: float,
     max_routes: int = 30,
-    max_steps: int = 3,
+    max_steps: int = 4,
 ) -> list[tuple[float, float, list[Edge]]]:
     """
     Find diverse routes — collects ALL direct single-step routes, then uses
