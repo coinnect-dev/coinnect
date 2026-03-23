@@ -78,10 +78,17 @@
     .loading-dot:nth-child(3){animation-delay:.4s;}
     details>summary{list-style:none;cursor:pointer;}
     details>summary::-webkit-details-marker{display:none;}
-    .filter-btn.active{background:rgb(6 182 212/0.15);border-color:rgb(6 182 212/0.6);color:#06b6d4;}
+    .filter-btn{border-bottom:2px solid transparent;}
+    .filter-btn.active{border-bottom:2px solid #06b6d4;color:#06b6d4;background:transparent !important;}
     .hist-period.active{background:rgb(6 182 212/0.15);border-color:rgb(6 182 212/0.6);color:#06b6d4;}
     /* Sparkline */
     .sparkline-svg{overflow:visible;}
+    .chart-wrap{position:relative;}
+    .chart-overlay{position:absolute;inset:0;z-index:2;cursor:crosshair;}
+    .chart-tip{position:absolute;top:-18px;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;white-space:nowrap;pointer-events:none;z-index:3;}
+    .chart-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.3);pointer-events:none;z-index:3;}
+    .dark .chart-line{background:rgba(255,255,255,.3);}
+    .chart-line{background:rgba(0,0,0,.2);}
     /* Hero tabs */
     .audience-tab{transition:all .2s;}
     .audience-tab.active{background:rgb(6 182 212/0.12);border-color:#06b6d4;color:#06b6d4;}
@@ -386,6 +393,16 @@
     </table>
   </div>
 
+  <div id="trustBar" class="hidden flex items-center gap-4 mb-3 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-[11px] text-gray-500 dark:text-gray-400">
+    <span class="flex items-center gap-1.5">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+      <span id="trustAge">Live rates</span>
+    </span>
+    <span class="opacity-30">|</span>
+    <span id="trustCount"></span>
+    <span class="opacity-30">|</span>
+    <span>Open source · <a href="https://github.com/coinnect-dev/coinnect" class="underline">verify</a></span>
+  </div>
   <div id="results"></div>
 
   </div><!-- end LEFT results column -->
@@ -1225,6 +1242,27 @@ function applyFilter(routes){
 // ── History charts ──────────────────────────────────────────────────────────
 let _histFrom='',_histTo='',_histMinutes=15;
 
+function chartHover(e,container,rates,W,H,minR,range,label){
+  const rect=container.getBoundingClientRect();
+  const x=e.clientX-rect.left;
+  const idx=Math.round((x/rect.width)*(rates.length-1));
+  const val=rates[Math.max(0,Math.min(idx,rates.length-1))];
+  const tooltip=container.querySelector('.chart-tip');
+  const line=container.querySelector('.chart-line');
+  if(!tooltip||!line)return;
+  tooltip.classList.remove('hidden');
+  line.classList.remove('hidden');
+  tooltip.style.left=x+'px';
+  line.style.left=x+'px';
+  const fmt=v=>v>=1000?Math.round(v).toLocaleString('en'):v>=1?v.toFixed(4):v.toFixed(6);
+  tooltip.textContent=fmt(val)+' '+label;
+}
+function chartLeave(container){
+  const t=container.querySelector('.chart-tip');
+  const l=container.querySelector('.chart-line');
+  if(t)t.classList.add('hidden');
+  if(l)l.classList.add('hidden');
+}
 function renderChart(wrapId,labelId,statsId,points,amount,fromC,toC,gradId){
   const wrap=document.getElementById(wrapId);
   const label=document.getElementById(labelId);
@@ -1238,7 +1276,9 @@ function renderChart(wrapId,labelId,statsId,points,amount,fromC,toC,gradId){
   // Rate = they_receive / amount (how much toC per 1 fromC)
   const rates=points.map(p=>p.they_receive/(amount||1));
   const minR=Math.min(...rates),maxR=Math.max(...rates);
-  const range=maxR-minR||maxR*0.001||0.01;
+  const rawRange=maxR-minR;
+  const minVisualRange=maxR*0.02;
+  const range=Math.max(rawRange,minVisualRange)||0.01;
 
   const W=wrap.clientWidth||500,H=128;
   const px=(i)=>i/(rates.length-1)*W;
@@ -1249,18 +1289,24 @@ function renderChart(wrapId,labelId,statsId,points,amount,fromC,toC,gradId){
   const isUp=rates.length>3&&latest>rates[rates.length-4];
   const col=isUp?'#22c55e':'#f59e0b';
 
+  const chartLabel=`${fromC}/${toC}`;
   wrap.innerHTML=`
-    <svg class="sparkline-svg w-full" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${col}" stop-opacity="0.25"/>
-          <stop offset="100%" stop-color="${col}" stop-opacity="0.01"/>
-        </linearGradient>
-      </defs>
-      <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/>
-      <polyline points="0,${H} ${pts} ${W},${H}" fill="url(#${gradId})" stroke="none"/>
-      <circle cx="${px(rates.length-1)}" cy="${py(latest)}" r="3" fill="${col}"/>
-    </svg>`;
+    <div class="chart-wrap">
+      <svg class="sparkline-svg w-full" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${col}" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="${col}" stop-opacity="0.01"/>
+          </linearGradient>
+        </defs>
+        <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round"/>
+        <polyline points="0,${H} ${pts} ${W},${H}" fill="url(#${gradId})" stroke="none"/>
+        <circle cx="${px(rates.length-1)}" cy="${py(latest)}" r="3" fill="${col}"/>
+      </svg>
+      <div class="chart-overlay" onmousemove="chartHover(event,this.parentElement,${JSON.stringify(rates)},${W},${H},${minR},${range},'${toC}')" onmouseleave="chartLeave(this.parentElement)"></div>
+      <div class="chart-tip hidden"></div>
+      <div class="chart-line hidden"></div>
+    </div>`;
 
   // Currency symbols
   const SYM={USD:'$',EUR:'€',GBP:'£',MXN:'$',BRL:'R$',COP:'$',ARS:'$',
@@ -1750,6 +1796,13 @@ async function getQuote(){
     document.getElementById('routeCount').textContent=`${_allRoutes.length} routes`;
     renderResults(_allRoutes,from,to);
     if(_activeView==='table')renderTable(_allRoutes,from,to);
+
+    const trustBar=document.getElementById('trustBar');
+    if(trustBar){
+      trustBar.classList.remove('hidden');
+      const liveCount=_allRoutes.filter(r=>r.steps.some(s=>LIVE_PROVIDERS.has(s.via))).length;
+      document.getElementById('trustCount').textContent=liveCount+' live \u00b7 '+(_allRoutes.length-liveCount)+' estimated';
+    }
 
     // Track search completion
     const bestRoute=_allRoutes.length?_allRoutes.reduce((a,b)=>a.total_cost_pct<b.total_cost_pct?a:b):null;
