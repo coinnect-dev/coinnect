@@ -219,6 +219,35 @@ from coinnect.x402_middleware import X402Middleware
 app.add_middleware(X402Middleware)
 
 
+GA4_SNIPPET = """<script>
+if(!localStorage.getItem('ga_optout')){
+  var s=document.createElement('script');s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id=G-CKBJHEVM2X';
+  document.head.appendChild(s);
+  window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+  window.gtag=gtag;gtag('js',new Date());gtag('config','G-CKBJHEVM2X');
+}
+</script></head>"""
+
+
+@app.middleware("http")
+async def inject_ga4(request: Request, call_next):
+    """Inject GA4 tracking into all server-rendered HTML pages."""
+    response = await call_next(request)
+    if (response.headers.get("content-type", "").startswith("text/html")
+        and hasattr(response, "body")):
+        try:
+            body = response.body.decode("utf-8")
+            if "</head>" in body and "googletagmanager" not in body:
+                body = body.replace("</head>", GA4_SNIPPET)
+                from fastapi.responses import HTMLResponse
+                return HTMLResponse(content=body, status_code=response.status_code,
+                                    headers=dict(response.headers))
+        except Exception:
+            pass
+    return response
+
+
 @app.middleware("http")
 async def handle_head_requests(request: Request, call_next):
     """Convert HEAD requests to GET — UptimeRobot and similar tools use HEAD."""
