@@ -64,7 +64,7 @@ As of 2026, AI agents are beginning to make financial decisions autonomously. Th
 
 Coinnect aggregates real-time pricing from exchanges, calculates all viable routes, and returns them ranked by total cost and time — with no preference for any provider.
 
-**Input:** "I want to send 500 USD to Nigeria."
+**Input:** "I want to send 50,000 INR to the UK."
 
 **Output:**
 ```json
@@ -72,15 +72,16 @@ Coinnect aggregates real-time pricing from exchanges, calculates all viable rout
   "routes": [{
     "rank": 1,
     "label": "Cheapest",
-    "total_cost_pct": 1.4,
+    "total_cost_pct": 0.76,
     "total_time_minutes": 60,
     "steps": [
-      {"from": "USD",  "to": "USDC", "via": "Kraken",      "fee_pct": 0.5},
-      {"from": "USDC", "to": "NGN",  "via": "Yellow Card", "fee_pct": 0.9}
+      {"from": "INR",  "to": "USDT", "via": "CoinDCX",  "fee_pct": 0.5},
+      {"from": "USDT", "to": "BTC",  "via": "MEXC",     "fee_pct": 0.1},
+      {"from": "BTC",  "to": "GBP",  "via": "Kraken",   "fee_pct": 0.16}
     ],
-    "you_send": 500.00,
-    "they_receive": 762450,
-    "they_receive_currency": "NGN"
+    "you_send": 50000,
+    "they_receive": 397,
+    "they_receive_currency": "GBP"
   }]
 }
 ```
@@ -102,7 +103,7 @@ Coinnect is the router for money. It doesn't touch the transfer. It finds the pa
 **For machines:** Public REST API returning JSON. Any AI agent or automated system can query Coinnect as a tool.
 
 ```
-GET https://coinnect.bot/v1/quote?from=USD&to=NGN&amount=500
+GET https://coinnect.bot/v1/quote?from=INR&to=GBP&amount=50000
 ```
 
 **For agents (MCP):** A Model Context Protocol server exposes three tools — `coinnect_quote`, `coinnect_corridors`, `coinnect_explain_route` — compatible with Claude Code, Claude Desktop, and any MCP client.
@@ -134,15 +135,15 @@ The engine models the global money transfer landscape as a **weighted directed g
 | Type | Source | Fee | Badge | Example |
 |------|--------|-----|-------|---------|
 | **Live exchange** | CCXT order book, Wise API | Real bid/ask spread | LIVE | Binance BTC→MXN at 0.12% |
-| **Estimated provider** | Published fee tables | Static % | ESTIMATED | Remitly USD→NGN at ~3.5% |
+| **Estimated provider** | Published fee tables | Static % | ESTIMATED | Wise INR→GBP at ~2.8% |
 | **Market rate bridge** | FX reference APIs | ~0.5% spread | ESTIMATED | USD→ETB via CurrencyAPI |
-| **P2P market** | Binance P2P, Yadio | Median of offers | LIVE/REFERENCE | USDT→NGN at 0.3% |
+| **P2P market** | Binance P2P, Yadio | Median of offers | LIVE/REFERENCE | USDT→PHP at 0.3% |
 
 #### How paths are found
 
 Two-phase approach:
 1. **Direct routes** — all single-step provider edges for the corridor, ranked by cost.
-2. **Multi-hop routes** — two Dijkstra passes (cost-optimized, time-optimized) find paths up to **4 hops**, like: ZAR → BTC (VALR, 0.75%) → NGN (Binance, 0.12%) = 0.87% total — **75% cheaper** than a direct Remitly transfer at 3.5%.
+2. **Multi-hop routes** — two Dijkstra passes (cost-optimized, time-optimized) find paths up to **4 hops**, like: INR → USDT (CoinDCX, 0.5%) → BTC (MEXC, 0.1%) → GBP (Kraken, 0.16%) = 0.76% total — **73% cheaper** than a direct Wise transfer at 2.8%.
 
 #### Bridge edges
 
@@ -250,12 +251,12 @@ The x402 protocol solves this. It extends HTTP with a payment layer: instead of 
 ### 4.2 How it works
 
 ```
-Agent → GET /v1/quote?from=USD&to=NGN&amount=500
+Agent → GET /v1/quote?from=INR&to=GBP&amount=50000
 Server ← 402 Payment Required
          X-Payment-Required: {amount: "0.002", currency: "USDC", network: "base",
                                recipient: "0xf0813041b9b017a88f28B8600E73a695E2B02e0A",
                                description: "Coinnect quote — 1 request"}
-Agent → GET /v1/quote?from=USD&to=NGN&amount=500
+Agent → GET /v1/quote?from=INR&to=GBP&amount=50000
          X-Payment: <signed USDC Base transaction>
 Server ← 200 OK + route data
 ```
