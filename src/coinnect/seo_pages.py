@@ -142,6 +142,51 @@ COUNTRY_DATA: dict[str, dict[str, Any]] = {
         "inbound": [("USD", "ZAR"), ("GBP", "ZAR")],
         "outbound": [("ZAR", "USD")],
     },
+    "hong-kong": {
+        "name": "Hong Kong", "currency": "HKD", "flag": "HK",
+        "inbound": [("USD", "HKD"), ("GBP", "HKD"), ("EUR", "HKD")],
+        "outbound": [("HKD", "USD"), ("HKD", "EUR")],
+    },
+    "singapore": {
+        "name": "Singapore", "currency": "SGD", "flag": "SG",
+        "inbound": [("USD", "SGD"), ("GBP", "SGD"), ("AUD", "SGD")],
+        "outbound": [("SGD", "USD"), ("SGD", "INR"), ("SGD", "PHP")],
+    },
+    "indonesia": {
+        "name": "Indonesia", "currency": "IDR", "flag": "ID",
+        "inbound": [("USD", "IDR"), ("SGD", "IDR")],
+        "outbound": [("IDR", "USD")],
+    },
+    "thailand": {
+        "name": "Thailand", "currency": "THB", "flag": "TH",
+        "inbound": [("USD", "THB"), ("GBP", "THB")],
+        "outbound": [("THB", "USD")],
+    },
+    "vietnam": {
+        "name": "Vietnam", "currency": "VND", "flag": "VN",
+        "inbound": [("USD", "VND"), ("EUR", "VND")],
+        "outbound": [("VND", "USD")],
+    },
+    "australia": {
+        "name": "Australia", "currency": "AUD", "flag": "AU",
+        "inbound": [("USD", "AUD"), ("GBP", "AUD")],
+        "outbound": [("AUD", "USD"), ("AUD", "INR"), ("AUD", "PHP")],
+    },
+    "chile": {
+        "name": "Chile", "currency": "CLP", "flag": "CL",
+        "inbound": [("USD", "CLP"), ("EUR", "CLP")],
+        "outbound": [("CLP", "USD")],
+    },
+    "peru": {
+        "name": "Peru", "currency": "PEN", "flag": "PE",
+        "inbound": [("USD", "PEN"), ("EUR", "PEN")],
+        "outbound": [("PEN", "USD")],
+    },
+    "egypt": {
+        "name": "Egypt", "currency": "EGP", "flag": "EG",
+        "inbound": [("USD", "EGP"), ("EUR", "EGP"), ("GBP", "EGP")],
+        "outbound": [],
+    },
 }
 
 # ── Currency display names ────────────────────────────────────────────────────
@@ -152,6 +197,9 @@ CURRENCY_NAMES: dict[str, str] = {
     "INR": "Indian Rupee", "PHP": "Philippine Peso", "NGN": "Nigerian Naira",
     "COP": "Colombian Peso", "PKR": "Pakistani Rupee", "BDT": "Bangladeshi Taka",
     "KES": "Kenyan Shilling", "GHS": "Ghanaian Cedi", "TRY": "Turkish Lira",
+    "HKD": "Hong Kong Dollar", "SGD": "Singapore Dollar", "IDR": "Indonesian Rupiah",
+    "THB": "Thai Baht", "VND": "Vietnamese Dong", "AUD": "Australian Dollar",
+    "CLP": "Chilean Peso", "PEN": "Peruvian Sol", "EGP": "Egyptian Pound",
     "ARS": "Argentine Peso", "JPY": "Japanese Yen", "ZAR": "South African Rand",
 }
 
