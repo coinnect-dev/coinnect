@@ -196,6 +196,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# x402 micropayment middleware (USDC on Base L2)
+from coinnect.x402_middleware import X402Middleware
+app.add_middleware(X402Middleware)
+
 
 @app.middleware("http")
 async def handle_head_requests(request: Request, call_next):
