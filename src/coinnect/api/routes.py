@@ -193,7 +193,7 @@ async def quote(
         # After routing, ALL routes containing reference steps are removed.
         result.routes = [r for r in result.routes
             if (all(not _is_reference_provider(s.via) for s in r.steps)
-                and r.they_receive > amount * 0.01)]  # sanity: receive > 1% of send
+                and r.they_receive > 0)]  # sanity: must receive something
         # Re-rank and reassign labels
         if result.routes:
             result.routes[0].label = "Cheapest"
