@@ -192,9 +192,18 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://coinnect.bot", "http://localhost:8100"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "HEAD"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def handle_head_requests(request: Request, call_next):
+    """Convert HEAD requests to GET — UptimeRobot and similar tools use HEAD."""
+    if request.method == "HEAD":
+        request._method = "GET"
+        request.scope["method"] = "GET"
+    return await call_next(request)
 
 
 @app.middleware("http")
