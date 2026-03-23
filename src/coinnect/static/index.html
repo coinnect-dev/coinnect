@@ -830,7 +830,7 @@ function esc(s){if(s==null)return'';const d=document.createElement('div');d.text
 // ── Live vs estimated provider badges ─────────────────────────────────────
 // Badge categories
 const LIVE_PROVIDERS=new Set(['Binance','Kraken','Coinbase','Bitso','Luno','Bitstamp','Gemini','Wise','Yellow Card','Buda','Flutterwave','Strike','OKX','Bybit','KuCoin','Gate.io','Bitget','MEXC','HTX','Crypto.com','Bithumb','Bitflyer','BtcTurk','IndependentReserve','WhiteBIT','Exmo','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P (live)']);
-const OFFICIAL_COUNTRY=new Set(['BCB PTAX (BR)','TRM (CO)','Blue market (AR)','Official (AR)','Dolar Blue (AR)','MEP (AR)','CCL (AR)','Parallel (LB)']);
+const OFFICIAL_COUNTRY=new Set(['BCB PTAX (BR)','TRM (CO)','Blue market (AR)','Official (AR)','Dolar Blue (AR)','MEP (AR)','CCL (AR)','Parallel (LB)','TCMB (TR)','NRB (NP)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)','CBR (RU)']);
 const REF_PROVIDERS=new Set(['CoinGecko (market)','ECB (reference)','Market rate','Yadio (P2P)','FloatRates']);
 function rateBadge(via){
   if(LIVE_PROVIDERS.has(via))return'<span class="inline-block ml-1 px-1 py-0.5 rounded text-[9px] font-bold leading-none bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">LIVE ~3m</span>';

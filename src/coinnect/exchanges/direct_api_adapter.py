@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
 import httpx
@@ -39,6 +40,15 @@ _wazirx_cache: dict = {"edges": [], "ts": 0.0}
 _satoshitango_cache: dict = {"edges": [], "ts": 0.0}
 _floatrates_cache: dict = {"edges": [], "ts": 0.0}
 _binance_p2p_cache: dict = {"edges": [], "ts": 0.0}
+_tcmb_cache: dict = {"edges": [], "ts": 0.0}
+_nrb_cache: dict = {"edges": [], "ts": 0.0}
+_nbp_cache: dict = {"edges": [], "ts": 0.0}
+_cnb_cache: dict = {"edges": [], "ts": 0.0}
+_nbu_cache: dict = {"edges": [], "ts": 0.0}
+_nbg_cache: dict = {"edges": [], "ts": 0.0}
+_boi_cache: dict = {"edges": [], "ts": 0.0}
+_bnr_cache: dict = {"edges": [], "ts": 0.0}
+_cbr_cache: dict = {"edges": [], "ts": 0.0}
 
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
@@ -60,6 +70,15 @@ WAZIRX_TTL = 180        # 3 minutes
 SATOSHITANGO_TTL = 300  # 5 minutes
 FLOATRATES_TTL = 3600   # 60 minutes (daily data)
 BINANCE_P2P_TTL = 300   # 5 minutes
+TCMB_TTL = 3600         # 60 minutes (updates once daily)
+NRB_TTL = 3600          # 60 minutes (updates once daily)
+NBP_TTL = 3600          # 60 minutes (updates once daily)
+CNB_TTL = 3600          # 60 minutes (updates once daily)
+NBU_TTL = 3600          # 60 minutes (updates once daily)
+NBG_TTL = 3600          # 60 minutes (updates once daily)
+BOI_TTL = 3600          # 60 minutes (updates once daily)
+BNR_TTL = 3600          # 60 minutes (updates once daily)
+CBR_TTL = 3600          # 60 minutes (updates once daily)
 
 HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
@@ -1325,6 +1344,493 @@ async def get_binance_p2p_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"Binance P2P adapter failed: {e}")
         return _binance_p2p_cache["edges"]
+
+    return edges
+
+
+# ── TCMB (Turkey Central Bank) ─────────────────────────────────────────────
+
+
+async def get_tcmb_edges() -> list[Edge]:
+    """Fetch official USD/TRY rate from Turkey Central Bank XML feed."""
+    now = time.monotonic()
+    if _tcmb_cache["edges"] and (now - _tcmb_cache["ts"]) < TCMB_TTL:
+        return _tcmb_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get("https://www.tcmb.gov.tr/kurlar/today.xml")
+            resp.raise_for_status()
+
+        root = ET.fromstring(resp.text)
+        # XML structure: <Tarih_Date> > <Currency CurrencyCode="USD"> > <ForexSelling>
+        for currency in root.findall(".//Currency"):
+            code = currency.get("CurrencyCode", "")
+            if code != "USD":
+                continue
+            forex_selling = currency.findtext("ForexSelling")
+            if forex_selling:
+                rate = float(forex_selling.replace(",", "."))
+                if rate > 0:
+                    edges.append(Edge(
+                        from_currency="USD",
+                        to_currency="TRY",
+                        via="TCMB (TR)",
+                        fee_pct=0.0,
+                        estimated_minutes=0,
+                        instructions="Turkish Central Bank official rate — reference only",
+                        exchange_rate=rate,
+                    ))
+                    break
+
+        _tcmb_cache["edges"] = edges
+        _tcmb_cache["ts"] = now
+        logger.info(f"TCMB: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"TCMB adapter failed: {e}")
+        return _tcmb_cache["edges"]
+
+    return edges
+
+
+# ── NRB (Nepal Rastra Bank) ────────────────────────────────────────────────
+
+
+async def get_nrb_edges() -> list[Edge]:
+    """Fetch official USD/NPR rate from Nepal Rastra Bank JSON API."""
+    now = time.monotonic()
+    if _nrb_cache["edges"] and (now - _nrb_cache["ts"]) < NRB_TTL:
+        return _nrb_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get(
+                "https://www.nrb.org.np/api/forex/v1/rates",
+                params={"per_page": 5, "page": 1},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        usd_rate = None
+
+        # Deep-search for USD rate in any nested structure
+        def _find_usd_rate(obj, depth=0):
+            """Recursively search for USD exchange rate in nested JSON."""
+            if depth > 5:
+                return None
+            if isinstance(obj, dict):
+                # Check if this dict itself is a USD rate entry
+                for key in ("iso3", "code", "currency_code", "charCode", "cc"):
+                    if obj.get(key) == "USD" or (isinstance(obj.get(key), dict) and obj[key].get("iso3") == "USD"):
+                        for rate_key in ("sell", "buy", "selling", "buying", "rate", "mid", "value"):
+                            val = obj.get(rate_key)
+                            if val:
+                                try:
+                                    return float(str(val).replace(",", ""))
+                                except (ValueError, TypeError):
+                                    continue
+                # Check if "name" contains "Dollar"
+                name = obj.get("name", "") or obj.get("currency", "")
+                if isinstance(name, str) and "dollar" in name.lower() and "us" in name.lower():
+                    for rate_key in ("sell", "buy", "selling", "buying", "rate", "mid", "value"):
+                        val = obj.get(rate_key)
+                        if val:
+                            try:
+                                return float(str(val).replace(",", ""))
+                            except (ValueError, TypeError):
+                                continue
+                # Recurse into values
+                for v in obj.values():
+                    result = _find_usd_rate(v, depth + 1)
+                    if result:
+                        return result
+            elif isinstance(obj, list):
+                for item in obj:
+                    result = _find_usd_rate(item, depth + 1)
+                    if result:
+                        return result
+            return None
+
+        usd_rate = _find_usd_rate(data)
+
+        if usd_rate and usd_rate > 0:
+            edges.append(Edge(
+                from_currency="USD",
+                to_currency="NPR",
+                via="NRB (NP)",
+                fee_pct=0.0,
+                estimated_minutes=0,
+                instructions="Nepal Rastra Bank official rate — reference only",
+                exchange_rate=usd_rate,
+            ))
+        else:
+            logger.debug(f"NRB: could not find USD rate in response keys={list(data.keys()) if isinstance(data, dict) else type(data)}")
+
+        _nrb_cache["edges"] = edges
+        _nrb_cache["ts"] = now
+        logger.info(f"NRB: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"NRB adapter failed: {e}")
+        return _nrb_cache["edges"]
+
+    return edges
+
+
+# ── NBP (National Bank of Poland) ──────────────────────────────────────────
+
+
+async def get_nbp_edges() -> list[Edge]:
+    """Fetch official USD/PLN and EUR/PLN rates from National Bank of Poland."""
+    now = time.monotonic()
+    if _nbp_cache["edges"] and (now - _nbp_cache["ts"]) < NBP_TTL:
+        return _nbp_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        # NBP Table A = average exchange rates
+        async with httpx.AsyncClient(headers={**HEADERS, "Accept": "application/json"}, timeout=15) as client:
+            resp = await client.get(
+                "https://api.nbp.pl/api/exchangerates/tables/A/?format=json"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response: [{"table":"A","no":"...","effectiveDate":"...","rates":[{"currency":"...","code":"USD","mid":4.1234}]}]
+        if data and isinstance(data, list):
+            rates = data[0].get("rates", [])
+            for rate_entry in rates:
+                code = rate_entry.get("code", "")
+                mid = rate_entry.get("mid")
+                if code in ("USD", "EUR", "GBP", "CHF") and mid:
+                    rate = float(mid)
+                    if rate > 0:
+                        edges.append(Edge(
+                            from_currency=code,
+                            to_currency="PLN",
+                            via="NBP (PL)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="National Bank of Poland official rate — reference only",
+                            exchange_rate=rate,
+                        ))
+
+        _nbp_cache["edges"] = edges
+        _nbp_cache["ts"] = now
+        logger.info(f"NBP: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"NBP adapter failed: {e}")
+        return _nbp_cache["edges"]
+
+    return edges
+
+
+# ── CNB (Czech National Bank) ──────────────────────────────────────────────
+
+
+async def get_cnb_edges() -> list[Edge]:
+    """Fetch official USD/CZK and EUR/CZK rates from Czech National Bank."""
+    now = time.monotonic()
+    if _cnb_cache["edges"] and (now - _cnb_cache["ts"]) < CNB_TTL:
+        return _cnb_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        # CNB daily rates text format (pipe-delimited)
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get(
+                "https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt"
+            )
+            resp.raise_for_status()
+
+        # Format: header lines, then "country|currency|amount|code|rate"
+        # e.g. "USA|dolar|1|USD|23,456"
+        wanted = {"USD", "EUR", "GBP", "CHF"}
+        for line in resp.text.strip().split("\n")[2:]:  # skip date + header
+            parts = line.split("|")
+            if len(parts) >= 5:
+                code = parts[3].strip()
+                if code in wanted:
+                    amount = int(parts[2].strip())
+                    rate_str = parts[4].strip().replace(",", ".")
+                    rate = float(rate_str) / amount
+                    if rate > 0:
+                        edges.append(Edge(
+                            from_currency=code,
+                            to_currency="CZK",
+                            via="CNB (CZ)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="Czech National Bank official rate — reference only",
+                            exchange_rate=rate,
+                        ))
+
+        _cnb_cache["edges"] = edges
+        _cnb_cache["ts"] = now
+        logger.info(f"CNB: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"CNB adapter failed: {e}")
+        return _cnb_cache["edges"]
+
+    return edges
+
+
+# ── NBU (National Bank of Ukraine) ─────────────────────────────────────────
+
+
+async def get_nbu_edges() -> list[Edge]:
+    """Fetch official USD/UAH rate from National Bank of Ukraine JSON API."""
+    now = time.monotonic()
+    if _nbu_cache["edges"] and (now - _nbu_cache["ts"]) < NBU_TTL:
+        return _nbu_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get(
+                "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response: [{"r030":840,"txt":"Долар США","rate":41.2345,"cc":"USD","exchangedate":"23.03.2026"}, ...]
+        wanted = {"USD", "EUR", "GBP", "CHF", "PLN"}
+        if isinstance(data, list):
+            for entry in data:
+                cc = entry.get("cc", "")
+                if cc in wanted:
+                    rate = entry.get("rate")
+                    if rate and float(rate) > 0:
+                        edges.append(Edge(
+                            from_currency=cc,
+                            to_currency="UAH",
+                            via="NBU (UA)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="National Bank of Ukraine official rate — reference only",
+                            exchange_rate=float(rate),
+                        ))
+
+        _nbu_cache["edges"] = edges
+        _nbu_cache["ts"] = now
+        logger.info(f"NBU: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"NBU adapter failed: {e}")
+        return _nbu_cache["edges"]
+
+    return edges
+
+
+# ── NBG (National Bank of Georgia) ─────────────────────────────────────────
+
+
+async def get_nbg_edges() -> list[Edge]:
+    """Fetch official USD/GEL rate from National Bank of Georgia JSON API."""
+    now = time.monotonic()
+    if _nbg_cache["edges"] and (now - _nbg_cache["ts"]) < NBG_TTL:
+        return _nbg_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15, follow_redirects=True) as client:
+            # Try the newer API endpoint first
+            resp = await client.get(
+                f"https://nbg.gov.ge/gw/api/ct/monetarypolicy/currencies/en/json/?date={today}"
+            )
+            if resp.status_code != 200:
+                # Fallback to older endpoint
+                resp = await client.get(
+                    "https://nbg.gov.ge/gw/api/ct/monetarypolicy/currencies/en/json/"
+                )
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response: [{"currencies":[{"code":"USD","quantity":1,"rate":2.7123,...}],...}]
+        # or flat: [{"code":"USD","quantity":1,"rate":2.7123,...}]
+        wanted = {"USD", "EUR", "GBP"}
+        currencies = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict):
+                    # Nested structure
+                    if "currencies" in item:
+                        currencies.extend(item["currencies"])
+                    # Flat structure
+                    elif "code" in item:
+                        currencies.append(item)
+
+        for entry in currencies:
+            code = entry.get("code", "")
+            if code in wanted:
+                rate = entry.get("rate")
+                quantity = entry.get("quantity", 1)
+                if rate and quantity:
+                    effective_rate = float(rate) / int(quantity)
+                    if effective_rate > 0:
+                        edges.append(Edge(
+                            from_currency=code,
+                            to_currency="GEL",
+                            via="NBG (GE)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="National Bank of Georgia official rate — reference only",
+                            exchange_rate=effective_rate,
+                        ))
+
+        _nbg_cache["edges"] = edges
+        _nbg_cache["ts"] = now
+        logger.info(f"NBG: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"NBG adapter failed: {e}")
+        return _nbg_cache["edges"]
+
+    return edges
+
+
+# ── BOI (Bank of Israel) ───────────────────────────────────────────────────
+
+
+async def get_boi_edges() -> list[Edge]:
+    """Fetch official USD/ILS rate from Bank of Israel XML feed."""
+    now = time.monotonic()
+    if _boi_cache["edges"] and (now - _boi_cache["ts"]) < BOI_TTL:
+        return _boi_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get(
+                "https://www.boi.org.il/PublicApi/GetExchangeRates?asXml=false"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response: {"exchangeRates": [{"key":"USD","currentExchangeRate":3.6123,...}, ...]}
+        wanted = {"USD", "EUR", "GBP"}
+        ex_rates = data.get("exchangeRates", [])
+        for entry in ex_rates:
+            code = entry.get("key", "")
+            if code in wanted:
+                rate = entry.get("currentExchangeRate")
+                unit = entry.get("unit", 1)
+                if rate and unit:
+                    effective_rate = float(rate) / int(unit)
+                    if effective_rate > 0:
+                        edges.append(Edge(
+                            from_currency=code,
+                            to_currency="ILS",
+                            via="BOI (IL)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="Bank of Israel official rate — reference only",
+                            exchange_rate=effective_rate,
+                        ))
+
+        _boi_cache["edges"] = edges
+        _boi_cache["ts"] = now
+        logger.info(f"BOI: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"BOI adapter failed: {e}")
+        return _boi_cache["edges"]
+
+    return edges
+
+
+# ── BNR (National Bank of Romania) ─────────────────────────────────────────
+
+
+async def get_bnr_edges() -> list[Edge]:
+    """Fetch official USD/RON and EUR/RON rates from National Bank of Romania XML."""
+    now = time.monotonic()
+    if _bnr_cache["edges"] and (now - _bnr_cache["ts"]) < BNR_TTL:
+        return _bnr_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get(
+                "https://www.bnr.ro/nbrfxrates.xml"
+            )
+            resp.raise_for_status()
+
+        root = ET.fromstring(resp.text)
+        # Namespace: {http://www.bnr.ro/xsd}
+        ns = {"bnr": "http://www.bnr.ro/xsd"}
+        wanted = {"USD", "EUR", "GBP", "CHF"}
+        for rate_elem in root.findall(".//bnr:Rate", ns):
+            code = rate_elem.get("currency", "")
+            if code in wanted and rate_elem.text:
+                multiplier = int(rate_elem.get("multiplier", "1"))
+                rate = float(rate_elem.text) / multiplier
+                if rate > 0:
+                    edges.append(Edge(
+                        from_currency=code,
+                        to_currency="RON",
+                        via="BNR (RO)",
+                        fee_pct=0.0,
+                        estimated_minutes=0,
+                        instructions="National Bank of Romania official rate — reference only",
+                        exchange_rate=rate,
+                    ))
+
+        _bnr_cache["edges"] = edges
+        _bnr_cache["ts"] = now
+        logger.info(f"BNR: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"BNR adapter failed: {e}")
+        return _bnr_cache["edges"]
+
+    return edges
+
+
+# ── CBR (Central Bank of Russia) ───────────────────────────────────────────
+
+
+async def get_cbr_edges() -> list[Edge]:
+    """Fetch official USD/RUB rate from Central Bank of Russia (via JSON mirror)."""
+    now = time.monotonic()
+    if _cbr_cache["edges"] and (now - _cbr_cache["ts"]) < CBR_TTL:
+        return _cbr_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            # Use the well-known JSON mirror (official XML blocks non-browser agents)
+            resp = await client.get(
+                "https://www.cbr-xml-daily.ru/daily_json.js"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        # Response: {"Date":"...","Valute":{"USD":{"ID":"...","NumCode":"840","CharCode":"USD","Nominal":1,"Name":"...","Value":84.1234,"Previous":...},...}}
+        valute = data.get("Valute", {})
+        wanted = {"USD", "EUR", "GBP", "CNY"}
+        for code in wanted:
+            entry = valute.get(code)
+            if entry:
+                nominal = entry.get("Nominal", 1)
+                value = entry.get("Value")
+                if value and nominal:
+                    rate = float(value) / int(nominal)
+                    if rate > 0:
+                        edges.append(Edge(
+                            from_currency=code,
+                            to_currency="RUB",
+                            via="CBR (RU)",
+                            fee_pct=0.0,
+                            estimated_minutes=0,
+                            instructions="Central Bank of Russia official rate — reference only",
+                            exchange_rate=rate,
+                        ))
+
+        _cbr_cache["edges"] = edges
+        _cbr_cache["ts"] = now
+        logger.info(f"CBR: loaded {len(edges)} edges")
+    except Exception as e:
+        logger.warning(f"CBR adapter failed: {e}")
+        return _cbr_cache["edges"]
 
     return edges
 # Bridge edges enabled 2026-03-23T17:10

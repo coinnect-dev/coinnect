@@ -45,6 +45,9 @@ async def _refresh_once(force: bool = False) -> int:
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
         get_binance_p2p_edges,
+        get_tcmb_edges, get_nrb_edges, get_nbp_edges, get_cnb_edges,
+        get_nbu_edges, get_nbg_edges, get_boi_edges, get_bnr_edges,
+        get_cbr_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     from coinnect.routing.engine import build_quote
@@ -58,6 +61,9 @@ async def _refresh_once(force: bool = False) -> int:
         yadio_edges, valr_edges, coindcx_edges,
         wazirx_edges, satoshitango_edges, floatrates_edges,
         binance_p2p_edges,
+        tcmb_edges, nrb_edges, nbp_edges, cnb_edges,
+        nbu_edges, nbg_edges, boi_edges, bnr_edges,
+        cbr_edges,
         calc_edges,
     ) = await asyncio.gather(
         get_all_edges(force_refresh=force),
@@ -85,6 +91,15 @@ async def _refresh_once(force: bool = False) -> int:
         get_satoshitango_edges(),
         get_floatrates_edges(),
         get_binance_p2p_edges(),
+        get_tcmb_edges(),
+        get_nrb_edges(),
+        get_nbp_edges(),
+        get_cnb_edges(),
+        get_nbu_edges(),
+        get_nbg_edges(),
+        get_boi_edges(),
+        get_bnr_edges(),
+        get_cbr_edges(),
         get_calculator_edges(),
     )
     all_edges = (
@@ -96,6 +111,9 @@ async def _refresh_once(force: bool = False) -> int:
         + yadio_edges + valr_edges + coindcx_edges
         + wazirx_edges + satoshitango_edges + floatrates_edges
         + binance_p2p_edges
+        + tcmb_edges + nrb_edges + nbp_edges + cnb_edges
+        + nbu_edges + nbg_edges + boi_edges + bnr_edges
+        + cbr_edges
         + calc_edges
     )
 
@@ -293,6 +311,9 @@ async def _get_all_edges_cached() -> list:
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
         get_binance_p2p_edges,
+        get_tcmb_edges, get_nrb_edges, get_nbp_edges, get_cnb_edges,
+        get_nbu_edges, get_nbg_edges, get_boi_edges, get_bnr_edges,
+        get_cbr_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     results = await asyncio.gather(
@@ -321,6 +342,15 @@ async def _get_all_edges_cached() -> list:
         get_satoshitango_edges(),
         get_floatrates_edges(),
         get_binance_p2p_edges(),
+        get_tcmb_edges(),
+        get_nrb_edges(),
+        get_nbp_edges(),
+        get_cnb_edges(),
+        get_nbu_edges(),
+        get_nbg_edges(),
+        get_boi_edges(),
+        get_bnr_edges(),
+        get_cbr_edges(),
         get_calculator_edges(),
     )
     all_edges = []
