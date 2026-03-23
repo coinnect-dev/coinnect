@@ -176,21 +176,25 @@ async def quote(
     if not real_edges:
         raise HTTPException(503, "Exchange data temporarily unavailable")
 
-    # Include bridge edges for multi-hop routing but they won't win as single-step direct routes
-    # because real providers always have them beat on direct corridors
+    # Two routing passes:
+    # 1. Full graph (real + bridge) — finds exotic corridors via reference FX bridges
+    # 2. Real-only graph — finds pure crypto multi-hop routes (Binance→Bitso etc.)
+    #    that get crowded out by cheaper reference-bridge paths in pass 1
     result = build_quote(real_edges + bridge_edges, from_, to, amount)
+    result_real = build_quote(real_edges, from_, to, amount)
 
-    # Filter routes:
-    # A route is valid if:
-    # 1. First step uses a real provider (where you can actually send money)
-    # 2. Last step uses a real provider (where recipient actually receives)
-    # 3. At least one step uses a non-reference provider
-    # Reference providers may appear as MIDDLE steps in multi-hop routes.
+    # Merge routes from both passes, dedup by path signature
+    seen_sigs = set()
+    merged = []
+    for r in result.routes + result_real.routes:
+        sig = tuple((s.from_currency, s.to_currency, s.via) for s in r.steps)
+        if sig not in seen_sigs:
+            seen_sigs.add(sig)
+            merged.append(r)
+    result.routes = merged
+
+    # Filter: remove any route containing reference providers
     if result.routes:
-        # Reference providers are pure data — they are NOT wallets, NOT services.
-        # They cannot appear in ANY step of a user-facing route.
-        # They only exist internally to help the router bridge exotic FX pairs.
-        # After routing, ALL routes containing reference steps are removed.
         result.routes = [r for r in result.routes
             if (all(not _is_reference_provider(s.via) for s in r.steps)
                 and r.they_receive > 0)]  # sanity: must receive something
