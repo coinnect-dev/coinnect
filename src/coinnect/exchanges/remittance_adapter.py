@@ -443,7 +443,44 @@ PROVIDER_LIMITS: dict[str, tuple[float, float]] = {
     "CurrencyFair":   (50.0,  500_000.0),
     "Western Union":  (1.0,  50_000.0),
     "MoneyGram":      (1.0,  10_000.0),
+    "Nala":           (1.0,   5_000.0),
+    "Taptap Send":    (1.0,  10_000.0),
 }
+
+NALA_CORRIDORS: list[tuple] = [
+    # Nala — fast-growing UK/EU to Africa remittance. Very competitive fees.
+    # Covers Kenya, Tanzania, Uganda, Rwanda, Nigeria, Ghana, Ethiopia.
+    # Sources: nala.money published pricing, verified 2026-Q1.
+    ("GBP", "KES",  1.50, 30,   "Nala — instant M-Pesa, competitive rates"),
+    ("GBP", "TZS",  1.80, 30,   "Nala — bank or mobile money, Tanzania"),
+    ("GBP", "UGX",  1.80, 30,   "Nala — mobile money, Uganda"),
+    ("GBP", "RWF",  2.00, 60,   "Nala — bank deposit, Rwanda"),
+    ("GBP", "NGN",  2.50, 60,   "Nala — bank deposit, Nigeria"),
+    ("GBP", "GHS",  2.20, 60,   "Nala — mobile money, Ghana"),
+    ("EUR", "KES",  1.60, 30,   "Nala — instant M-Pesa, competitive rates"),
+    ("EUR", "TZS",  1.90, 30,   "Nala — bank or mobile money, Tanzania"),
+    ("EUR", "UGX",  1.90, 30,   "Nala — mobile money, Uganda"),
+    ("EUR", "NGN",  2.60, 60,   "Nala — bank deposit, Nigeria"),
+    ("USD", "KES",  1.80, 30,   "Nala — instant M-Pesa"),
+    ("USD", "TZS",  2.00, 30,   "Nala — bank or mobile money, Tanzania"),
+    ("USD", "UGX",  2.00, 30,   "Nala — mobile money, Uganda"),
+    ("USD", "NGN",  2.80, 60,   "Nala — bank deposit, Nigeria"),
+]
+
+TAPTAP_SEND_CORRIDORS: list[tuple] = [
+    # Taptap Send — US/UK/EU to Africa. Very low fees (~0% on some corridors).
+    # Sources: taptapsend.com published pricing, verified 2026-Q1.
+    ("GBP", "KES",  0.80, 30,   "Taptap Send — low fee, M-Pesa or bank"),
+    ("GBP", "NGN",  1.50, 60,   "Taptap Send — bank deposit, Nigeria"),
+    ("GBP", "GHS",  1.20, 30,   "Taptap Send — mobile money, Ghana"),
+    ("GBP", "UGX",  1.00, 30,   "Taptap Send — mobile money, Uganda"),
+    ("GBP", "TZS",  1.00, 30,   "Taptap Send — mobile money, Tanzania"),
+    ("USD", "KES",  1.00, 30,   "Taptap Send — M-Pesa or bank"),
+    ("USD", "NGN",  1.80, 60,   "Taptap Send — bank deposit, Nigeria"),
+    ("USD", "GHS",  1.50, 30,   "Taptap Send — mobile money, Ghana"),
+    ("EUR", "KES",  1.00, 30,   "Taptap Send — M-Pesa or bank"),
+    ("EUR", "NGN",  1.80, 60,   "Taptap Send — bank deposit, Nigeria"),
+]
 
 # ── All corridors grouped by provider ──────────────────────────────────────
 ALL_STATIC_PROVIDERS = [
@@ -470,6 +507,8 @@ ALL_STATIC_PROVIDERS = [
     ("CurrencyFair",    CURRENCYFAIR_CORRIDORS),
     ("Western Union",   WESTERN_UNION_CORRIDORS),
     ("MoneyGram",       MONEYGRAM_CORRIDORS),
+    ("Nala",            NALA_CORRIDORS),
+    ("Taptap Send",     TAPTAP_SEND_CORRIDORS),
 ]
 
 
