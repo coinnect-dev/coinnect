@@ -64,7 +64,6 @@ async def _refresh_once(force: bool = False) -> int:
         binance_p2p_edges,
         tcmb_edges, nrb_edges, nbp_edges, cnb_edges,
         nbu_edges, nbg_edges, boi_edges, bnr_edges,
-        cbr_edges,
         uphold_edges, ofx_edges,
         calc_edges,
     ) = await asyncio.gather(
@@ -117,7 +116,6 @@ async def _refresh_once(force: bool = False) -> int:
         + binance_p2p_edges
         + tcmb_edges + nrb_edges + nbp_edges + cnb_edges
         + nbu_edges + nbg_edges + boi_edges + bnr_edges
-        + cbr_edges
         + uphold_edges + ofx_edges
         + calc_edges
     )
