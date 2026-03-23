@@ -33,7 +33,7 @@ This is the core problem Coinnect solves: **not the cost of moving money, but th
 |---------|-------|-------|---------|
 | Monito.com | Global fiat remittance | For-profit, affiliate commissions | No — paid per referral |
 | Yadio.io | LatAm P2P crypto rates | For-profit, price tracker | Partial — single-step only |
-| Wise | Direct fiat transfer | For-profit, they are a route | No — also a listed route |
+| Wise | Direct fiat transfer | For-profit, also a provider | Partial — also a listed route |
 | Google "send money" | Surface-level | Commercial agreements | No |
 | Coinnect | Global, fiat + crypto + P2P | Non-profit, donation-funded | **Yes** |
 
