@@ -378,7 +378,62 @@ This is a beta. Priorities shift based on user feedback. See [`ROADMAP.md`](./RO
 
 ---
 
-## 10. Vision
+## 10. Rate Accuracy Model
+
+Every route in Coinnect carries an **accuracy score** (0.0–1.0) reflecting the confidence in the displayed rate:
+
+| Source type | Score | Meaning |
+|-------------|-------|---------|
+| Live exchange API (order book) | 1.0 | Real-time bid/ask from exchange |
+| Live FX API (Wise, etc.) | 0.95 | Provider's own rate, refreshed every 3 min |
+| Central bank reference | 0.90 | Official rate, updated daily |
+| P2P market monitor | 0.80 | Aggregated from multiple P2P listings |
+| Published fee table + live FX | 0.60 | Known fee structure applied to live mid-market rate |
+| Static estimate | 0.40 | Manual research, verified quarterly |
+
+The accuracy score is computed as:
+
+```
+accuracy = source_freshness × source_reliability × fee_confidence
+```
+
+Where:
+- `source_freshness` decays linearly from 1.0 (just fetched) to 0.5 (at TTL expiry)
+- `source_reliability` is the historical hit rate of the source (% of successful fetches in last 24h)
+- `fee_confidence` is 1.0 for known fees (API-reported) and 0.6 for estimated fees
+
+This score is exposed in the API response and used internally to weight route rankings when multiple routes have similar total costs.
+
+---
+
+## 11. Adaptive Fee Calibration
+
+Static fee estimates (~est.) are inherently inaccurate — provider fees change without notice, and exchange rate spreads vary by corridor and time of day.
+
+Coinnect addresses this through an **adaptive calibration loop**:
+
+1. **Observation:** When a provider with live API data covers the same corridor as an estimated provider, both rates are recorded in parallel.
+
+2. **Comparison:** The system computes the error between the estimated rate and any available ground truth:
+   - Live API quotes for the same corridor
+   - World Bank Remittance Prices Worldwide (quarterly benchmark)
+   - User-reported rates (future: community verification via MTP)
+
+3. **Adjustment:** Fee estimates are adjusted using exponential moving average:
+   ```
+   adjusted_fee = α × observed_fee + (1 - α) × current_estimate
+   ```
+   where α = 0.3 (slow adaptation to avoid overreacting to outliers).
+
+4. **Confidence tracking:** Each adjustment narrows or widens the confidence interval. Corridors with frequent ground truth observations converge to high accuracy; corridors with sparse data maintain wider uncertainty bands.
+
+This creates a self-improving system: as more data sources come online and more users report real rates, the estimated providers converge toward actual costs — without requiring manual updates.
+
+The calibration state is persisted in SQLite and published as part of the open data exports, enabling external researchers to audit and improve the model.
+
+---
+
+## 12. Vision
 
 Before GPS, every driver carried a road atlas. It didn't drive. It didn't own the roads. It had no preference for which highway you took. You trusted it precisely because it had no stake in your route — it just knew every path and showed you all of them.
 
