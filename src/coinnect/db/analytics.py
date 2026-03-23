@@ -71,6 +71,26 @@ def init_analytics_db() -> None:
                 created_at    TEXT NOT NULL,
                 PRIMARY KEY (suggestion_id, fingerprint)
             );
+
+            CREATE TABLE IF NOT EXISTS rate_reports (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts              TEXT NOT NULL,
+                from_currency   TEXT NOT NULL,
+                to_currency     TEXT NOT NULL,
+                provider        TEXT NOT NULL,
+                reported_rate   REAL NOT NULL,
+                reported_fee_pct REAL,
+                amount          REAL,
+                source          TEXT DEFAULT 'web',
+                fingerprint     TEXT,
+                api_key_prefix  TEXT,
+                verified        INTEGER DEFAULT 0,
+                created_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_rate_reports_corridor
+                ON rate_reports(from_currency, to_currency, provider);
+            CREATE INDEX IF NOT EXISTS idx_rate_reports_ts
+                ON rate_reports(ts);
         """)
     logger.info("Analytics DB tables ready")
 
@@ -275,3 +295,74 @@ def set_suggestion_status(suggestion_id: int, status: str) -> None:
 def set_suggestion_admin_note(suggestion_id: int, note: str) -> None:
     with _connect() as conn:
         conn.execute("UPDATE suggestions SET admin_note=? WHERE id=?", (note, suggestion_id))
+
+
+# ── Rate reports ───────────────────────────────────────────────────────────
+
+def save_rate_report(
+    from_c: str,
+    to_c: str,
+    provider: str,
+    rate: float,
+    fee_pct: float | None = None,
+    amount: float | None = None,
+    source: str = "web",
+    fingerprint: str | None = None,
+    api_key: str | None = None,
+) -> int:
+    """Save a community-reported rate observation. Returns the report id."""
+    now = datetime.now(UTC).isoformat()
+    try:
+        with _connect() as conn:
+            cur = conn.execute("""
+                INSERT INTO rate_reports
+                    (ts, from_currency, to_currency, provider, reported_rate,
+                     reported_fee_pct, amount, source, fingerprint, api_key_prefix, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                now, from_c.upper(), to_c.upper(), provider, rate,
+                fee_pct, amount, source, fingerprint,
+                (api_key[:8] if api_key else None), now,
+            ))
+            return cur.lastrowid
+    except Exception as e:
+        logger.debug(f"rate_report insert failed: {e}")
+        return 0
+
+
+def get_rate_reports(
+    from_c: str, to_c: str, provider: str, hours_back: int = 24
+) -> list[dict]:
+    """Return recent rate reports for a specific corridor/provider."""
+    with _connect() as conn:
+        rows = conn.execute("""
+            SELECT id, ts, from_currency, to_currency, provider,
+                   reported_rate, reported_fee_pct, amount, source, verified
+            FROM rate_reports
+            WHERE from_currency=? AND to_currency=? AND provider=?
+              AND ts >= datetime('now', ?)
+            ORDER BY ts DESC
+        """, (from_c.upper(), to_c.upper(), provider, f"-{hours_back} hours")).fetchall()
+        return [dict(r) for r in rows]
+
+
+def get_calibration_data() -> list[dict]:
+    """
+    Aggregate rate reports: avg reported_rate per provider/corridor
+    over the last 24 hours. Used by admin to compare against estimates.
+    """
+    with _connect() as conn:
+        rows = conn.execute("""
+            SELECT from_currency, to_currency, provider,
+                   COUNT(*) as report_count,
+                   ROUND(AVG(reported_rate), 6) as avg_reported_rate,
+                   ROUND(MIN(reported_rate), 6) as min_reported_rate,
+                   ROUND(MAX(reported_rate), 6) as max_reported_rate,
+                   ROUND(AVG(reported_fee_pct), 4) as avg_reported_fee_pct,
+                   MAX(ts) as latest_report
+            FROM rate_reports
+            WHERE ts >= datetime('now', '-24 hours')
+            GROUP BY from_currency, to_currency, provider
+            ORDER BY report_count DESC
+        """).fetchall()
+        return [dict(r) for r in rows]

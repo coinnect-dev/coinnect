@@ -54,6 +54,18 @@ async def admin_searches(
     return {"searches": get_recent_searches(limit)}
 
 
+# ── Admin: rate reports ──────────────────────────────────────────────────────
+
+@admin_router.get("/reports")
+async def admin_reports(
+    hours: int = Query(24, ge=1, le=168),
+    x_admin_key: str | None = Header(None),
+):
+    _require_admin(x_admin_key)
+    from coinnect.db.analytics import get_calibration_data
+    return {"reports": get_calibration_data()}
+
+
 # ── Admin: provider management ────────────────────────────────────────────────
 
 class ProviderUpdate(BaseModel):

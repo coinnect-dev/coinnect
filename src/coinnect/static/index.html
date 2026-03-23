@@ -1553,6 +1553,7 @@ function renderFeaturedCard(r,from,to,insideTied=false){
           <div class="text-xs text-gray-400 mb-1">Time: ${fmtTime(r.total_time_minutes)}</div>
           <div class="pt-3 border-t border-gray-100 dark:border-gray-800">${renderSteps(r.steps,to)}</div>
           ${renderReqs(r.steps,to)}
+          <div class="pt-2 text-right"><a href="#" onclick="reportRate('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send});return false;" class="text-[10px] text-gray-400 hover:text-cyan-500 transition-colors">Report real rate</a></div>
         </div>
       </details>
     </div>`;
@@ -1589,7 +1590,9 @@ function renderCompactRow(r,from,to){
         </div>
         <div class="px-5 py-2 bg-gray-50 dark:bg-gray-800/40 text-xs font-mono text-gray-500">${t('rate')} ${rate}</div>
         <div class="px-5 py-4">${renderSteps(r.steps,to)}</div>
-        <div class="px-5 pb-5">${renderReqs(r.steps,to)}</div>
+        <div class="px-5 pb-5">${renderReqs(r.steps,to)}
+          <div class="pt-2 text-right"><a href="#" onclick="reportRate('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send});return false;" class="text-[10px] text-gray-400 hover:text-cyan-500 transition-colors">Report real rate</a></div>
+        </div>
       </div>
     </details>`;
 }
@@ -1823,6 +1826,37 @@ function trackEvent(name, params){
 function trackOutbound(url, label){
   trackEvent('outbound_click',{url:url,label:label,transport_type:'beacon'});
 }
+
+// ── Rate report ─────────────────────────────────────────────────────────────
+async function reportRate(fromC,toC,provider,rate){
+  const amount=parseFloat(document.getElementById('amount')?.value)||null;
+  try{
+    const res=await fetch('/v1/verify',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        from_currency:fromC,to_currency:toC,provider:provider,
+        rate:rate,amount:amount
+      })
+    });
+    if(res.ok){
+      const d=await res.json();
+      // Brief thank-you toast
+      const toast=document.createElement('div');
+      toast.className='fixed bottom-6 right-6 bg-emerald-600 text-white text-sm px-4 py-2 rounded-xl shadow-lg z-50 animate-pulse';
+      toast.textContent='Thanks! Rate reported.';
+      document.body.appendChild(toast);
+      setTimeout(()=>toast.remove(),3000);
+      trackEvent('rate_reported',{from:fromC,to:toC,provider:provider});
+    }else{
+      const err=await res.json().catch(()=>({}));
+      alert(err.detail||'Could not submit report. Try again later.');
+    }
+  }catch(e){
+    alert('Network error — could not submit report.');
+  }
+}
+
 // Debounce helper for amount_changed
 let _amountDebounce=null;
 

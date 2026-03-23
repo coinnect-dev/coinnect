@@ -412,6 +412,64 @@ async def create_key(request: Request, label: str | None = Query(None, max_lengt
     }
 
 
+# ── Rate verification ─────────────────────────────────────────────────────────
+
+# Rate limit: 10 reports per IP per hour
+_verify_timestamps: dict[str, list[float]] = defaultdict(list)
+_VERIFY_MAX_PER_HOUR = 10
+
+
+class RateReport(BaseModel):
+    from_currency: str
+    to_currency: str
+    provider: str
+    rate: float  # the exchange rate you observed
+    fee_pct: float | None = None  # the fee percentage if known
+    amount: float | None = None  # the amount you were quoting
+
+
+@router.post("/verify", summary="Report a real rate you observed", tags=["Community"])
+async def verify_rate(request: Request, body: RateReport):
+    """
+    Report the actual rate you see at a provider. This helps Coinnect
+    calibrate estimated rates toward real values.
+
+    Anyone can report. Reports are aggregated and outliers are filtered.
+    """
+    # Rate limit by IP
+    ip = _get_client_ip(request)
+    now_mono = time.monotonic()
+    timestamps = _verify_timestamps[ip]
+    _verify_timestamps[ip] = [t for t in timestamps if now_mono - t < 3600]
+    if len(_verify_timestamps[ip]) >= _VERIFY_MAX_PER_HOUR:
+        raise HTTPException(429, "Too many rate reports — max 10 per hour. Try again later.")
+    _verify_timestamps[ip].append(now_mono)
+
+    # Basic validation
+    if body.rate <= 0:
+        raise HTTPException(400, "rate must be positive")
+    if len(body.from_currency) > 10 or len(body.to_currency) > 10:
+        raise HTTPException(400, "currency code too long")
+    if len(body.provider) > 100:
+        raise HTTPException(400, "provider name too long")
+
+    from coinnect.db.analytics import save_rate_report
+    report_id = save_rate_report(
+        from_c=body.from_currency,
+        to_c=body.to_currency,
+        provider=body.provider,
+        rate=body.rate,
+        fee_pct=body.fee_pct,
+        amount=body.amount,
+        source="web",
+    )
+    return {
+        "ok": True,
+        "report_id": report_id,
+        "message": "Thanks! Your rate report helps calibrate Coinnect for everyone.",
+    }
+
+
 @router.get("/keys/usage", summary="Check usage for a key", tags=["API Keys"])
 async def key_usage(x_api_key: str = Header(..., description="Your Coinnect API key (cn_...)")):
     """
