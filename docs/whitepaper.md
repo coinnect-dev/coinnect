@@ -474,9 +474,19 @@ The most valuable form of distributed computing for Coinnect is not CPU — it's
 
 Future architecture: volunteer "verifier nodes" that run a lightweight Coinnect agent, collect local rate data, and submit it via the `/v1/verify` endpoint. Contributors earn quest rewards (MTP). This is conceptually similar to how Waze collects traffic data from drivers — distributed sensing, centralized routing.
 
-### Why centralized routing is correct
+### Federated directory model
 
-Unlike blockchain networks where decentralization prevents censorship, money routing benefits from centralization: a single Dijkstra pass over the complete graph always finds the optimal path. Distributing the routing computation would only add latency without improving results. What should be distributed is the data layer, not the compute layer.
+Coinnect's long-term architecture follows a **federated directory model** — similar to DNS, not blockchain. Every node maintains a replica of the provider directory (edges, rates, fees) and can resolve routing queries independently.
+
+When 100 agents query routes, one server suffices. When 10,000 agents query simultaneously, anyone can run a Coinnect node that syncs the same directory and serves queries locally. No central bottleneck. No single point of failure.
+
+This is fundamentally different from blockchain:
+- **Blockchain** requires global consensus on every state change — it scales poorly with more participants.
+- **Federated directory** replicates read-only data across nodes — it scales linearly. More nodes = more capacity, not more overhead.
+
+The directory is the protocol. Any node that speaks MRP (Money Routing Protocol) can join the network, replicate the edge data, and serve queries. The source of truth for rate data comes from the provider APIs themselves — not from a central server or a consensus mechanism.
+
+Think of it as: providers publish their rates → nodes replicate the directory → agents query any node → the network grows organically. Like DNS resolvers, not like miners.
 
 ---
 
