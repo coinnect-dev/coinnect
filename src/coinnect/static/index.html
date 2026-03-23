@@ -945,6 +945,11 @@ const PROVIDER_INFO = {
   'Payoneer': {url:'https://payoneer.com',refresh:'Estimated (published fees)',contact:'https://payoneer.custhelp.com',fees:'https://www.payoneer.com/about/fees/'},
   'Nala': {url:'https://nala.money',refresh:'Estimated (published fees)',contact:'https://www.nala.money/faq',fees:'https://www.nala.money/pricing'},
   'Taptap Send': {url:'https://taptapsend.com',refresh:'Estimated (published fees)',contact:'https://www.taptapsend.com/faq',fees:'https://www.taptapsend.com/pricing'},
+  'Zinli': {url:'https://zinli.com',refresh:'Estimated (published fees)',contact:'https://zinli.com/contacto',fees:'https://zinli.com/comisiones'},
+  'Lemon Cash': {url:'https://lemon.me',refresh:'Estimated (published fees)',contact:'https://help.lemon.me'},
+  'Mukuru': {url:'https://mukuru.com',refresh:'Estimated (published fees)',contact:'https://www.mukuru.com/contact/',fees:'https://www.mukuru.com/pricing/'},
+  'Mama Money': {url:'https://mamamoney.co.za',refresh:'Estimated (published fees)',contact:'https://www.mamamoney.co.za/contact',fees:'https://www.mamamoney.co.za/pricing'},
+  'Chipper Cash': {url:'https://chippercash.com',refresh:'Estimated (published fees)',contact:'https://support.chippercash.com'},
 };
 function translateLabel(label){
   if(label==='Cheapest')return t('tag_cheapest')||'Cheapest';
@@ -1728,9 +1733,10 @@ function renderFeaturedCard(r,from,to,insideTied=false){
               ${providerDetails(r.steps)}
             </div>
           </details>
-          <div class="pt-2 flex items-center justify-between">
-            <span class="rate-vote flex items-center gap-1 text-[10px] text-gray-300 dark:text-gray-600"><span>${t('rate_correct')}</span><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},true,this)" class="hover:text-emerald-500 transition-colors px-0.5" title="Correct">&#10003;</button><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},false,this)" class="hover:text-red-400 transition-colors px-0.5" title="Incorrect">&#10007;</button></span>
-            <a href="#" onclick="showFeedbackPanel('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},this);return false;" class="text-[10px] text-gray-400 hover:text-cyan-500 transition-colors font-medium">${t('rate_feedback')}</a>
+          <div class="pt-2 flex items-center gap-3 text-[10px]">
+            <span class="rate-vote inline-flex items-center gap-1.5 text-gray-400 dark:text-gray-500">${t('rate_correct')} <button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},true,this)" class="w-5 h-5 inline-flex items-center justify-center rounded border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-emerald-500 hover:border-emerald-400 transition-colors" title="Correct">&#10003;</button><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},false,this)" class="w-5 h-5 inline-flex items-center justify-center rounded border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-400 hover:border-red-400 transition-colors" title="Incorrect">&#10007;</button></span>
+            <span class="text-gray-200 dark:text-gray-700">|</span>
+            <a href="#" onclick="showFeedbackPanel('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},this);return false;" class="text-gray-400 hover:text-cyan-500 transition-colors">${t('rate_feedback')}</a>
           </div>
         </div>
       </details>
@@ -1776,9 +1782,10 @@ function renderCompactRow(r,from,to){
               ${providerDetails(r.steps)}
             </div>
           </details>
-          <div class="pt-2 flex items-center justify-between">
-            <span class="rate-vote flex items-center gap-1 text-[10px] text-gray-300 dark:text-gray-600"><span>${t('rate_correct')}</span><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},true,this)" class="hover:text-emerald-500 transition-colors px-0.5" title="Correct">&#10003;</button><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},false,this)" class="hover:text-red-400 transition-colors px-0.5" title="Incorrect">&#10007;</button></span>
-            <a href="#" onclick="showFeedbackPanel('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},this);return false;" class="text-[10px] text-gray-400 hover:text-cyan-500 transition-colors font-medium">${t('rate_feedback')}</a>
+          <div class="pt-2 flex items-center gap-3 text-[10px]">
+            <span class="rate-vote inline-flex items-center gap-1.5 text-gray-400 dark:text-gray-500">${t('rate_correct')} <button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},true,this)" class="w-5 h-5 inline-flex items-center justify-center rounded border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-emerald-500 hover:border-emerald-400 transition-colors" title="Correct">&#10003;</button><button onclick="quickVote('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},false,this)" class="w-5 h-5 inline-flex items-center justify-center rounded border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-400 hover:border-red-400 transition-colors" title="Incorrect">&#10007;</button></span>
+            <span class="text-gray-200 dark:text-gray-700">|</span>
+            <a href="#" onclick="showFeedbackPanel('${from}','${to}','${viaList[0]}',${r.they_receive/r.you_send},this);return false;" class="text-gray-400 hover:text-cyan-500 transition-colors">${t('rate_feedback')}</a>
           </div>
         </div>
       </div>
