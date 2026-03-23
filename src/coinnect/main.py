@@ -1123,7 +1123,12 @@ async def whitepaper():
     import markdown as md_lib
     text = (DOCS_DIR / "whitepaper.md").read_text()
     body = md_lib.markdown(text, extensions=["tables", "fenced_code", "nl2br"])
-    return HTMLResponse(f"""<!DOCTYPE html>
+    # Cache-bust SVG images
+    import time as _t
+    _cb = str(int(_t.time()))
+    body = body.replace('/static/routing-diagram.svg', f'/static/routing-diagram.svg?v={_cb}')
+    body = body.replace('/static/architecture.svg', f'/static/architecture.svg?v={_cb}')
+    resp = HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1189,3 +1194,5 @@ async def whitepaper():
   </script>
 </body>
 </html>""")
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp

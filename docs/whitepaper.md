@@ -1,6 +1,6 @@
 # Coinnect: The Open Route Guide for Global Money
 
-**Version:** 0.6 (March 2026)
+**Version:** 0.7 (March 2026)
 **Author:** Miguel
 **Domain:** coinnect.bot · **Status:** Live — public beta
 **Code:** [github.com/coinnect-dev/coinnect](https://github.com/coinnect-dev/coinnect) · MIT License
