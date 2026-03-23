@@ -114,6 +114,7 @@ async def _refresh_once(force: bool = False) -> int:
 async def _refresh_loop() -> None:
     """Background task: refresh rates every 3 minutes, prune DB weekly."""
     prune_counter = 0
+    quest_counter = 0
     while True:
         try:
             count = await _refresh_once(force=True)
@@ -129,6 +130,17 @@ async def _refresh_loop() -> None:
                 prune_counter = 0
             except Exception as e:
                 logger.error(f"Prune failed: {e}")
+
+        quest_counter += 1
+        if quest_counter >= 20:  # ~1 hour at 3-min intervals
+            try:
+                from coinnect.db.analytics import generate_quests
+                created = generate_quests()
+                if created:
+                    logger.info(f"Generated {created} new quests")
+                quest_counter = 0
+            except Exception as e:
+                logger.error(f"Quest generation failed: {e}")
 
         await asyncio.sleep(180)  # 3 minutes
 

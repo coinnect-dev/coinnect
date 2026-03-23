@@ -470,6 +470,34 @@ async def verify_rate(request: Request, body: RateReport):
     }
 
 
+@router.get("/quests", summary="Open rate verification bounties", tags=["Community"])
+async def list_quests():
+    """
+    Lists open quests — corridors where Coinnect needs real rate data.
+    Bots and humans can claim quests by submitting a rate report via POST /v1/verify.
+    """
+    from coinnect.db.analytics import get_open_quests
+    return {
+        "quests": get_open_quests(),
+        "how_to_claim": "POST /v1/verify with the corridor and provider, then POST /v1/quests/{id}/claim with your report_id",
+    }
+
+
+@router.post("/quests/{quest_id}/claim", summary="Claim a quest with your rate report", tags=["Community"])
+async def claim_quest_endpoint(quest_id: int, report_id: int = Query(...), request: Request = None):
+    """Claim a completed quest by linking it to your rate report."""
+    from coinnect.db.analytics import claim_quest as _claim
+    result = _claim(quest_id, report_id, _get_client_ip(request))
+    if not result:
+        raise HTTPException(404, "Quest not found or already claimed")
+    return {
+        "ok": True,
+        "quest_id": quest_id,
+        "status": "claimed",
+        "message": "Quest claimed! Reward will be distributed in the next payout cycle.",
+    }
+
+
 @router.get("/keys/usage", summary="Check usage for a key", tags=["API Keys"])
 async def key_usage(x_api_key: str = Header(..., description="Your Coinnect API key (cn_...)")):
     """

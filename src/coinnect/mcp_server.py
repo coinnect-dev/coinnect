@@ -77,6 +77,53 @@ async def list_tools() -> list[Tool]:
             }
         ),
         Tool(
+            name="coinnect_verify",
+            description=(
+                "Report a real exchange rate you observed at a provider. "
+                "This helps Coinnect calibrate estimated rates toward real values. "
+                "You can earn quest rewards for verified reports."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "from_currency": {
+                        "type": "string",
+                        "description": "Source currency code (e.g. USD, EUR)"
+                    },
+                    "to_currency": {
+                        "type": "string",
+                        "description": "Destination currency code (e.g. MXN, NGN)"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "Name of the exchange or provider where you observed the rate"
+                    },
+                    "rate": {
+                        "type": "number",
+                        "description": "The exchange rate you observed"
+                    },
+                    "fee_pct": {
+                        "type": "number",
+                        "description": "The fee percentage if known"
+                    }
+                },
+                "required": ["from_currency", "to_currency", "provider", "rate"]
+            }
+        ),
+        Tool(
+            name="coinnect_quests",
+            description=(
+                "List open rate verification bounties. Coinnect creates quests for corridors "
+                "where it needs real rate data. Complete quests by verifying rates via "
+                "coinnect_verify and earn rewards."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
             name="coinnect_explain_route",
             description=(
                 "Given a quote result from coinnect_quote, explain the best route in plain language. "
@@ -108,6 +155,10 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return await _handle_quote(arguments)
     elif name == "coinnect_corridors":
         return await _handle_corridors()
+    elif name == "coinnect_verify":
+        return await _handle_verify(arguments)
+    elif name == "coinnect_quests":
+        return await _handle_quests()
     elif name == "coinnect_explain_route":
         return [TextContent(type="text", text=_explain_route(arguments))]
     else:
@@ -192,6 +243,84 @@ async def _handle_corridors() -> list[TextContent]:
 
     except Exception as e:
         return [TextContent(type="text", text=f"Error fetching corridors: {e}")]
+
+
+async def _handle_verify(args: dict) -> list[TextContent]:
+    from_c = str(args.get("from_currency", "")).upper()
+    to_c = str(args.get("to_currency", "")).upper()
+    provider = str(args.get("provider", ""))
+    rate = float(args.get("rate", 0))
+    fee_pct = args.get("fee_pct")
+
+    if not from_c or not to_c or not provider or rate <= 0:
+        return [TextContent(type="text", text="Error: from_currency, to_currency, provider, and rate > 0 are required.")]
+
+    try:
+        payload = {
+            "from_currency": from_c,
+            "to_currency": to_c,
+            "provider": provider,
+            "rate": rate,
+        }
+        if fee_pct is not None:
+            payload["fee_pct"] = float(fee_pct)
+
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(f"{API_BASE}/v1/verify", json=payload)
+
+        if r.status_code != 200:
+            return [TextContent(type="text", text=f"API error {r.status_code}: {r.text[:200]}")]
+
+        data = r.json()
+        report_id = data.get("report_id", "?")
+        return [TextContent(type="text", text=(
+            f"Rate report submitted successfully (report #{report_id}).\n"
+            f"  {from_c} -> {to_c} via {provider}: rate={rate}"
+            + (f", fee={fee_pct}%" if fee_pct else "")
+            + "\n\nCheck /v1/quests to see if this qualifies for a bounty reward."
+        ))]
+    except httpx.ConnectError:
+        return [TextContent(type="text", text=f"Could not connect to Coinnect API at {API_BASE}. Is the server running?")]
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error submitting rate report: {e}")]
+
+
+async def _handle_quests() -> list[TextContent]:
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(f"{API_BASE}/v1/quests")
+
+        if r.status_code != 200:
+            return [TextContent(type="text", text=f"API error {r.status_code}")]
+
+        data = r.json()
+        quests = data.get("quests", [])
+
+        if not quests:
+            return [TextContent(type="text", text="No open quests right now. Check back later!")]
+
+        lines = [
+            f"Open quests ({len(quests)} available):",
+            "",
+            "Complete a quest by reporting the real rate at the listed provider using coinnect_verify.",
+            ""
+        ]
+        for q in quests:
+            lines.append(
+                f"  Quest #{q['id']}: {q['from_currency']} -> {q['to_currency']} via {q['provider']} "
+                f"(reward: ${q['reward_usd']:.3f})"
+            )
+
+        lines += [
+            "",
+            "How to claim:",
+            "  1. Use coinnect_verify to report the real rate for the corridor+provider",
+            "  2. POST /v1/quests/{quest_id}/claim?report_id={your_report_id}",
+        ]
+        return [TextContent(type="text", text="\n".join(lines))]
+
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error fetching quests: {e}")]
 
 
 def _explain_route(args: dict) -> str:

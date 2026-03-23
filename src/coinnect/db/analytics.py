@@ -91,6 +91,20 @@ def init_analytics_db() -> None:
                 ON rate_reports(from_currency, to_currency, provider);
             CREATE INDEX IF NOT EXISTS idx_rate_reports_ts
                 ON rate_reports(ts);
+
+            CREATE TABLE IF NOT EXISTS quests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_currency TEXT NOT NULL,
+                to_currency TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                reward_usd REAL NOT NULL DEFAULT 0.001,
+                status TEXT NOT NULL DEFAULT 'open',
+                created_at TEXT NOT NULL,
+                claimed_by TEXT,
+                claimed_at TEXT,
+                report_id INTEGER
+            );
+            CREATE INDEX IF NOT EXISTS idx_quests_status ON quests(status);
         """)
     logger.info("Analytics DB tables ready")
 
@@ -344,6 +358,121 @@ def get_rate_reports(
             ORDER BY ts DESC
         """, (from_c.upper(), to_c.upper(), provider, f"-{hours_back} hours")).fetchall()
         return [dict(r) for r in rows]
+
+
+# ── Quests (bounty board) ──────────────────────────────────────────────────
+
+LIVE_PROVIDERS = {
+    'Binance', 'Kraken', 'Coinbase', 'OKX', 'Bybit', 'KuCoin', 'Gate', 'Bitget',
+    'MEXC', 'HTX', 'Crypto.com', 'Luno', 'Bitstamp', 'Gemini', 'Bithumb', 'Bitflyer',
+    'BtcTurk', 'IndependentReserve', 'WhiteBIT', 'Exmo', 'Wise', 'Buda', 'VALR',
+    'CoinDCX', 'WazirX', 'SatoshiTango', 'Bitso',
+}
+
+
+def generate_quests() -> int:
+    """
+    Create quests for corridors with high search demand but only estimated providers.
+    Looks at top 10 corridors from search_log (last 24h), finds ESTIMATED providers,
+    creates quests where none exist. Max 20 open quests at a time.
+    Returns count of quests created.
+    """
+    now = datetime.now(UTC).isoformat()
+    created = 0
+    with _connect() as conn:
+        # Check current open quest count
+        open_count = conn.execute(
+            "SELECT COUNT(*) FROM quests WHERE status='open'"
+        ).fetchone()[0]
+        if open_count >= 20:
+            return 0
+
+        # Top 10 corridors by search volume in last 24h
+        top = conn.execute("""
+            SELECT from_currency, to_currency, COUNT(*) AS cnt
+            FROM search_log
+            WHERE ts >= datetime('now', '-24 hours')
+            GROUP BY from_currency, to_currency
+            ORDER BY cnt DESC
+            LIMIT 10
+        """).fetchall()
+
+        # For each corridor, look at rate_snapshots to find providers
+        for row in top:
+            if open_count + created >= 20:
+                break
+            from_c, to_c = row["from_currency"], row["to_currency"]
+
+            # Get providers from recent snapshots' routes_json
+            snaps = conn.execute("""
+                SELECT routes_json FROM rate_snapshots
+                WHERE from_currency=? AND to_currency=?
+                ORDER BY captured_at DESC LIMIT 1
+            """, (from_c, to_c)).fetchone()
+            if not snaps:
+                continue
+
+            import json as _json
+            try:
+                routes = _json.loads(snaps["routes_json"])
+            except Exception:
+                continue
+
+            for route in routes:
+                if open_count + created >= 20:
+                    break
+                via = route.get("via", "")
+                # Extract base provider name (first in chain)
+                provider = via.split("+")[0].strip() if via else ""
+                if not provider or provider in LIVE_PROVIDERS:
+                    continue
+
+                # Check if open quest already exists for this corridor+provider
+                existing = conn.execute("""
+                    SELECT 1 FROM quests
+                    WHERE from_currency=? AND to_currency=? AND provider=? AND status='open'
+                """, (from_c, to_c, provider)).fetchone()
+                if existing:
+                    continue
+
+                conn.execute("""
+                    INSERT INTO quests (from_currency, to_currency, provider, reward_usd, status, created_at)
+                    VALUES (?,?,?,0.001,'open',?)
+                """, (from_c, to_c, provider, now))
+                created += 1
+
+    if created:
+        logger.info(f"Generated {created} new quests")
+    return created
+
+
+def get_open_quests(limit: int = 20) -> list[dict]:
+    """Return open quests for the bounty board."""
+    with _connect() as conn:
+        rows = conn.execute("""
+            SELECT id, from_currency, to_currency, provider, reward_usd, created_at
+            FROM quests
+            WHERE status='open'
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def claim_quest(quest_id: int, report_id: int, claimer: str) -> bool:
+    """Mark a quest as claimed, linking it to a rate report. Returns True on success."""
+    now = datetime.now(UTC).isoformat()
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT id FROM quests WHERE id=? AND status='open'", (quest_id,)
+        ).fetchone()
+        if not row:
+            return False
+        conn.execute("""
+            UPDATE quests SET status='claimed', claimed_by=?, claimed_at=?, report_id=?
+            WHERE id=?
+        """, (claimer, now, report_id, quest_id))
+        return True
 
 
 def get_calibration_data() -> list[dict]:

@@ -1,0 +1,68 @@
+{
+  "name": "coinnect",
+  "version": "1.0.0",
+  "description": "Find the cheapest way to send money between any two currencies. Compares 22+ crypto exchanges and 19 remittance providers in real-time.",
+  "author": "Coinnect",
+  "homepage": "https://coinnect.bot",
+  "repository": "https://github.com/coinnect-dev/coinnect",
+  "license": "MIT",
+  "categories": ["finance", "remittance", "crypto", "comparison", "routing"],
+  "tools": [
+    {
+      "name": "coinnect_quote",
+      "description": "Find the cheapest routes to send money from one currency to another. Returns routes ranked by total cost with step-by-step instructions.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": {"type": "string", "description": "Source currency code (e.g., USD, EUR, BTC)"},
+          "to": {"type": "string", "description": "Destination currency code (e.g., MXN, NGN, PHP)"},
+          "amount": {"type": "number", "description": "Amount in source currency"}
+        },
+        "required": ["from", "to", "amount"]
+      },
+      "endpoint": "https://coinnect.bot/v1/quote?from={from}&to={to}&amount={amount}",
+      "method": "GET"
+    },
+    {
+      "name": "coinnect_corridors",
+      "description": "List the most active currency corridors with provider information.",
+      "parameters": {"type": "object", "properties": {}},
+      "endpoint": "https://coinnect.bot/v1/corridors",
+      "method": "GET"
+    },
+    {
+      "name": "coinnect_verify",
+      "description": "Report a real rate you observed at a provider. Helps calibrate estimated rates. You earn quest rewards for verified reports.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from_currency": {"type": "string"},
+          "to_currency": {"type": "string"},
+          "provider": {"type": "string"},
+          "rate": {"type": "number", "description": "The exchange rate you observed"},
+          "fee_pct": {"type": "number", "description": "The fee percentage if known"}
+        },
+        "required": ["from_currency", "to_currency", "provider", "rate"]
+      },
+      "endpoint": "https://coinnect.bot/v1/verify",
+      "method": "POST"
+    },
+    {
+      "name": "coinnect_quests",
+      "description": "List open rate verification bounties. Complete quests by verifying rates and earn rewards.",
+      "parameters": {"type": "object", "properties": {}},
+      "endpoint": "https://coinnect.bot/v1/quests",
+      "method": "GET"
+    }
+  ],
+  "mcp": {
+    "command": "python -m coinnect.mcp_server",
+    "transport": "stdio",
+    "tools": ["coinnect_quote", "coinnect_corridors", "coinnect_explain_route"]
+  },
+  "pricing": {
+    "model": "free",
+    "rate_limit": "20 req/day anonymous, 1000/day with free API key",
+    "api_key": "POST /v1/keys to generate instantly, no signup"
+  }
+}
