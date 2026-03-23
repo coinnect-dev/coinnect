@@ -10,6 +10,7 @@ Uploads yesterday's rate snapshots as a CSV to:
 import os
 import io
 import csv
+import json
 import sqlite3
 import logging
 from datetime import datetime, timedelta, UTC
@@ -34,7 +35,7 @@ def export_day_csv(date_str: str) -> str | None:
     try:
         rows = conn.execute("""
             SELECT captured_at, from_currency, to_currency, amount,
-                   best_cost_pct, best_time_min, they_receive, best_via
+                   best_cost_pct, best_time_min, they_receive, best_via, routes_json
             FROM rate_snapshots
             WHERE substr(replace(substr(captured_at, 1, 19), 'T', ' '), 1, 10) = ?
             ORDER BY captured_at ASC
@@ -46,21 +47,51 @@ def export_day_csv(date_str: str) -> str | None:
         logger.info(f"No data for {date_str}")
         return None
 
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow(["captured_at_utc", "from_currency", "to_currency", "amount",
-                "best_cost_pct", "best_time_min", "they_receive", "best_via"])
+    # Export TWO files: summary (best route) + detailed (all routes)
+    # Summary CSV
+    summary_buf = io.StringIO()
+    sw = csv.writer(summary_buf)
+    sw.writerow(["captured_at_utc", "from_currency", "to_currency", "amount",
+                 "best_cost_pct", "best_time_min", "they_receive", "best_via"])
     for r in rows:
-        w.writerow([r["captured_at"], r["from_currency"], r["to_currency"],
-                    r["amount"], r["best_cost_pct"], r["best_time_min"],
-                    r["they_receive"], r["best_via"]])
+        sw.writerow([r["captured_at"], r["from_currency"], r["to_currency"],
+                     r["amount"], r["best_cost_pct"], r["best_time_min"],
+                     r["they_receive"], r["best_via"]])
 
-    logger.info(f"Exported {len(rows)} rows for {date_str}")
-    return buf.getvalue()
+    # Detailed CSV — all routes per snapshot expanded
+    detail_buf = io.StringIO()
+    dw = csv.writer(detail_buf)
+    dw.writerow(["captured_at_utc", "from_currency", "to_currency", "amount",
+                 "rank", "provider", "cost_pct", "they_receive", "has_public_api"])
+
+    LIVE_PROVIDERS = {'Binance','Kraken','Coinbase','OKX','Bybit','KuCoin','Gate','Bitget',
+        'MEXC','HTX','Crypto.com','Luno','Bitstamp','Gemini','Bithumb','Bitflyer',
+        'BtcTurk','IndependentReserve','WhiteBIT','Exmo','Wise','Bitso','Buda',
+        'VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P (live)'}
+
+    detail_count = 0
+    for r in rows:
+        try:
+            routes = json.loads(r["routes_json"])
+        except Exception:
+            continue
+        for route in routes:
+            via = route.get("via", "")
+            has_api = any(p in via for p in LIVE_PROVIDERS)
+            dw.writerow([
+                r["captured_at"], r["from_currency"], r["to_currency"], r["amount"],
+                route.get("rank", 0), via,
+                route.get("total_cost_pct", 0), route.get("they_receive", 0),
+                has_api
+            ])
+            detail_count += 1
+
+    logger.info(f"Exported {len(rows)} snapshots + {detail_count} detailed routes for {date_str}")
+    return summary_buf.getvalue(), detail_buf.getvalue()
 
 
-def upload_to_hf(csv_content: str, date_str: str):
-    """Upload CSV to Hugging Face dataset."""
+def upload_to_hf(content: bytes, filename: str, commit_msg: str):
+    """Upload a file to Hugging Face dataset."""
     if not HF_TOKEN:
         logger.error("HF_TOKEN not set")
         return False
@@ -69,18 +100,17 @@ def upload_to_hf(csv_content: str, date_str: str):
         from huggingface_hub import HfApi
         api = HfApi(token=HF_TOKEN)
 
-        filename = f"data/rates-{date_str}.csv"
         api.upload_file(
-            path_or_fileobj=csv_content.encode("utf-8"),
+            path_or_fileobj=content,
             path_in_repo=filename,
             repo_id=HF_REPO,
             repo_type="dataset",
-            commit_message=f"Add rate snapshots for {date_str}",
+            commit_message=commit_msg,
         )
         logger.info(f"Uploaded {filename} to {HF_REPO}")
         return True
     except Exception as e:
-        logger.error(f"HF upload failed: {e}")
+        logger.error(f"HF upload failed for {filename}: {e}")
         return False
 
 
@@ -89,9 +119,19 @@ def main():
     yesterday = (datetime.now(UTC) - timedelta(days=1)).strftime("%Y-%m-%d")
     logger.info(f"Exporting data for {yesterday}")
 
-    csv_content = export_day_csv(yesterday)
-    if csv_content:
-        upload_to_hf(csv_content, yesterday)
+    result = export_day_csv(yesterday)
+    if result:
+        summary_csv, detail_csv = result
+        upload_to_hf(
+            summary_csv.encode("utf-8"),
+            f"data/rates-{yesterday}.csv",
+            f"Add rate snapshots for {yesterday}",
+        )
+        upload_to_hf(
+            detail_csv.encode("utf-8"),
+            f"data/routes-{yesterday}.csv",
+            f"Add detailed routes for {yesterday}",
+        )
     else:
         logger.info("No data to upload")
 
