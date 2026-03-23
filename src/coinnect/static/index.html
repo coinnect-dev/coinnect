@@ -700,19 +700,27 @@
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500"></span> <strong>REFERENCE</strong> — Market data aggregator</span>
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> <strong>ESTIMATED</strong> — Published fee tables</span>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
       <!-- Live -->
       <div>
         <div class="flex items-center gap-2 mb-3">
-          <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Live</span>
         </div>
         <div id="providersLive" class="flex flex-wrap gap-2"></div>
       </div>
+      <!-- Official (Central Banks) -->
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+          <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Official</span>
+        </div>
+        <div id="providersOfficial" class="flex flex-wrap gap-2"></div>
+      </div>
       <!-- Reference -->
       <div>
         <div class="flex items-center gap-2 mb-3">
-          <span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+          <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span>
           <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reference</span>
         </div>
         <div id="providersReference" class="flex flex-wrap gap-2"></div>
@@ -732,15 +740,17 @@
 document.addEventListener('DOMContentLoaded',function(){
   // Wait for exchangeLogo and esc to be defined
   setTimeout(function(){
-    const live=['Binance','Kraken','Coinbase','OKX','Bybit','KuCoin','Bitso','Luno','Bitstamp','Gemini','Bithumb','Bitflyer','BtcTurk','Wise','Buda','VALR','CoinDCX','WazirX','SatoshiTango'];
-    const reference=['CoinGecko','Yadio (P2P)','Frankfurter (ECB)','FloatRates','Bluelytics (AR)','CriptoYa (AR)','BCB PTAX (BR)','TRM (CO)'];
-    const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Binance P2P','Western Union','MoneyGram'];
+    const live=['Binance','Kraken','Coinbase','OKX','Bybit','KuCoin','Bitso','Luno','Bitstamp','Gemini','Bithumb','Bitflyer','BtcTurk','Wise','Buda','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P'];
+    const official=['BCB PTAX (BR)','TRM (CO)','Bluelytics (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)','CBR (RU)'];
+    const reference=['CoinGecko','Yadio','Frankfurter (ECB)','FloatRates','CriptoYa (AR)'];
+    const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Western Union','MoneyGram','Nala','Taptap Send'];
     function renderProviders(names,containerId){
       const el=document.getElementById(containerId);
       if(!el)return;
       el.innerHTML=names.map(n=>`<span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5">${typeof exchangeLogo==='function'?exchangeLogo(n,14):''}<span>${typeof esc==='function'?esc(n):n}</span></span>`).join('');
     }
     renderProviders(live,'providersLive');
+    renderProviders(official,'providersOfficial');
     renderProviders(reference,'providersReference');
     renderProviders(estimated,'providersEstimated');
   },100);
