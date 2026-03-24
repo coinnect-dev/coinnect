@@ -66,6 +66,10 @@
   <link rel="stylesheet" href="/static/tailwind.css">
 
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { overflow-x: hidden; max-width: 100vw; }
+    img, svg, video { max-width: 100%; height: auto; }
+    .font-mono { word-break: break-all; }
     :root {
       --bg: #ffffff;
       --bg-surface: #f9fafb;
@@ -1036,11 +1040,11 @@ function exchangeLogo(via,size=14){
 function viaWithLogos(vias,size=14){
   return vias.map(v=>{
     const url=PROVIDER_URL[v];
-    const inner=`${exchangeLogo(v,size)}<span>${v}</span>`;
+    const inner=`${exchangeLogo(v,size)}<span class="truncate max-w-[100px] sm:max-w-none">${v}</span>`;
     return url
-      ?`<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:underline transition-opacity">${inner}</a>`
-      :`<span class="inline-flex items-center gap-1">${inner}</span>`;
-  }).join('<span class="text-gray-300 dark:text-gray-600 mx-0.5">+</span>');
+      ?`<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-cyan-600 dark:text-cyan-400 hover:underline transition-opacity min-w-0">${inner}</a>`
+      :`<span class="inline-flex items-center gap-1 min-w-0">${inner}</span>`;
+  }).join('<span class="text-gray-300 dark:text-gray-600 mx-0.5 shrink-0">+</span>');
 }
 
 let _allRoutes=[];
@@ -1730,13 +1734,13 @@ function renderFeaturedCard(r,from,to,insideTied=false){
   const feePctStr=r.total_cost_pct.toFixed(2);
   return`
     <div class="bg-white dark:bg-gray-900 border ${border} rounded-2xl overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4">
-        <div class="flex items-center gap-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5 sm:py-4">
+        <div class="flex items-center gap-2 min-w-0 flex-wrap">
           ${viaWithLogos(viaList,18)}
           ${isBest?`<span class="text-xs bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5 font-medium">${t('tag_cheapest')}</span>`:''}
         </div>
         <div class="text-right">
-          <div class="text-xl font-bold font-mono ${isBest?'text-emerald-600 dark:text-emerald-400':'text-gray-900 dark:text-white'}">${fmtNum(r.they_receive,to)} <span class="text-sm font-normal text-gray-400">${to}</span></div>
+          <div class="text-lg sm:text-xl font-bold font-mono ${isBest?'text-emerald-600 dark:text-emerald-400':'text-gray-900 dark:text-white'}">${fmtNum(r.they_receive,to)} <span class="text-sm font-normal text-gray-400">${to}</span></div>
           <div class="text-xs text-gray-400">${feeStr} (${feePctStr}%)</div>
         </div>
       </div>
@@ -1802,16 +1806,14 @@ function renderCompactRow(r,from,to){
   const amountVal=parseFloat(document.getElementById('amount').value);
   return`
     <details class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden" ontoggle="if(this.open)trackEvent('route_expanded',{label:'${r.label}',via:'${[...new Set(r.steps.map(s=>s.via))].join('+')}',rank:${r.rank}})">
-      <summary class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-        <span class="text-xs text-gray-400 w-5 shrink-0 font-mono">${r.rank}</span>
-        <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">${viaWithLogos(viaList,14)}</div>
-        <div class="text-right min-w-[100px]">
-          <span class="font-mono font-semibold text-gray-900 dark:text-white">${fmtNum(r.they_receive,to)}</span>
-          <span class="text-gray-400 text-xs ml-1">${to}</span>
+      <summary class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <span class="text-xs text-gray-400 shrink-0 font-mono">${r.rank}</span>
+        <div class="flex-1 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200 min-w-0">${viaWithLogos(viaList,14)}</div>
+        <div class="text-right">
+          <span class="font-mono font-semibold text-gray-900 dark:text-white text-sm">${fmtNum(r.they_receive,to)}</span>
+          <span class="text-gray-400 text-xs">${to}</span>
         </div>
-        <div class="text-right min-w-[70px]">
-          <span class="text-xs text-gray-500">${fmtFee(r,amountVal,from)}</span>
-        </div>
+        <span class="text-xs text-gray-400">${fmtFee(r,amountVal,from)}</span>
         <span class="text-gray-300 text-xs transition-transform group-open:rotate-180">▼</span>
       </summary>
       <div class="border-t border-gray-100 dark:border-gray-800">
