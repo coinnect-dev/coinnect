@@ -57,6 +57,7 @@ _gemini_cache: dict = {"edges": [], "ts": 0.0}
 _bithumb_cache: dict = {"edges": [], "ts": 0.0}
 _bitflyer_cache: dict = {"edges": [], "ts": 0.0}
 _independentreserve_cache: dict = {"edges": [], "ts": 0.0}
+_cryptocompare_cache: dict = {"edges": [], "ts": 0.0}
 
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
@@ -95,6 +96,7 @@ GEMINI_TTL = 180        # 3 minutes
 BITHUMB_TTL = 180       # 3 minutes
 BITFLYER_TTL = 180      # 3 minutes
 INDEPENDENTRESERVE_TTL = 180  # 3 minutes
+CRYPTOCOMPARE_TTL = 180       # 3 minutes
 
 HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
@@ -2415,6 +2417,68 @@ async def get_independentreserve_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"IndependentReserve adapter failed: {e}")
         return _independentreserve_cache["edges"]
+
+    return edges
+
+
+# ── CryptoCompare ─────────────────────────────────────────────────────────────
+
+async def get_cryptocompare_edges() -> list[Edge]:
+    """Fetch composite crypto-to-fiat rates from CryptoCompare (free tier, no auth needed)."""
+    now = time.monotonic()
+    if now - _cryptocompare_cache["ts"] < CRYPTOCOMPARE_TTL and _cryptocompare_cache["edges"]:
+        return _cryptocompare_cache["edges"]
+
+    edges: list[Edge] = []
+    cryptos = ["BTC", "ETH", "USDT", "USDC"]
+    # Fiats that CoinGecko might miss or rate-limit on
+    fiats = ["USD", "EUR", "GBP", "JPY", "KRW", "CAD", "AUD", "CHF", "CNY", "HKD",
+             "SGD", "TWD", "MXN", "BRL", "ARS", "COP", "CLP", "PEN", "INR", "PKR",
+             "BDT", "PHP", "IDR", "THB", "VND", "MYR", "NGN", "KES", "GHS", "ZAR",
+             "TRY", "UAH", "PLN", "CZK", "RON", "ILS", "AED", "SAR", "EGP",
+             "XOF", "XAF", "TZS", "UGX", "RWF", "PYG", "UYU", "DOP", "GTQ",
+             "HNL", "NIO", "CRC", "BOB", "GEL", "NPR"]
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # CryptoCompare allows up to 50 tsyms per call
+            fiat_str = ",".join(fiats)
+            for crypto in cryptos:
+                url = f"https://min-api.cryptocompare.com/data/price?fsym={crypto}&tsyms={fiat_str}"
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                for fiat, rate in data.items():
+                    if not isinstance(rate, (int, float)) or rate <= 0:
+                        continue
+                    # crypto → fiat
+                    edges.append(Edge(
+                        from_currency=crypto,
+                        to_currency=fiat,
+                        via="CryptoCompare",
+                        fee_pct=0.5,
+                        estimated_minutes=20,
+                        instructions=f"Market rate {crypto}\u2192{fiat} (CryptoCompare composite)",
+                        exchange_rate=rate,
+                    ))
+                    # fiat → crypto
+                    edges.append(Edge(
+                        from_currency=fiat,
+                        to_currency=crypto,
+                        via="CryptoCompare",
+                        fee_pct=0.5,
+                        estimated_minutes=20,
+                        instructions=f"Market rate {fiat}\u2192{crypto} (CryptoCompare composite)",
+                        exchange_rate=1.0 / rate,
+                    ))
+
+        _cryptocompare_cache["edges"] = edges
+        _cryptocompare_cache["ts"] = now
+        logger.info(f"CryptoCompare: loaded {len(edges)} edges for {len(cryptos)} cryptos \u00d7 {len(fiats)} fiats")
+    except Exception as e:
+        logger.warning(f"CryptoCompare adapter failed: {e}")
+        return _cryptocompare_cache["edges"]
 
     return edges
 # Bridge edges enabled 2026-03-23T17:10
