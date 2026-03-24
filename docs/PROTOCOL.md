@@ -173,7 +173,7 @@ MRP is designed as a community standard. The reference implementation (Coinnect)
 
 Global remittances move ~$800B/year. Most people sending money across borders pay 5–10% in fees because they have no easy way to compare all options. Banks, crypto rails, mobile money, and P2P platforms all offer different rates for different corridors — but there is no common language for routing across them.
 
-MRP is an attempt to create that common language: a neutral, open, non-profit standard that benefits senders, recipients, and the broader financial inclusion mission — the same way HTTP benefited the open web.
+MRP is an attempt to create that common language: a neutral, open standard that benefits senders, recipients, and the broader financial inclusion mission — the same way HTTP benefited the open web.
 
 We are not building a payment network. We are building the map.
 

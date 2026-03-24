@@ -321,7 +321,7 @@ def _footer_html() -> str:
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     return f"""<footer class="footer">
   <p>Rates updated every 3 minutes. Last render: {html.escape(now)}</p>
-  <p>Non-profit. No affiliate fees. Open data (CC-BY 4.0).</p>
+  <p>Mission-driven. No affiliate fees. Open data (CC-BY 4.0).</p>
   <p><a href="/">Home</a> &middot; <a href="/whitepaper">Whitepaper</a> &middot;
      <a href="/docs">API Docs</a> &middot; <a href="/sitemap.xml">Sitemap</a></p>
   <p>&copy; {datetime.now(UTC).year} <a href="{BASE_URL}">Coinnect</a> — The open map for global money</p>
@@ -448,7 +448,7 @@ def render_corridor_page(
 <li style="margin:.5rem 0"><strong>Pick the cheapest path</strong> — Some routes use crypto as a bridge (e.g. buy USDC, send, sell). Others are direct bank transfers.</li>
 <li style="margin:.5rem 0"><strong>Execute it yourself</strong> — Coinnect never touches your money. Follow the step-by-step instructions for your chosen route.</li>
 </ol>
-<p style="margin-top:.8rem">Coinnect is non-profit, open-source, and takes no affiliate fees. <a href="/whitepaper">Read the whitepaper</a>.</p>
+<p style="margin-top:.8rem">Coinnect is mission-driven, open-source, and takes no affiliate fees. <a href="/whitepaper">Read the whitepaper</a>.</p>
 </div>"""
 
     # FAQ section for SEO
@@ -461,7 +461,7 @@ def render_corridor_page(
 <h3>How often are rates updated?</h3>
 <p>Every 3 minutes. Rates are pulled live from 15+ exchanges and remittance providers.</p>
 <h3>Is Coinnect free?</h3>
-<p>Yes. Non-profit, no affiliate fees, open source. <a href="/">Use the interactive search</a> for any amount.</p>
+<p>Yes. Free for personal use, no affiliate fees, open source. <a href="/">Use the interactive search</a> for any amount.</p>
 </div>"""
 
     # FAQ JSON-LD

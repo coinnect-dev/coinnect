@@ -1,7 +1,9 @@
 # Coinnect — Governance & Participation
 
 > Coinnect is the reference implementation of the **Money Routing Protocol (MRP)**.
-> It is a non-profit, open-source project. No affiliate fees. No investors. No custody.
+> It is a mission-driven, open-source social enterprise. No affiliate fees. No investors. No custody.
+>
+> *During beta, the governance and legal structure may be adjusted as the project evolves.*
 
 ---
 

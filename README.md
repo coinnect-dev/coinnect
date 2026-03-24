@@ -2,7 +2,7 @@
 
 > The free open map for global money.
 
-**[coinnect.bot](https://coinnect.bot)** · Non-profit · Open source · Bot-friendly
+**[coinnect.bot](https://coinnect.bot)** · Mission-driven · Open source · Bot-friendly
 
 ---
 
@@ -36,11 +36,11 @@ GET https://coinnect.bot/v1/quote?from=USD&to=NGN&amount=500
 }
 ```
 
-## Why non-profit?
+## Why mission-driven?
 
 Every comparison platform faces the same problem: the business model eventually compromises the product. Affiliate commissions, promoted listings, premium placements — these introduce bias into what should be a purely informational service.
 
-Coinnect accepts no commission from any exchange, ever. It is funded by voluntary donations from users who save money using it.
+Coinnect accepts no commission from any exchange, ever. It is an open-source social enterprise, API-funded and supported by voluntary donations from users who save money using it.
 
 ## For humans and machines
 

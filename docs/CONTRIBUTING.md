@@ -1,6 +1,6 @@
 # Contributing to Coinnect
 
-Coinnect is the reference implementation of the [Money Routing Protocol (MRP)](PROTOCOL.md). It is open-source, non-profit, and maintained by one person. Contributions are welcome.
+Coinnect is the reference implementation of the [Money Routing Protocol (MRP)](PROTOCOL.md). It is open-source, mission-driven, and maintained by one person. Contributions are welcome.
 
 ---
 

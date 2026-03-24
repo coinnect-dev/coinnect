@@ -218,7 +218,7 @@ app = FastAPI(
         "The open map for global money.\n\n"
         "Finds the cheapest path between any two currencies — "
         "across traditional remittance, crypto exchanges, and P2P platforms.\n\n"
-        "**Non-profit. No affiliate fees. No custody. Free for personal use.**\n\n"
+        "**Mission-driven. No affiliate fees. No custody. Free for personal use.**\n\n"
         "**For AI agents:** call `/v1/quote` as a tool with `from`, `to`, and `amount` parameters. "
         "Or use the MCP server (`python -m coinnect.mcp_server`) for Claude/MCP-compatible agents.\n\n"
         "Rate limits: 20 req/day / 50/hr anonymous (beta) · 1,000/day free key · "
@@ -792,7 +792,7 @@ async def suggest_page():
     </div>
 
     <p class="meta-text">
-      Coinnect is non-profit and open source &middot; <a href="/">Live rates</a> &middot; <a href="/whitepaper">Whitepaper</a>
+      Coinnect is mission-driven and open source &middot; <a href="/">Live rates</a> &middot; <a href="/whitepaper">Whitepaper</a>
     </p>
   </div>
 
@@ -1155,7 +1155,7 @@ async def whitepaper():
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Coinnect Whitepaper — The Open Routing Layer for Global Money</title>
-  <meta name="description" content="Coinnect white paper: open-source money routing layer. Finds cheapest path between any currencies via fiat, crypto, and P2P networks. Non-profit, no affiliate fees.">
+  <meta name="description" content="Coinnect white paper: open-source money routing layer. Finds cheapest path between any currencies via fiat, crypto, and P2P networks. Mission-driven, no affiliate fees.">
   <style>
     *{{box-sizing:border-box;}}
     body{{margin:0;font-family:Georgia,serif;line-height:1.75;color:#1a1a1a;background:#fff;}}

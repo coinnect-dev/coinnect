@@ -109,4 +109,4 @@ Full list at: `GET /v1/corridors`
 - Contact: hello@coinnect.bot
 - Maintained by: Miguel
 
-Coinnect is a non-profit, open-source project. It is not a startup. There are no VCs, no affiliate kickbacks, and no paid placements. Every route is ranked by cost to the sender.
+Coinnect is a mission-driven, open-source project. It is not a startup. There are no VCs, no affiliate kickbacks, and no paid placements. Every route is ranked by cost to the sender.

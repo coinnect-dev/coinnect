@@ -39,9 +39,9 @@ The founding maintainer (Miguel Valencia, `@miguelvalenciav`) is entitled to a s
 
 **Starting salary:** USD 2,500/month (USD 30,000/year)
 
-**Cap rule:** The maintainer salary shall not exceed **10% of total annual organizational revenue** in any given year. If revenue is insufficient, the unpaid portion accrues as deferred compensation to be paid when revenue allows, with no interest.
+**Compensation rule:** Maintainer compensation is determined quarterly, benchmarked to market rates for equivalent open-source infrastructure roles, and adjusted to project revenue. If revenue is insufficient, the unpaid portion accrues as deferred compensation to be paid when revenue allows, with no interest.
 
-**Growth rule:** The target salary scales with organizational size, benchmarked against the compensation of the executive director of a non-profit organization of equivalent budget and impact. Adjustments require a public governance decision with at least 30 days of community notice.
+**Growth rule:** The target salary scales with organizational size, benchmarked against the compensation of the lead maintainer of an open-source social enterprise of equivalent budget and impact. Adjustments require a public governance decision with at least 30 days of community notice.
 
 **Inflation / cost-of-living:** Salary may be adjusted annually by CPI or equivalent cost-of-living index, with no governance vote required, up to a maximum of 8% per year.
 
@@ -59,7 +59,7 @@ Once Coinnect has a legal entity or fiscal sponsor:
 
 | Category | Target allocation |
 |----------|------------------|
-| Maintainer salary | ≤ 10% of revenue |
+| Maintainer salary | determined quarterly, benchmarked to market rates |
 | Infrastructure (servers, APIs, monitoring) | ≤ 15% of revenue |
 | Working group stipends / contributor grants | ≤ 25% of revenue |
 | Research & protocol development | ≤ 20% of revenue |
@@ -80,7 +80,7 @@ Once Coinnect has a legal entity or fiscal sponsor:
 
 USDC on Polygon is preferred for small donations — fees under $0.01. ETH mainnet for larger amounts.
 
-> **Why USDC over USDT?** USDC is issued by Circle, subject to US regulatory oversight, with monthly audited reserves. It is more appropriate for a transparent non-profit treasury.
+> **Why USDC over USDT?** USDC is issued by Circle, subject to US regulatory oversight, with monthly audited reserves. It is more appropriate for a transparent open-source treasury.
 
 > **Why not privacy coins (ZCASH, Monero)?** Transparency is a core value of this organization. All treasury activity is publicly verifiable on-chain.
 
@@ -107,7 +107,9 @@ This data may be freely used for research, training, or analysis. Citation reque
 
 ## Fiscal status
 
-Coinnect is currently an unincorporated open-source project maintained by Miguel Valencia. It is seeking a fiscal sponsor (e.g., Open Source Collective, NLnet, or a dedicated legal entity) to handle formal grant management and treasury governance.
+Coinnect is currently an unincorporated open-source social enterprise maintained by Miguel Valencia. It is seeking a fiscal sponsor (e.g., Open Source Collective, NLnet, or a dedicated legal entity) to handle formal grant management and treasury governance.
+
+> During beta, the governance and legal structure may be adjusted as the project evolves.
 
 Until a fiscal sponsor is established, all funds are managed transparently and reported publicly.
 

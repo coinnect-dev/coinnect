@@ -1,6 +1,6 @@
 # Contributing to Coinnect
 
-Coinnect is a non-profit, open-source project. Contributions are welcome and appreciated.
+Coinnect is a mission-driven, open-source project. Contributions are welcome and appreciated.
 
 ## What we need most
 

@@ -178,5 +178,5 @@
   <text x="114" y="544" font-size="9" fill="#64748b">periodic / estimated</text>
   <circle cx="210" cy="540" r="4" fill="#10b981" opacity="0.7"/>
   <text x="218" y="544" font-size="9" fill="#64748b">SQLite (single file)</text>
-  <text x="750" y="544" text-anchor="end" font-size="9" fill="#334155">coinnect.bot · MIT · non-profit</text>
+  <text x="750" y="544" text-anchor="end" font-size="9" fill="#334155">coinnect.bot · MIT · mission-driven</text>
 </svg>

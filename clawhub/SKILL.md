@@ -95,7 +95,7 @@ Tools: `coinnect_quote`, `coinnect_corridors`, `coinnect_explain_route`, `coinne
 
 ## What makes this different
 
-- **Non-profit** — rankings are by cost, never by who pays us
+- **Mission-driven** — rankings are by cost, never by who pays us
 - **Open source** (MIT) — audit the code, fork it, self-host it
 - **Open data** (CC-BY 4.0) — historical rate snapshots as free CSV
 - **Multi-hop routing** — finds paths through crypto intermediaries that single-provider tools miss

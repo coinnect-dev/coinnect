@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How I Built a Dijkstra-Based Money Routing Engine with 29K Edges</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem; color: #1a1a1a; line-height: 1.7; background: #fff; }
+  h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.3rem; margin-top: 2.5rem; color: #0891b2; }
+  h3 { font-size: 1.05rem; margin-top: 1.5rem; }
+  p { margin: 0.8rem 0; }
+  code { background: #f1f5f9; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.88em; }
+  pre { background: #f1f5f9; padding: 1rem; border-radius: 8px; overflow-x: auto; border: 1px solid #e2e8f0; }
+  pre code { background: none; padding: 0; font-size: 0.85em; }
+  a { color: #0891b2; }
+  strong { color: #111; }
+  ul, li { margin: 0.3rem 0; }
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0; }
+  .copy-hint { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 2rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="copy-hint">Select all (Ctrl+A), copy (Ctrl+C), and paste into dev.to editor in Markdown mode.</div>
+
+<pre style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem; background: #fafafa; padding: 1.5rem; border-radius: 8px;">---
+title: How I Built a Dijkstra-Based Money Routing Engine with 29K Edges
+published: true
+tags: opensource, python, fintech, algorithms
+cover_image: https://coinnect.bot/static/routing-diagram.svg
+---
+
+## The problem nobody talks about
+
+A nurse in the Philippines sends $300 home every month. She's used the same service since 2012. She doesn't know that a two-step route through a stablecoin she's never heard of would save her $18 every month. Over twelve years, that's $2,500 — not stolen, just invisible.
+
+I wanted to build something that shows all the paths. Not a transfer service. Not a wallet. Just a map.
+
+That's [Coinnect](https://coinnect.bot) — an open-source routing engine that finds the cheapest way to move money between any two currencies using any combination of fiat, crypto, and P2P networks.
+
+## Modeling global money as a graph
+
+The core insight: every exchange, remittance provider, and P2P market is just an edge in a directed graph.
+
+```
+Nodes = currencies (USD, MXN, BTC, USDT, NGN, GBP...)
+Edges = conversion paths, each carrying:
+  - exchange_rate
+  - fee_pct
+  - estimated_minutes
+  - provider name
+```
+
+Right now the graph has **29,000+ edges** across **50+ currencies**, pulled from **45+ live data sources** every 3 minutes:
+
+- 21 crypto exchanges via CCXT (Binance, Kraken, Coinbase, OKX...)
+- Wise live FX rates
+- Regional exchanges with direct REST APIs (Bitso, Buda, VALR, CoinDCX, WazirX)
+- Binance P2P real-time median prices for 12 emerging market currencies
+- 10 central bank official rates (Banxico, BCB, TRM, TCMB...)
+- 28 estimated remittance providers (Remitly, Western Union, Paysend, Nala...)
+- Reference FX bridges for exotic corridors (CurrencyAPI, Frankfurter, FloatRates)
+
+Every edge gets refreshed in parallel via `asyncio.gather()` in a background task. The whole refresh takes about 30 seconds.
+
+## The routing algorithm
+
+Finding the cheapest path from INR to GBP sounds simple until you realize the answer might be:
+
+```
+INR → USDT (CoinDCX, 0.5%)
+    → BTC (MEXC, 0.1%)
+    → GBP (Kraken, 0.16%)
+    = 0.76% total
+```
+
+While the "obvious" route — Wise at 2.8% — is almost 4x more expensive.
+
+The engine uses a modified Dijkstra with two passes:
+
+```python
+def _dijkstra(graph, start, end, amount, optimize="cost",
+              max_routes=5, max_steps=4):
+    heap = [(0.0, 0, 0, start, amount, [])]
+    results = []
+    visited_states = {}
+
+    while heap and len(results) &lt; max_routes:
+        priority, _, steps, curr, curr_amount, path = heapq.heappop(heap)
+
+        # Prune by (currency, provider_set) — allows different
+        # exchange combos through the same intermediate currency
+        providers_key = frozenset(e.via for e in path)
+        state = (curr, providers_key)
+        if state in visited_states and visited_states[state] &lt;= priority:
+            continue
+        visited_states[state] = priority
+
+        if curr == end and path:
+            # Compound cost: 1 - ∏(1 - fee_i/100)
+            product = 1.0
+            for e in path:
+                product *= (1 - e.fee_pct / 100)
+            results.append(((1 - product) * 100, curr_amount, path))
+            continue
+
+        if steps >= max_steps:
+            continue
+
+        for edge in graph.get(curr, []):
+            # No provider appears twice in a path
+            if any(e.via == edge.via for e in path):
+                continue
+            new_amount = (curr_amount * edge.exchange_rate
+                          * (1 - edge.fee_pct / 100))
+            new_priority = priority + (
+                edge.fee_pct if optimize == "cost"
+                else edge.estimated_minutes)
+            heapq.heappush(heap, (
+                new_priority, ..., steps + 1,
+                edge.to_currency, new_amount, path + [edge]))
+```
+
+### Key design decisions
+
+**Compound cost, not additive.** If you chain three 1% fees, the real cost isn't 3% — it's `1 - (0.99 × 0.99 × 0.99) = 2.97%`. Small difference, but it matters when comparing routes.
+
+**Provider deduplication.** No exchange appears twice in a path. This prevents circular nonsense like Binance → X → Binance and forces genuine diversity across providers.
+
+**Dual routing pass.** The quote endpoint runs Dijkstra twice: once on the full graph (including reference FX bridges for exotic corridors), once on real providers only (to find pure crypto multi-hop routes that would otherwise be overshadowed by cheaper reference data).
+
+**K-shortest paths, not just shortest.** Classic Dijkstra prunes aggressively — once it visits BTC at step 1 via OKX, it blocks Kraken and Binance from reaching BTC at step 1. My state key includes the provider set, so different exchange combinations through the same currency all get explored.
+
+**Max 4 hops.** Beyond 4 steps, the accumulated fees and complexity make routes impractical. The safety cap is 200K heap pops.
+
+## What I got wrong (and fixed)
+
+**The 1% sanity check.** I had a filter: `they_receive > amount * 0.01` to catch garbage routes. Worked great for USD→MXN. Completely broke INR→GBP — because 388 GBP is the correct answer for 50,000 INR, but 388 &lt; 500 (the threshold calculated in INR units). Fix: just check `> 0`.
+
+**Counter was counting pushes.** My safety cap of 50,000 iterations was counting heap pushes, not pops. With 29K edges, the counter hit 50K almost instantly without exploring anything useful. Switching to counting pops and raising the cap to 200K fixed it.
+
+**Reference providers in user-facing routes.** CoinGecko, central banks, and market rate bridges exist to help the router find exotic paths (like ZAR→ETB). But they're not real transfer services — you can't actually "send money via CoinGecko." I had to filter them from all user-facing results while keeping them available as intermediate hops.
+
+## The stack
+
+It's deliberately simple:
+
+- **FastAPI** with 4 uvicorn workers
+- **SQLite** (WAL mode) for rate history and analytics
+- **Tailwind CSS** built from source (34KB, not the 300KB CDN)
+- **Zero JavaScript frameworks** — vanilla JS, template literals
+- One Python process on one Linux server
+
+No Kubernetes. No microservices. No Redis. The whole thing runs on a single VPS and handles the current load without breaking a sweat.
+
+## What surprised me
+
+**The edges matter more than the algorithm.** Dijkstra is a solved problem. The hard part is getting accurate, fresh data from 45+ sources with different rate limits, auth methods, response formats, and failure modes. Wise blocks you if you make too many requests. CoinGecko rate-limits at 30 req/min. Binance P2P requires a POST with specific body format. Each adapter is its own little battle.
+
+**Reverse corridors are not obvious.** I had USD→INR but not INR→GBP. Someone searched for it, got "no routes found," and I realized we were missing 55 reverse corridors across 10 providers. Now we log every failed search to catch these gaps.
+
+**People don't compare.** The nurse in the Philippines isn't lazy. The information genuinely doesn't exist in one place. Most comparison sites are affiliate-funded and only show providers that pay them. The structural incentive is broken. That's why this has to be mission-driven.
+
+## Try it / break it
+
+- **Live:** [coinnect.bot](https://coinnect.bot)
+- **API:** `GET https://coinnect.bot/v1/quote?from=USD&amp;to=MXN&amp;amount=500`
+- **Code:** [github.com/coinnect-dev/coinnect](https://github.com/coinnect-dev/coinnect) (MIT)
+- **Whitepaper:** [coinnect.bot/whitepaper](https://coinnect.bot/whitepaper)
+
+I built this alone over the past month. I'd genuinely appreciate feedback — especially on corridors that return wrong rates, providers I'm missing, or if you work in the remittance space and want to help. I'm looking for advisors and potentially a co-founder who knows this world better than I do.
+
+If you send money across borders, try your corridor. Tell me what's wrong. That's the most valuable thing you can do.</pre>
+
+</body>
+</html>

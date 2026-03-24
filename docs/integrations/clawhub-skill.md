@@ -12,7 +12,7 @@ name: coinnect
 display_name: "Coinnect — Money Routing"
 description: >
   Find the cheapest multi-step path to send money between any two currencies —
-  fiat, crypto, P2P, or mixed. Non-profit, no affiliate fees, no KYC required.
+  fiat, crypto, P2P, or mixed. Mission-driven, no affiliate fees, no KYC required.
   Returns ranked routes with fees, exchange rates, step-by-step instructions,
   and sender/recipient requirements.
 version: "0.3.0"
