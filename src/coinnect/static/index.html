@@ -1899,6 +1899,14 @@ function renderResults(routes,from,to){
     extras=extras.slice(1);
   }
 
+  // Ensure diversity: if all featured are multi-hop, promote the best single-hop fiat route
+  const bestDirect=extras.find(r=>r.steps.length===1);
+  if(bestDirect && featured.every(r=>r.steps.length>1)){
+    bestDirect.label='Best direct';
+    featured.push(bestDirect);
+    extras=extras.filter(r=>r!==bestDirect);
+  }
+
   if(_activeFilter!=='all'&&featured.length===0){featured=filtered.slice(0,3);extras=filtered.slice(3);}
 
   // extras keep their original labels (not used in compact row display anymore)
@@ -1912,12 +1920,18 @@ function renderResults(routes,from,to){
     ageText.textContent=ageSec<10?t('live_rates'):t('rates_ago').replace('{sec}',ageSec);
   }
 
-  // Group tied cheapest routes into one card; randomize their order
+  // Group tied cheapest routes into one card; randomize, cap at 3
   const TIE=0.1;
   const cheapest=featured.find(r=>r.label==='Cheapest');
-  const tiedCheapest=cheapest
-    ? featured.filter(r=>Math.abs(r.total_cost_pct-cheapest.total_cost_pct)<=TIE)
+  let tiedCheapest=cheapest
+    ? featured.filter(r=>r.label!=='Best direct'&&r.label!=='Fastest'&&Math.abs(r.total_cost_pct-cheapest.total_cost_pct)<=TIE)
     : [];
+  // Cap tied group at 3 — push overflow to extras
+  if(tiedCheapest.length>3){
+    const overflow=tiedCheapest.slice(3);
+    tiedCheapest=tiedCheapest.slice(0,3);
+    extras=[...overflow,...extras];
+  }
   const nonTied=featured.filter(r=>!tiedCheapest.includes(r));
   // Shuffle tied group so no provider always appears first
   const shuffled=[...tiedCheapest].sort(()=>Math.random()-0.5);
