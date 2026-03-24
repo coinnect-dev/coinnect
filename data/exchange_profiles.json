@@ -1,0 +1,386 @@
+{
+  "$schema_version": "1.0.0",
+  "$schema_description": "Exchange Profile schema for Coinnect — factual reference data for money service providers",
+  "$schema": {
+    "type": "object",
+    "required": ["slug", "name", "founded", "headquarters", "website", "integration_status", "coinnect_data_source"],
+    "properties": {
+      "slug":                  { "type": "string",  "description": "URL-safe identifier, e.g. 'wise', 'western-union'" },
+      "name":                  { "type": "string",  "description": "Official company name" },
+      "logo_url":              { "type": "string",  "description": "URL to official logo (press kit or brand page)", "format": "uri" },
+      "founded":               { "type": "integer", "description": "Year the company was founded" },
+      "headquarters":          { "type": "object",  "properties": { "city": { "type": "string" }, "country": { "type": "string" } } },
+      "regulated_in":          { "type": "array",   "items": { "type": "string" }, "description": "List of jurisdictions or regulatory bodies" },
+      "supported_currencies":  { "type": ["integer", "string"], "description": "Count or descriptive range of supported currencies" },
+      "supported_countries":   { "type": ["integer", "string"], "description": "Count or descriptive range of supported countries" },
+      "transfer_methods":      { "type": "array",   "items": { "type": "string" }, "description": "Methods: bank, card, mobile money, crypto, cash pickup, etc." },
+      "fee_model":             { "type": "string",  "description": "Brief factual description of how fees work" },
+      "speed":                 { "type": "string",  "description": "Typical transfer times" },
+      "website":               { "type": "string",  "format": "uri" },
+      "api_docs":              { "type": "string",  "format": "uri", "description": "Public API documentation URL, if available" },
+      "app_stores": {
+        "type": "object",
+        "properties": {
+          "ios":     { "type": "string", "format": "uri" },
+          "android": { "type": "string", "format": "uri" }
+        }
+      },
+      "interesting_facts":     { "type": "array",   "items": { "type": "string" }, "description": "3-5 factual, positive highlights" },
+      "integration_status":    { "type": "string",  "enum": ["live", "estimated", "planned"], "description": "Current status on Coinnect" },
+      "coinnect_data_source":  { "type": "string",  "description": "How Coinnect gets pricing data: CCXT order book, direct API, published fees" }
+    }
+  },
+  "exchanges": [
+    {
+      "slug": "wise",
+      "name": "Wise",
+      "logo_url": "https://wise.com/public-resources/assets/logos/wise/brand_logo.svg",
+      "founded": 2011,
+      "headquarters": { "city": "London", "country": "United Kingdom" },
+      "regulated_in": [
+        "UK — FCA (Financial Conduct Authority)",
+        "US — FinCEN (Money Services Business)",
+        "EU — Electronic Money Institution (Belgium)",
+        "Australia — ASIC",
+        "Canada — FINTRAC",
+        "Singapore — MAS",
+        "Japan — Kanto Local Finance Bureau",
+        "65 licenses worldwide"
+      ],
+      "supported_currencies": 54,
+      "supported_countries": 80,
+      "transfer_methods": ["bank_transfer", "debit_card", "credit_card", "apple_pay", "google_pay", "wise_balance"],
+      "fee_model": "Transparent variable fee (typically 0.33%–4.75% depending on currency pair) applied to the mid-market exchange rate with no markup. Fee shown upfront before confirmation.",
+      "speed": "74% of transfers arrive in under 20 seconds; 95% within one day. Some currency pairs may take 1–6 days.",
+      "website": "https://wise.com",
+      "api_docs": "https://docs.wise.com/api-docs",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/wise-ex-transferwise/id612261027",
+        "android": "https://play.google.com/store/apps/details?id=com.transferwise.android"
+      },
+      "interesting_facts": [
+        "Founded in 2011 by Kristo Kaarmann and Taavet Hinrikus, who were personally frustrated by the cost of converting GBP and EUR.",
+        "Serves over 14.8 million customers, businesses, and banks, moving approximately $16 billion monthly.",
+        "Listed on the London Stock Exchange since July 2021.",
+        "Uses the mid-market exchange rate with no markup — one of the first major providers to do so.",
+        "Holds 65 regulatory licenses worldwide, operating in over 80 countries."
+      ],
+      "integration_status": "live",
+      "coinnect_data_source": "Wise public rates API with corridor-specific published fee estimates"
+    },
+    {
+      "slug": "binance",
+      "name": "Binance",
+      "logo_url": "https://public.bnbstatic.com/static/images/common/logo.svg",
+      "founded": 2017,
+      "headquarters": { "city": "Abu Dhabi", "country": "United Arab Emirates" },
+      "regulated_in": [
+        "UAE — ADGM (Recognised Investment Exchange, Recognised Clearing House, Broker-Dealer)",
+        "France — AMF (registered DASP)",
+        "Dubai — VARA (Virtual Assets Regulatory Authority)",
+        "Bahrain — Central Bank of Bahrain",
+        "Japan — FSA (via local entity)",
+        "18+ regulatory licenses globally"
+      ],
+      "supported_currencies": 1300,
+      "supported_countries": 180,
+      "transfer_methods": ["bank_transfer", "credit_card", "debit_card", "p2p", "crypto_deposit", "mobile_money"],
+      "fee_model": "Spot trading fees start at 0.10% maker/taker, with tiered discounts based on volume and BNB holdings. Fiat deposit/withdrawal fees vary by method and currency.",
+      "speed": "Crypto deposits confirmed in minutes depending on blockchain. Fiat deposits typically 1–3 business days via bank transfer, instant via card.",
+      "website": "https://www.binance.com",
+      "api_docs": "https://developers.binance.com/docs/binance-spot-api-docs/rest-api",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/binance-buy-bitcoin-crypto/id1436799971",
+        "android": "https://play.google.com/store/apps/details?id=com.binance.dev"
+      },
+      "interesting_facts": [
+        "Founded in 2017 by Changpeng Zhao; grew to become the world's largest cryptocurrency exchange by trading volume.",
+        "Serves over 300 million registered users in more than 180 countries.",
+        "Supports over 1,300 cryptocurrencies and 50+ fiat currencies.",
+        "First crypto exchange to secure a global license under the ADGM framework (Abu Dhabi, 2026).",
+        "Operates Binance Academy, one of the largest free crypto education platforms."
+      ],
+      "integration_status": "live",
+      "coinnect_data_source": "CCXT order book (live bid/ask via ccxt.binance)"
+    },
+    {
+      "slug": "western-union",
+      "name": "Western Union",
+      "logo_url": "https://www.westernunion.com/content/dam/wu/brand/logos/wu_logo.svg",
+      "founded": 1851,
+      "headquarters": { "city": "Denver, Colorado", "country": "United States" },
+      "regulated_in": [
+        "US — FinCEN (Money Services Business), state-level money transmitter licenses in all 50 states",
+        "EU — various national regulators",
+        "UK — FCA",
+        "Australia — AUSTRAC",
+        "Licensed in 200+ countries and territories"
+      ],
+      "supported_currencies": 130,
+      "supported_countries": 200,
+      "transfer_methods": ["bank_transfer", "cash_pickup", "mobile_wallet", "debit_card", "credit_card", "home_delivery"],
+      "fee_model": "Fees vary by corridor, amount, delivery method, and payment method. Online transfers tend to have lower fees than in-person agent transactions. Exchange rate includes a margin.",
+      "speed": "Cash pickup available within minutes in many corridors. Bank transfers typically 1–4 business days depending on destination.",
+      "website": "https://www.westernunion.com",
+      "api_docs": "https://developer.westernunion.com",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/western-union-send-money/id389038585",
+        "android": "https://play.google.com/store/apps/details?id=com.westernunion.android.mtapp"
+      },
+      "interesting_facts": [
+        "Founded in 1851, Western Union is one of the oldest financial services companies in the world.",
+        "Operates a network of approximately 455,000 agent locations across 200+ countries and territories.",
+        "Supports transfers in more than 130 currencies.",
+        "Originally a telegraph company — sent the first transcontinental telegram in 1861.",
+        "Publicly traded on the NYSE under ticker symbol WU."
+      ],
+      "integration_status": "estimated",
+      "coinnect_data_source": "Published fees and exchange rate estimates (no public rate API for consumer transfers)"
+    },
+    {
+      "slug": "remitly",
+      "name": "Remitly",
+      "logo_url": "https://www.remitly.com/static/images/remitly-logo.svg",
+      "founded": 2011,
+      "headquarters": { "city": "Seattle, Washington", "country": "United States" },
+      "regulated_in": [
+        "US — FinCEN (Money Services Business), state money transmitter licenses",
+        "UK — FCA (Financial Conduct Authority)",
+        "EU — various national regulators",
+        "Australia — AUSTRAC",
+        "Canada — FINTRAC"
+      ],
+      "supported_currencies": 100,
+      "supported_countries": 170,
+      "transfer_methods": ["bank_transfer", "debit_card", "credit_card", "mobile_wallet", "cash_pickup"],
+      "fee_model": "Per-transfer fee varies by corridor and delivery speed (Express or Economy). Typical fees range from $1.49–$3.99 per transfer. Exchange rate includes a margin that varies by corridor.",
+      "speed": "Express transfers can arrive in minutes (debit/credit card funding). Economy transfers typically 1–3 business days.",
+      "website": "https://www.remitly.com",
+      "api_docs": "https://developer.remitly.com",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/remitly-send-money-abroad/id828492788",
+        "android": "https://play.google.com/store/apps/details?id=com.remitly.androidapp"
+      },
+      "interesting_facts": [
+        "Founded in 2011 by Matt Oppenheimer, Josh Hug, and Shivaas Gulati.",
+        "Publicly traded on NASDAQ under ticker symbol RELY since September 2021.",
+        "Disbursement network includes 435,000+ cash pickup locations, ~4 billion bank accounts, ~1.1 billion mobile wallets, and 900 million cards.",
+        "Supports transfers from 17 sending countries to over 170 receiving countries.",
+        "Acquired Rewire (now Remitly for Immigrants) to serve long-term migrant financial needs."
+      ],
+      "integration_status": "estimated",
+      "coinnect_data_source": "Published fees with open exchange rate API fallback (corridor-specific static estimates)"
+    },
+    {
+      "slug": "okx",
+      "name": "OKX",
+      "logo_url": "https://static.okx.com/cdn/assets/imgs/221/logo.svg",
+      "founded": 2017,
+      "headquarters": { "city": "San Jose, California", "country": "United States" },
+      "regulated_in": [
+        "Seychelles — FSA (Virtual Asset Service Provider)",
+        "UAE — VARA (Virtual Assets Regulatory Authority, Dubai)",
+        "EU — MiCA license (via OKCoin Europe Ltd, Malta)",
+        "Australia — ASIC (registered)",
+        "Singapore — MAS Major Payment Institution license",
+        "US — state-level licenses"
+      ],
+      "supported_currencies": 900,
+      "supported_countries": 100,
+      "transfer_methods": ["bank_transfer", "credit_card", "debit_card", "p2p", "crypto_deposit", "mobile_money"],
+      "fee_model": "Spot trading fees start at 0.08% maker / 0.10% taker, with tiered discounts based on volume and OKB holdings. P2P trading is fee-free for makers.",
+      "speed": "Crypto deposits confirmed in minutes depending on blockchain. Fiat deposits via P2P are typically instant; bank transfers 1–3 business days.",
+      "website": "https://www.okx.com",
+      "api_docs": "https://www.okx.com/docs-v5/en/",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/okx-buy-bitcoin-btc-crypto/id1327268470",
+        "android": "https://play.google.com/store/apps/details?id=com.okinc.okex.gp"
+      },
+      "interesting_facts": [
+        "Founded in 2017 by Star Xu; originally launched as OKEx, rebranded to OKX in 2022.",
+        "Serves over 50 million users across 100+ countries.",
+        "Holds a MiCA-compliant license passported across all 30 EU/EEA member states.",
+        "Offers an integrated Web3 wallet with DEX aggregation, NFT marketplace, and DeFi access.",
+        "Official sponsor of Manchester City F.C. and the McLaren Formula 1 team."
+      ],
+      "integration_status": "live",
+      "coinnect_data_source": "CCXT order book (live bid/ask via ccxt.okx)"
+    },
+    {
+      "slug": "kraken",
+      "name": "Kraken",
+      "logo_url": "https://www.kraken.com/assets/images/kraken-logo.svg",
+      "founded": 2011,
+      "headquarters": { "city": "Cheyenne, Wyoming", "country": "United States" },
+      "regulated_in": [
+        "US — FinCEN (Money Services Business), Wyoming SPDI charter (Special Purpose Depository Institution)",
+        "UK — FCA (registered)",
+        "Ireland — CBI (CASP under MiCA)",
+        "Cyprus — CySEC (MiFID Investment Firm)",
+        "Australia — AUSTRAC (Digital Currency Exchange)",
+        "Canada — registered MSB",
+        "Japan — FSA (registered)",
+        "Argentina — CNV (Virtual Asset Service Provider)"
+      ],
+      "supported_currencies": 430,
+      "supported_countries": 190,
+      "transfer_methods": ["bank_transfer", "crypto_deposit", "debit_card", "credit_card", "wire_transfer", "ach"],
+      "fee_model": "Spot trading fees start at 0.16% maker / 0.26% taker for low volume, decreasing with higher 30-day volume. Fiat deposit/withdrawal fees vary by method (ACH free, wire $5–$35).",
+      "speed": "Crypto deposits confirmed in minutes. ACH deposits available in 1–5 business days; wire transfers 1–5 business days. Instant buy available via card.",
+      "website": "https://www.kraken.com",
+      "api_docs": "https://docs.kraken.com",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/kraken-buy-crypto-bitcoin/id1481947260",
+        "android": "https://play.google.com/store/apps/details?id=com.kraken.trade"
+      },
+      "interesting_facts": [
+        "Founded in 2011 by Jesse Powell; one of the longest-operating crypto exchanges.",
+        "Holds a Wyoming Special Purpose Depository Institution (SPDI) charter — one of the first crypto-native bank charters in the US.",
+        "Supports 6 fiat currencies (USD, EUR, GBP, CAD, AUD, CHF) and 430+ cryptocurrencies.",
+        "Relocated global headquarters from San Francisco to Cheyenne, Wyoming in 2025.",
+        "Licensed as a CASP under MiCA in Ireland, enabling passporting across the EU/EEA."
+      ],
+      "integration_status": "live",
+      "coinnect_data_source": "CCXT order book (live bid/ask via ccxt.kraken)"
+    },
+    {
+      "slug": "moneygram",
+      "name": "MoneyGram",
+      "logo_url": "https://www.moneygram.com/etc.clientlibs/moneygram/clientlibs/clientlib-site/resources/images/moneygram-logo.svg",
+      "founded": 1988,
+      "headquarters": { "city": "Dallas, Texas", "country": "United States" },
+      "regulated_in": [
+        "US — FinCEN (Money Services Business), licensed money transmitter in all 50 states",
+        "US — NY Banking Department (Money Transmitter)",
+        "US — Georgia Department of Banking and Finance (NMLS #898432)",
+        "EU — various national regulators",
+        "UK — FCA",
+        "Licensed in 200+ countries and territories"
+      ],
+      "supported_currencies": 120,
+      "supported_countries": 200,
+      "transfer_methods": ["cash_pickup", "bank_transfer", "mobile_wallet", "debit_card", "credit_card", "home_delivery"],
+      "fee_model": "Fees vary by corridor, amount, delivery method, and payment method. The MoneyGram API provides a quote endpoint with send amount, receive amount, fees, and guaranteed FX rate.",
+      "speed": "Cash pickup available within minutes at 400,000+ agent locations. Bank deposits typically 1–3 business days. Mobile wallet transfers often same-day.",
+      "website": "https://www.moneygram.com",
+      "api_docs": "https://developer.moneygram.com",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/moneygram-money-transfers/id967aborr848904",
+        "android": "https://play.google.com/store/apps/details?id=com.moneygram.sendmoney"
+      },
+      "interesting_facts": [
+        "Formed in 1988; one of the largest global money transfer networks alongside Western Union.",
+        "Operates approximately 400,000 agent locations in 200+ countries and territories.",
+        "Acquired by Madison Dearborn Partners in 2023, becoming a private company after years on NASDAQ.",
+        "Founding federated node operator on Midnight, a privacy-focused blockchain network.",
+        "Offers a public developer API for partners to integrate money transfer and crypto on/off-ramp services."
+      ],
+      "integration_status": "estimated",
+      "coinnect_data_source": "Published fees (MoneyGram developer API available for partner integration)"
+    },
+    {
+      "slug": "payoneer",
+      "name": "Payoneer",
+      "logo_url": "https://www.payoneer.com/wp-content/uploads/payoneer-logo.svg",
+      "founded": 2005,
+      "headquarters": { "city": "New York", "country": "United States" },
+      "regulated_in": [
+        "US — FinCEN (Money Services Business), state money transmitter licenses",
+        "EU — Electronic Money Institution (Central Bank of Ireland)",
+        "UK — FCA (authorized Electronic Money Institution)",
+        "Australia — ASIC",
+        "Japan — FSA",
+        "Hong Kong — Money Service Operator license",
+        "US — OCC national trust bank charter application filed (Feb 2026, for PAYO Digital Bank, N.A.)"
+      ],
+      "supported_currencies": 150,
+      "supported_countries": 200,
+      "transfer_methods": ["bank_transfer", "payoneer_balance", "local_receiving_accounts", "debit_card", "ach"],
+      "fee_model": "Cross-border payments in 150+ currencies. Balance withdrawals to local bank incur a fee of up to 2%. Currency conversion fee up to 2% above mid-market rate. Receiving payments from marketplaces is free.",
+      "speed": "Payments between Payoneer accounts are instant. Bank withdrawals typically 2–5 business days depending on destination country and bank.",
+      "website": "https://www.payoneer.com",
+      "api_docs": "https://www.payoneer.com/developers/",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/payoneer-global-payments/id602920702",
+        "android": "https://play.google.com/store/apps/details?id=com.payoneer.android"
+      },
+      "interesting_facts": [
+        "Founded in 2005; publicly traded on NASDAQ under ticker symbol PAYO since June 2021.",
+        "Serves businesses in over 200 countries, enabling cross-border payments in 150+ currencies.",
+        "Account balances available in USD, EUR, GBP, HKD, and JPY with local receiving accounts.",
+        "Partner of major global marketplaces including Amazon, Fiverr, Upwork, and Airbnb.",
+        "Filed application for a US national trust bank charter (PAYO Digital Bank, N.A.) in February 2026."
+      ],
+      "integration_status": "planned",
+      "coinnect_data_source": "Published fees (Payoneer API available for partner payout integration)"
+    },
+    {
+      "slug": "global66",
+      "name": "Global66",
+      "logo_url": "https://global66.com/assets/images/logo-global66.svg",
+      "founded": 2018,
+      "headquarters": { "city": "Santiago", "country": "Chile" },
+      "regulated_in": [
+        "Chile — CMF (Comision para el Mercado Financiero)",
+        "Colombia — Superintendencia Financiera",
+        "Peru — SBS (Superintendencia de Banca, Seguros y AFP)",
+        "Mexico — CNBV",
+        "Registered in each Latin American market where it operates"
+      ],
+      "supported_currencies": 20,
+      "supported_countries": 80,
+      "transfer_methods": ["bank_transfer", "debit_card", "global66_balance", "smartcard"],
+      "fee_model": "No explicit transfer fee for most international transfers. Revenue comes from a markup on the mid-market exchange rate. Domestic transfers may incur a small fee.",
+      "speed": "Most transfers completed within one business day. Instant transfers between Global66 users.",
+      "website": "https://global66.com",
+      "api_docs": null,
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/global66-tu-cuenta-global/id1460aborr516816",
+        "android": "https://play.google.com/store/apps/details?id=com.global66.cards"
+      },
+      "interesting_facts": [
+        "Founded in 2018 by Tomas Bercovich and Cristobal Forno in Santiago, Chile.",
+        "Operates in 6 Latin American countries (Chile, Colombia, Peru, Mexico, Argentina, Ecuador) with transfers to 80+ destinations.",
+        "Mobilized over US$3.7 billion in transfer volume across Latin America in 2025, a 157% year-over-year growth.",
+        "Offers a SmartCard (currently available in Chile, Colombia, and Peru) for international purchases and ATM withdrawals.",
+        "One of the fastest-growing fintechs in the Latin American cross-border payments space."
+      ],
+      "integration_status": "planned",
+      "coinnect_data_source": "Published fees (no public API available; exchange rate markup estimated from pricing page)"
+    },
+    {
+      "slug": "bitso",
+      "name": "Bitso",
+      "logo_url": "https://bitso.com/assets/images/bitso-logo.svg",
+      "founded": 2014,
+      "headquarters": { "city": "Mexico City", "country": "Mexico" },
+      "regulated_in": [
+        "Mexico — CNBV (registered Financial Technology Institution under Fintech Law)",
+        "Gibraltar — GFSC (Distributed Ledger Technology license)",
+        "Brazil — registered with local regulators",
+        "Argentina — registered with local regulators",
+        "First crypto platform in Latin America licensed by the Gibraltar Financial Services Commission"
+      ],
+      "supported_currencies": 50,
+      "supported_countries": 160,
+      "transfer_methods": ["bank_transfer", "spei", "debit_card", "crypto_deposit", "p2p"],
+      "fee_model": "Spot trading fees start at 0.10%–0.60% maker/taker depending on 30-day volume tier. Fiat deposits via SPEI (Mexico) are free; other deposit methods vary.",
+      "speed": "Crypto deposits confirmed in minutes. SPEI deposits (Mexico) typically within minutes during banking hours. International fiat 1–3 business days.",
+      "website": "https://bitso.com",
+      "api_docs": "https://docs.bitso.com/bitso-api/docs/api-overview",
+      "app_stores": {
+        "ios": "https://apps.apple.com/app/bitso-compra-bitcoin/id1292836438",
+        "android": "https://play.google.com/store/apps/details?id=com.bitso.wallet"
+      },
+      "interesting_facts": [
+        "Founded in 2014 by Daniel Vogel, Ben Peters, and Pablo Gonzalez; the largest cryptocurrency exchange in Latin America.",
+        "First crypto platform in Latin America to receive a DLT license from the Gibraltar Financial Services Commission.",
+        "Registered as a Financial Technology Institution (ITF) under Mexico's Fintech Law, supervised by the CNBV.",
+        "Supports fiat currencies MXN, ARS, COP, and BRL — enabling localized trading across key Latin American markets.",
+        "Offers Bitso Business with APIs for developers to access crypto liquidity and LatAm local payment rails."
+      ],
+      "integration_status": "live",
+      "coinnect_data_source": "Direct API (live order book via Bitso REST API — not in CCXT, custom adapter)"
+    }
+  ]
+}

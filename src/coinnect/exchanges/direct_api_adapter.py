@@ -52,6 +52,11 @@ _bnr_cache: dict = {"edges": [], "ts": 0.0}
 _cbr_cache: dict = {"edges": [], "ts": 0.0}
 _uphold_cache: dict = {"edges": [], "ts": 0.0}
 _ofx_cache: dict = {"edges": [], "ts": 0.0}
+_coinbase_cache: dict = {"edges": [], "ts": 0.0}
+_gemini_cache: dict = {"edges": [], "ts": 0.0}
+_bithumb_cache: dict = {"edges": [], "ts": 0.0}
+_bitflyer_cache: dict = {"edges": [], "ts": 0.0}
+_independentreserve_cache: dict = {"edges": [], "ts": 0.0}
 
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
@@ -85,6 +90,11 @@ BNR_TTL = 3600          # 60 minutes (updates once daily)
 CBR_TTL = 3600          # 60 minutes (updates once daily)
 UPHOLD_TTL = 300        # 5 minutes
 OFX_TTL = 300           # 5 minutes
+COINBASE_TTL = 180      # 3 minutes
+GEMINI_TTL = 180        # 3 minutes
+BITHUMB_TTL = 180       # 3 minutes
+BITFLYER_TTL = 180      # 3 minutes
+INDEPENDENTRESERVE_TTL = 180  # 3 minutes
 
 HEADERS = {"User-Agent": "Coinnect/1.0 (coinnect.bot)"}
 
@@ -2075,6 +2085,336 @@ async def get_ofx_edges() -> list[Edge]:
     except Exception as e:
         logger.warning(f"OFX adapter failed: {e}")
         return _ofx_cache["edges"]
+
+    return edges
+
+
+# ── Coinbase (USD pairs) ─────────────────────────────────────────────────
+
+COINBASE_PAIRS = ["BTC-USD", "ETH-USD", "USDC-USD", "USDT-USD"]
+COINBASE_FEE = 0.60
+
+
+async def get_coinbase_edges() -> list[Edge]:
+    """Fetch live rates from Coinbase Exchange public ticker API."""
+    now = time.monotonic()
+    if _coinbase_cache["edges"] and (now - _coinbase_cache["ts"]) < COINBASE_TTL:
+        return _coinbase_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            for pair in COINBASE_PAIRS:
+                try:
+                    url = f"https://api.exchange.coinbase.com/products/{pair}/ticker"
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                    bid = float(data.get("bid", 0))
+                    ask = float(data.get("ask", 0))
+                    if not bid or not ask:
+                        continue
+
+                    base, quote = pair.split("-")
+                    spread_pct = ((ask - bid) / ask) * 100
+                    total_cost = round(COINBASE_FEE + spread_pct, 3)
+
+                    edges.append(Edge(
+                        from_currency=base,
+                        to_currency=quote,
+                        via="Coinbase",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Sell {base} for {quote} on Coinbase",
+                        exchange_rate=bid,
+                    ))
+                    edges.append(Edge(
+                        from_currency=quote,
+                        to_currency=base,
+                        via="Coinbase",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Buy {base} with {quote} on Coinbase",
+                        exchange_rate=1.0 / ask,
+                    ))
+                except Exception as e:
+                    logger.warning(f"Coinbase pair {pair} failed: {e}")
+
+        _coinbase_cache["edges"] = edges
+        _coinbase_cache["ts"] = now
+        logger.info(f"Coinbase: loaded {len(edges)} edges from {len(COINBASE_PAIRS)} pairs")
+    except Exception as e:
+        logger.warning(f"Coinbase adapter failed: {e}")
+        return _coinbase_cache["edges"]
+
+    return edges
+
+
+# ── Gemini (USD pairs) ───────────────────────────────────────────────────
+
+GEMINI_PAIRS = {"btcusd": ("BTC", "USD"), "ethusd": ("ETH", "USD")}
+GEMINI_FEE = 0.35
+
+
+async def get_gemini_edges() -> list[Edge]:
+    """Fetch live rates from Gemini public ticker API."""
+    now = time.monotonic()
+    if _gemini_cache["edges"] and (now - _gemini_cache["ts"]) < GEMINI_TTL:
+        return _gemini_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            for symbol, (base, quote) in GEMINI_PAIRS.items():
+                try:
+                    url = f"https://api.gemini.com/v1/pubticker/{symbol}"
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                    bid = float(data.get("bid", 0))
+                    ask = float(data.get("ask", 0))
+                    if not bid or not ask:
+                        continue
+
+                    spread_pct = ((ask - bid) / ask) * 100
+                    total_cost = round(GEMINI_FEE + spread_pct, 3)
+
+                    edges.append(Edge(
+                        from_currency=base,
+                        to_currency=quote,
+                        via="Gemini",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Sell {base} for {quote} on Gemini",
+                        exchange_rate=bid,
+                    ))
+                    edges.append(Edge(
+                        from_currency=quote,
+                        to_currency=base,
+                        via="Gemini",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Buy {base} with {quote} on Gemini",
+                        exchange_rate=1.0 / ask,
+                    ))
+                except Exception as e:
+                    logger.warning(f"Gemini pair {symbol} failed: {e}")
+
+        _gemini_cache["edges"] = edges
+        _gemini_cache["ts"] = now
+        logger.info(f"Gemini: loaded {len(edges)} edges from {len(GEMINI_PAIRS)} pairs")
+    except Exception as e:
+        logger.warning(f"Gemini adapter failed: {e}")
+        return _gemini_cache["edges"]
+
+    return edges
+
+
+# ── Bithumb (KRW pairs) ─────────────────────────────────────────────────
+
+BITHUMB_COINS = {"BTC", "ETH", "USDT", "XRP"}
+BITHUMB_FEE = 0.25
+
+
+async def get_bithumb_edges() -> list[Edge]:
+    """Fetch live KRW rates from Bithumb public ticker API (single bulk call)."""
+    now = time.monotonic()
+    if _bithumb_cache["edges"] and (now - _bithumb_cache["ts"]) < BITHUMB_TTL:
+        return _bithumb_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            resp = await client.get("https://api.bithumb.com/public/ticker/ALL_KRW")
+            resp.raise_for_status()
+            data = resp.json()
+
+        payload = data.get("data", {})
+        for coin in BITHUMB_COINS:
+            ticker = payload.get(coin)
+            if not ticker:
+                continue
+
+            # Bithumb returns opening/closing/min/max plus buy/sell prices
+            buy_price = float(ticker.get("buy_price", 0))   # best bid
+            sell_price = float(ticker.get("sell_price", 0))  # best ask
+            if not buy_price or not sell_price:
+                # Fallback to closing_price if bid/ask missing
+                closing = float(ticker.get("closing_price", 0))
+                if not closing:
+                    continue
+                buy_price = closing
+                sell_price = closing
+
+            spread_pct = ((sell_price - buy_price) / sell_price) * 100 if sell_price > buy_price else 0
+            total_cost = round(BITHUMB_FEE + spread_pct, 3)
+
+            edges.append(Edge(
+                from_currency=coin,
+                to_currency="KRW",
+                via="Bithumb",
+                fee_pct=total_cost,
+                estimated_minutes=15,
+                instructions=f"Sell {coin} for KRW on Bithumb (Korean Won)",
+                exchange_rate=buy_price,
+            ))
+            edges.append(Edge(
+                from_currency="KRW",
+                to_currency=coin,
+                via="Bithumb",
+                fee_pct=total_cost,
+                estimated_minutes=15,
+                instructions=f"Buy {coin} with KRW on Bithumb (Korean Won)",
+                exchange_rate=1.0 / sell_price,
+            ))
+
+        _bithumb_cache["edges"] = edges
+        _bithumb_cache["ts"] = now
+        logger.info(f"Bithumb: loaded {len(edges)} edges for {len(BITHUMB_COINS)} KRW pairs")
+    except Exception as e:
+        logger.warning(f"Bithumb adapter failed: {e}")
+        return _bithumb_cache["edges"]
+
+    return edges
+
+
+# ── Bitflyer (JPY pairs) ────────────────────────────────────────────────
+
+BITFLYER_PRODUCTS = {"BTC_JPY": ("BTC", "JPY"), "ETH_JPY": ("ETH", "JPY")}
+BITFLYER_FEE = 0.15
+
+
+async def get_bitflyer_edges() -> list[Edge]:
+    """Fetch live JPY rates from bitFlyer public ticker API."""
+    now = time.monotonic()
+    if _bitflyer_cache["edges"] and (now - _bitflyer_cache["ts"]) < BITFLYER_TTL:
+        return _bitflyer_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            for product_code, (base, quote) in BITFLYER_PRODUCTS.items():
+                try:
+                    url = f"https://api.bitflyer.com/v1/ticker?product_code={product_code}"
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                    best_bid = float(data.get("best_bid", 0))
+                    best_ask = float(data.get("best_ask", 0))
+                    if not best_bid or not best_ask:
+                        # Fallback to ltp (last traded price)
+                        ltp = float(data.get("ltp", 0))
+                        if not ltp:
+                            continue
+                        best_bid = ltp
+                        best_ask = ltp
+
+                    spread_pct = ((best_ask - best_bid) / best_ask) * 100 if best_ask > best_bid else 0
+                    total_cost = round(BITFLYER_FEE + spread_pct, 3)
+
+                    edges.append(Edge(
+                        from_currency=base,
+                        to_currency=quote,
+                        via="bitFlyer",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Sell {base} for {quote} on bitFlyer (Japanese Yen)",
+                        exchange_rate=best_bid,
+                    ))
+                    edges.append(Edge(
+                        from_currency=quote,
+                        to_currency=base,
+                        via="bitFlyer",
+                        fee_pct=total_cost,
+                        estimated_minutes=15,
+                        instructions=f"Buy {base} with {quote} on bitFlyer (Japanese Yen)",
+                        exchange_rate=1.0 / best_ask,
+                    ))
+                except Exception as e:
+                    logger.warning(f"bitFlyer product {product_code} failed: {e}")
+
+        _bitflyer_cache["edges"] = edges
+        _bitflyer_cache["ts"] = now
+        logger.info(f"bitFlyer: loaded {len(edges)} edges from {len(BITFLYER_PRODUCTS)} products")
+    except Exception as e:
+        logger.warning(f"bitFlyer adapter failed: {e}")
+        return _bitflyer_cache["edges"]
+
+    return edges
+
+
+# ── IndependentReserve (AUD pairs) ──────────────────────────────────────
+
+INDEPENDENTRESERVE_PAIRS = [
+    ("xbt", "aud", "BTC", "AUD"),
+    ("eth", "aud", "ETH", "AUD"),
+    ("usdt", "aud", "USDT", "AUD"),
+    ("usdc", "aud", "USDC", "AUD"),
+]
+INDEPENDENTRESERVE_FEE = 0.50
+
+
+async def get_independentreserve_edges() -> list[Edge]:
+    """Fetch live AUD rates from IndependentReserve public market summary API."""
+    now = time.monotonic()
+    if _independentreserve_cache["edges"] and (now - _independentreserve_cache["ts"]) < INDEPENDENTRESERVE_TTL:
+        return _independentreserve_cache["edges"]
+
+    edges: list[Edge] = []
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            for primary, secondary, base, quote in INDEPENDENTRESERVE_PAIRS:
+                try:
+                    url = (
+                        f"https://api.independentreserve.com/Public/GetMarketSummary"
+                        f"?primaryCurrencyCode={primary}&secondaryCurrencyCode={secondary}"
+                    )
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                    best_bid = float(data.get("CurrentHighestBidPrice", 0))
+                    best_ask = float(data.get("CurrentLowestOfferPrice", 0))
+                    if not best_bid or not best_ask:
+                        last = float(data.get("LastPrice", 0))
+                        if not last:
+                            continue
+                        best_bid = last
+                        best_ask = last
+
+                    spread_pct = ((best_ask - best_bid) / best_ask) * 100 if best_ask > best_bid else 0
+                    total_cost = round(INDEPENDENTRESERVE_FEE + spread_pct, 3)
+
+                    edges.append(Edge(
+                        from_currency=base,
+                        to_currency=quote,
+                        via="IndependentReserve",
+                        fee_pct=total_cost,
+                        estimated_minutes=20,
+                        instructions=f"Sell {base} for {quote} on IndependentReserve (AUD)",
+                        exchange_rate=best_bid,
+                    ))
+                    edges.append(Edge(
+                        from_currency=quote,
+                        to_currency=base,
+                        via="IndependentReserve",
+                        fee_pct=total_cost,
+                        estimated_minutes=20,
+                        instructions=f"Buy {base} with {quote} on IndependentReserve (AUD)",
+                        exchange_rate=1.0 / best_ask,
+                    ))
+                except Exception as e:
+                    logger.warning(f"IndependentReserve {base}/{quote} failed: {e}")
+
+        _independentreserve_cache["edges"] = edges
+        _independentreserve_cache["ts"] = now
+        logger.info(f"IndependentReserve: loaded {len(edges)} edges from {len(INDEPENDENTRESERVE_PAIRS)} pairs")
+    except Exception as e:
+        logger.warning(f"IndependentReserve adapter failed: {e}")
+        return _independentreserve_cache["edges"]
 
     return edges
 # Bridge edges enabled 2026-03-23T17:10

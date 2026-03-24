@@ -59,6 +59,8 @@ async def _refresh_once(force: bool = False) -> int:
         get_nbu_edges, get_nbg_edges, get_boi_edges, get_bnr_edges,
         # get_cbr_edges removed — sanctioned country
         get_uphold_edges, get_ofx_edges,
+        get_coinbase_edges, get_gemini_edges, get_bithumb_edges,
+        get_bitflyer_edges, get_independentreserve_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     from coinnect.routing.engine import build_quote
@@ -75,6 +77,8 @@ async def _refresh_once(force: bool = False) -> int:
         tcmb_edges, nrb_edges, nbp_edges, cnb_edges,
         nbu_edges, nbg_edges, boi_edges, bnr_edges,
         uphold_edges, ofx_edges,
+        coinbase_edges, gemini_edges, bithumb_edges,
+        bitflyer_edges, independentreserve_edges,
         calc_edges,
     ) = await asyncio.gather(
         get_all_edges(force_refresh=force),
@@ -114,6 +118,11 @@ async def _refresh_once(force: bool = False) -> int:
         # get_cbr_edges() removed — sanctioned country
         get_uphold_edges(),
         get_ofx_edges(),
+        get_coinbase_edges(),
+        get_gemini_edges(),
+        get_bithumb_edges(),
+        get_bitflyer_edges(),
+        get_independentreserve_edges(),
         get_calculator_edges(),
     )
     all_edges = (
@@ -128,6 +137,8 @@ async def _refresh_once(force: bool = False) -> int:
         + tcmb_edges + nrb_edges + nbp_edges + cnb_edges
         + nbu_edges + nbg_edges + boi_edges + bnr_edges
         + uphold_edges + ofx_edges
+        + coinbase_edges + gemini_edges + bithumb_edges
+        + bitflyer_edges + independentreserve_edges
         + calc_edges
     )
 
@@ -432,6 +443,8 @@ async def _get_all_edges_cached() -> list:
         get_nbu_edges, get_nbg_edges, get_boi_edges, get_bnr_edges,
         # get_cbr_edges removed — sanctioned country
         get_uphold_edges, get_ofx_edges,
+        get_coinbase_edges, get_gemini_edges, get_bithumb_edges,
+        get_bitflyer_edges, get_independentreserve_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
     results = await asyncio.gather(
@@ -472,6 +485,11 @@ async def _get_all_edges_cached() -> list:
         # get_cbr_edges() removed — sanctioned country
         get_uphold_edges(),
         get_ofx_edges(),
+        get_coinbase_edges(),
+        get_gemini_edges(),
+        get_bithumb_edges(),
+        get_bitflyer_edges(),
+        get_independentreserve_edges(),
         get_calculator_edges(),
     )
     all_edges = []

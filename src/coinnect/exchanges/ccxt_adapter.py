@@ -19,7 +19,7 @@ SUPPORTED_EXCHANGES = {
     # Tier 1 — Global majors
     "kraken":   {"class": ccxt.kraken,   "fee_pct": 0.26},
     "binance":  {"class": ccxt.binance,  "fee_pct": 0.10},
-    "coinbase": {"class": ccxt.coinbase, "fee_pct": 0.60},
+    # coinbase: moved to direct_api_adapter (fetchTickers returns None bid/ask)
     "okx":      {"class": ccxt.okx,      "fee_pct": 0.10},
     "bybit":    {"class": ccxt.bybit,    "fee_pct": 0.10},
     "kucoin":   {"class": ccxt.kucoin,   "fee_pct": 0.10},
@@ -31,11 +31,9 @@ SUPPORTED_EXCHANGES = {
     # Tier 2 — Regional (unlock local fiat pairs)
     "luno":           {"class": ccxt.luno,           "fee_pct": 0.10},  # ZAR, NGN, IDR, MYR
     "bitstamp":       {"class": ccxt.bitstamp,       "fee_pct": 0.50},  # EUR, USD
-    "gemini":         {"class": ccxt.gemini,         "fee_pct": 0.35},  # USD
-    "bithumb":        {"class": ccxt.bithumb,        "fee_pct": 0.25},  # KRW (Korea)
-    "bitflyer":       {"class": ccxt.bitflyer,       "fee_pct": 0.15},  # JPY (Japan)
+    # gemini, bithumb, bitflyer: moved to direct_api_adapter (fetchTickers returns None bid/ask)
     "btcturk":        {"class": ccxt.btcturk,        "fee_pct": 0.25},  # TRY (Turkey)
-    "independentreserve": {"class": ccxt.independentreserve, "fee_pct": 0.50},  # AUD
+    # independentreserve: moved to direct_api_adapter (fetchTickers returns None bid/ask)
     "whitebit":       {"class": ccxt.whitebit,       "fee_pct": 0.10},  # EUR
     # exmo removed — primarily serves sanctioned RUB market
     # bitso, mercado: fetchTickers() not supported by CCXT — handled in direct_api_adapter
