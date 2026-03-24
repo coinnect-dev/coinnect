@@ -1183,10 +1183,27 @@ function getLocalCurrency(){
   return LOCALE_CURRENCY[lang]||LOCALE_CURRENCY[lang.split('-')[0]]||'MXN';
 }
 
+function prioritizeLocalCurrency(selectEl, currencyCode){
+  // Move the user's local currency to the very top of the dropdown
+  const opt=[...selectEl.options].find(o=>o.value===currencyCode);
+  if(!opt)return;
+  // Create a "Your currency" group at position 0
+  const topGroup=document.createElement('optgroup');
+  topGroup.label='📍 Your currency';
+  const clone=opt.cloneNode(true);
+  topGroup.appendChild(clone);
+  selectEl.insertBefore(topGroup, selectEl.firstChild);
+}
+
 function applyLocaleDefaults(){
   const localCur=getLocalCurrency();
   const fromSel=document.getElementById('from');
   const toSel=document.getElementById('to');
+  // Prioritize local currency at top of both selectors
+  prioritizeLocalCurrency(fromSel, localCur);
+  prioritizeLocalCurrency(toSel, localCur);
+  // Also add USD to top of TO if not already local
+  if(localCur!=='USD')prioritizeLocalCurrency(toSel,'USD');
   // Default: USD → local currency, $100
   fromSel.value='USD';
   const opt=[...toSel.options].find(o=>o.value===localCur);
