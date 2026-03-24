@@ -1971,12 +1971,44 @@ async def get_uphold_edges() -> list[Edge]:
 OFX_FEE = 0.50
 
 
+_ofx_token_cache: dict = {"token": "", "ts": 0.0}
+_OFX_TOKEN_TTL = 3000  # ~50 min (tokens last 60 min)
+
+
+async def _ofx_get_token(client: httpx.AsyncClient) -> str | None:
+    """Get OFX OAuth2 access token using client credentials."""
+    now = time.monotonic()
+    if _ofx_token_cache["token"] and (now - _ofx_token_cache["ts"]) < _OFX_TOKEN_TTL:
+        return _ofx_token_cache["token"]
+    cid = os.environ.get("OFX_CLIENT_ID", "")
+    secret = os.environ.get("OFX_CLIENT_SECRET", "")
+    if not cid or not secret:
+        return None
+    try:
+        resp = await client.post(
+            "https://api.ofx.com/v1/oauth/token",
+            data={"grant_type": "client_credentials", "scope": "ofxrates"},
+            auth=(cid, secret),
+            timeout=10,
+        )
+        resp.raise_for_status()
+        token = resp.json().get("access_token", "")
+        if token:
+            _ofx_token_cache["token"] = token
+            _ofx_token_cache["ts"] = now
+        return token
+    except Exception as e:
+        logger.warning(f"OFX token failed: {e}")
+        return None
+
+
 async def get_ofx_edges() -> list[Edge]:
-    """Fetch live rates from OFX Rates API. Requires OFX_API_KEY env var.
+    """Fetch live rates from OFX Rates API (OAuth2).
+    Requires OFX_CLIENT_ID + OFX_CLIENT_SECRET env vars.
     Register free at https://developer.ofx.com/rates-api
     """
-    api_key = os.environ.get("OFX_API_KEY")
-    if not api_key:
+    cid = os.environ.get("OFX_CLIENT_ID", "")
+    if not cid:
         return []
 
     now = time.monotonic()
@@ -1984,43 +2016,49 @@ async def get_ofx_edges() -> list[Edge]:
         return _ofx_cache["edges"]
 
     edges: list[Edge] = []
-    # OFX corridors to query
     corridors = [
-        ("USD", "MXN"), ("USD", "EUR"), ("USD", "GBP"),
-        ("USD", "AUD"), ("USD", "CAD"), ("USD", "INR"),
-        ("EUR", "GBP"), ("EUR", "USD"), ("GBP", "USD"),
+        ("USD", "MXN"), ("USD", "EUR"), ("USD", "GBP"), ("USD", "AUD"),
+        ("USD", "CAD"), ("USD", "INR"), ("USD", "PHP"), ("USD", "BRL"),
+        ("USD", "NGN"), ("USD", "KES"), ("USD", "ZAR"), ("USD", "SGD"),
+        ("EUR", "GBP"), ("EUR", "USD"), ("EUR", "MXN"), ("EUR", "INR"),
+        ("GBP", "USD"), ("GBP", "EUR"), ("GBP", "INR"),
+        ("AUD", "USD"), ("AUD", "GBP"), ("CAD", "USD"),
     ]
     try:
-        async with httpx.AsyncClient(
-            headers={**HEADERS, "Authorization": f"Bearer {api_key}"},
-            timeout=15,
-        ) as client:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+            token = await _ofx_get_token(client)
+            if not token:
+                logger.warning("OFX: no token — skipping")
+                return _ofx_cache.get("edges", [])
+
             for source, dest in corridors:
                 try:
                     resp = await client.get(
-                        f"https://api.ofx.com/v1/rates?source={source}&destination={dest}"
+                        "https://api.ofx.com/v1/rates",
+                        params={"source": source, "destination": dest, "amount": "1000"},
+                        headers={"Authorization": f"Bearer {token}"},
                     )
                     resp.raise_for_status()
                     data = resp.json()
-                    rate = float(data.get("rate", 0) or data.get("Rate", 0))
+                    rate = float(data.get("rate", 0) or data.get("customerRate", 0) or 0)
                     if not rate:
                         continue
                     edges.append(Edge(
                         from_currency=source,
                         to_currency=dest,
                         via="OFX",
-                        fee_pct=OFX_FEE,
+                        fee_pct=0.4,
                         estimated_minutes=1440,
-                        instructions=f"Transfer {source} to {dest} via OFX",
+                        instructions=f"Transfer {source} to {dest} via OFX — ~1 business day",
                         exchange_rate=rate,
                     ))
                     edges.append(Edge(
                         from_currency=dest,
                         to_currency=source,
                         via="OFX",
-                        fee_pct=OFX_FEE,
+                        fee_pct=0.4,
                         estimated_minutes=1440,
-                        instructions=f"Transfer {dest} to {source} via OFX",
+                        instructions=f"Transfer {dest} to {source} via OFX — ~1 business day",
                         exchange_rate=1.0 / rate,
                     ))
                 except Exception as inner_e:
