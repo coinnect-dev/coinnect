@@ -292,7 +292,7 @@ async def security_headers(request: Request, call_next):
         "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com; "
         "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; "
         "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data:; "
+        "img-src 'self' data: https://api.qrserver.com https://www.google.com; "
         "frame-ancestors 'none'"
     )
     if "Via" in response.headers:
