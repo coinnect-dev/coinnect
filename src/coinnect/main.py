@@ -28,6 +28,16 @@ STATIC_DIR = Path(__file__).parent / "static"
 DOCS_DIR = Path(__file__).parent.parent.parent / "docs"
 
 
+# ── Global edge store + quote cache ────────────────────────────────────────
+_edges_store: dict = {"edges": [], "ts": 0.0}
+_quote_cache: dict[str, dict] = {}
+
+
+def get_cached_edges() -> list:
+    """Return edges from the last background refresh (instant, no network calls)."""
+    return _edges_store.get("edges", [])
+
+
 # ── Background rate refresh ─────────────────────────────────────────────────
 
 async def _refresh_once(force: bool = False) -> int:
@@ -125,6 +135,10 @@ async def _refresh_once(force: bool = False) -> int:
         logger.warning("Refresh returned 0 edges")
         return 0
 
+    # Store edges globally for instant access by quote endpoint
+    _edges_store["edges"] = all_edges
+    _edges_store["ts"] = __import__('time').monotonic()
+
     # Record snapshot + pre-compute quote cache for tracked corridors
     for from_c, to_c, amount in TRACKED_CORRIDORS:
         try:
@@ -140,10 +154,6 @@ async def _refresh_once(force: bool = False) -> int:
             logger.debug(f"Snapshot failed {from_c}→{to_c}: {e}")
 
     return len(all_edges)
-
-
-# Pre-computed quote cache for popular corridors — filled by _refresh_once
-_quote_cache: dict[str, dict] = {}
 
 
 async def _refresh_loop() -> None:

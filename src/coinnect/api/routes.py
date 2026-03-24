@@ -173,9 +173,12 @@ async def quote(
         if not allowed:
             raise _rate_limit_error(info)
 
-    # ── Fetch edges & build quote ────────────────────────────────────────────
-    from coinnect.main import _get_all_edges_cached
-    all_edges = await _get_all_edges_cached()
+    # ── Fetch edges from background cache (instant, no network calls) ────────
+    from coinnect.main import get_cached_edges, _get_all_edges_cached
+    all_edges = get_cached_edges()
+    if not all_edges:
+        # First request before background refresh completes — fetch live
+        all_edges = await _get_all_edges_cached()
     # Reference-only providers — pure data sources, NOT real transfer services.
     # These should only appear as MIDDLE steps in multi-hop routes.
     # CriptoYa individual exchange names use the "(AR)" suffix pattern.
