@@ -316,11 +316,35 @@ async def exchanges():
 async def providers_status():
     """Returns freshness and edge count per provider — used by frontend to sort provider list."""
     from coinnect.main import get_cached_edges
-    import time as _t
+    import time
+    from coinnect.exchanges.direct_api_adapter import (
+        _bitso_cache, _buda_cache, _coingecko_cache, _valr_cache,
+        _coindcx_cache, _wazirx_cache, _satoshitango_cache,
+        _floatrates_cache, _yadio_cache, _bluelytics_cache,
+        _criptoya_cache, _bcb_cache, _banxico_cache, _trm_cache,
+        _frankfurter_cache, _currencyapi_cache, _binance_p2p_cache,
+        _uphold_cache, _strike_cache,
+    )
+    from coinnect.exchanges.wise_adapter import _wise_rate_cache, _rate_cache as _wise_fx_cache
+
+    now = time.monotonic()
+    # Map provider name → cache timestamp
+    cache_map = {
+        'Bitso': _bitso_cache, 'Buda': _buda_cache, 'CoinGecko (market)': _coingecko_cache,
+        'VALR': _valr_cache, 'CoinDCX': _coindcx_cache, 'WazirX': _wazirx_cache,
+        'SatoshiTango': _satoshitango_cache, 'FloatRates': _floatrates_cache,
+        'Yadio (P2P)': _yadio_cache, 'Bluelytics (AR)': _bluelytics_cache,
+        'CriptoYa': _criptoya_cache, 'BCB PTAX (BR)': _bcb_cache,
+        'Banxico (MX)': _banxico_cache, 'TRM (CO)': _trm_cache,
+        'Frankfurter': _frankfurter_cache, 'CurrencyAPI': _currencyapi_cache,
+        'Binance P2P (live)': _binance_p2p_cache, 'Uphold': _uphold_cache,
+        'Strike': _strike_cache,
+    }
+
     edges = get_cached_edges()
     if not edges:
         return {"providers": []}
-    # Group edges by provider, count and check freshness
+
     providers: dict[str, dict] = {}
     for e in edges:
         via = e.via
@@ -328,13 +352,21 @@ async def providers_status():
             providers[via] = {"name": via, "edges": 0, "corridors": set()}
         providers[via]["edges"] += 1
         providers[via]["corridors"].add(f"{e.from_currency}-{e.to_currency}")
+
     result = []
-    for via, info in sorted(providers.items(), key=lambda x: -x[1]["edges"]):
+    for via, info in providers.items():
+        # Find cache age
+        cache = cache_map.get(via)
+        ts = cache.get("ts", 0) if cache else 0
+        age_sec = round(now - ts) if ts > 0 else None
         result.append({
             "name": info["name"],
             "edges": info["edges"],
             "corridors": len(info["corridors"]),
+            "age_seconds": age_sec,
         })
+    # Sort: freshest first (lowest age), None (no cache) last
+    result.sort(key=lambda x: (x["age_seconds"] is None, x["age_seconds"] or 999999))
     return {"providers": result, "total_edges": len(edges)}
 
 

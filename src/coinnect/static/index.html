@@ -756,24 +756,39 @@ document.addEventListener('DOMContentLoaded',function(){
     const official=['BCB PTAX (BR)','Banxico (MX)','TRM (CO)','Bluelytics (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)'];
     const reference=['CoinGecko','Yadio','Frankfurter (ECB)','FloatRates','CriptoYa (AR)'];
     const estimated=['Remitly','WorldRemit','Ria','Sendwave','Xoom','Paysend','OFX','TransferGo','Skrill','Revolut','Strike','XE','Global66','Atlantic Money','Intermex','CurrencyFair','Western Union','MoneyGram','Nala','Taptap Send'];
-    // Fetch live status to sort by edge count and gray out inactive
+    // Fetch live status to sort by freshness and gray out inactive
     fetch('/v1/providers/status').then(r=>r.json()).then(d=>{
       const status={};
-      (d.providers||[]).forEach(p=>{status[p.name]=p.edges;});
-      function sortByEdges(names){
-        return [...names].sort((a,b)=>(status[b]||0)-(status[a]||0));
+      (d.providers||[]).forEach(p=>{status[p.name]={edges:p.edges,age:p.age_seconds};});
+      function fmtAge(sec){
+        if(sec===null||sec===undefined)return'est.';
+        if(sec<120)return'~'+sec+'s ago';
+        if(sec<7200)return'~'+Math.round(sec/60)+'m ago';
+        if(sec<172800)return'~'+Math.round(sec/3600)+'h ago';
+        return'~'+Math.round(sec/86400)+'d ago';
+      }
+      function sortByFreshness(names){
+        return [...names].sort((a,b)=>{
+          const aa=status[a],bb=status[b];
+          const ageA=aa?aa.age:999999,ageB=bb?bb.age:999999;
+          if(ageA===null&&ageB!==null)return 1;
+          if(ageB===null&&ageA!==null)return -1;
+          return(ageA||999999)-(ageB||999999);
+        });
       }
       function renderProviders(names,containerId){
         const el=document.getElementById(containerId);
         if(!el)return;
-        el.innerHTML=sortByEdges(names).map(n=>{
-          const edges=status[n]||0;
+        el.innerHTML=sortByFreshness(names).map(n=>{
+          const info=status[n];
+          const edges=info?info.edges:0;
+          const age=info?info.age:null;
           const active=edges>0;
           const cls=active
             ?'text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-            :'text-gray-400 dark:text-gray-600 bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800 opacity-50';
-          const badge=active?`<span class="text-[8px] text-gray-400 ml-0.5">${edges}</span>`:'';
-          return`<span class="inline-flex items-center gap-1.5 text-xs ${cls} border rounded-lg px-2.5 py-1.5" title="${edges} edges">${typeof exchangeLogo==='function'?exchangeLogo(n,14):''}<span>${typeof esc==='function'?esc(n):n}</span>${badge}</span>`;
+            :'text-gray-400 dark:text-gray-600 bg-gray-50/50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-800 opacity-40';
+          const ageStr=active?fmtAge(age):'offline';
+          return`<span class="inline-flex items-center gap-1.5 text-xs ${cls} border rounded-lg px-2.5 py-1.5" title="${edges} edges · ${ageStr}">${typeof exchangeLogo==='function'?exchangeLogo(n,14):''}<span>${typeof esc==='function'?esc(n):n}</span><span class="text-[8px] ${active?'text-gray-400':'text-gray-300 dark:text-gray-700'}">${ageStr}</span></span>`;
         }).join('');
       }
       renderProviders(live,'providersLive');
@@ -781,7 +796,6 @@ document.addEventListener('DOMContentLoaded',function(){
       renderProviders(reference,'providersReference');
       renderProviders(estimated,'providersEstimated');
     }).catch(()=>{
-      // Fallback: render without status
       function renderProviders(names,containerId){
         const el=document.getElementById(containerId);
         if(!el)return;
