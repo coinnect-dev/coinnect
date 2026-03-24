@@ -291,7 +291,8 @@ async def security_headers(request: Request, call_next):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com https://static.cloudflareinsights.com; "
         "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cloudflareinsights.com; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https://api.qrserver.com https://www.google.com https://*.gstatic.com; "
         "frame-ancestors 'none'"
     )
