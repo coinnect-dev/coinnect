@@ -147,11 +147,12 @@
     </a>
 
     <div class="flex items-center gap-2">
-      <a href="#donate" onclick="document.getElementById('donateSection')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-800 px-2.5 py-1 rounded-full hover:bg-pink-100 dark:hover:bg-pink-950/50 transition-colors hidden sm:inline-flex items-center gap-1">
-        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <a href="#donate" onclick="document.getElementById('donateSection')?.scrollIntoView({behavior:'smooth'});return false;"
+         class="text-xs bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-800 px-2.5 py-1 rounded-full hover:bg-pink-100 dark:hover:bg-pink-950/50 transition-colors items-center gap-1" style="display:none" id="navDonate">
+        <svg class="w-3 h-3 shrink-0" style="width:12px;height:12px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         Donate
       </a>
-      <a href="#pricing" onclick="document.getElementById('pricingSection')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-2 py-1 transition-colors hidden sm:inline">Get API Key</a>
+      <a href="#pricing" onclick="document.getElementById('pricingSection')?.scrollIntoView({behavior:'smooth'});return false;" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-2 py-1 transition-colors" style="display:none" id="navApiKey">Free API Key</a>
       <a href="/whitepaper" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-2 py-1 transition-colors hidden sm:inline">Whitepaper</a>
       <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'github_nav')"
          class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -2290,6 +2291,11 @@ function applyUrlParams(){
 }
 
 window.onload=()=>{
+  // Show nav buttons on sm+ screens
+  if(window.innerWidth>=640){
+    var d=document.getElementById('navDonate');if(d)d.style.display='inline-flex';
+    var k=document.getElementById('navApiKey');if(k)k.style.display='inline';
+  }
   updateThemeIcon();
   applyLocaleDefaults();
   if(applyUrlParams())updateAmountCurrency();
