@@ -61,7 +61,7 @@
     if(localStorage.getItem('ga_consent')==='1'&&localStorage.getItem('ga_optout')!=='1'){loadGA4();}
   </script>
 
-  <script src="/static/i18n.js?v=2026.03.23.3"></script>
+  <script src="/static/i18n.js?v=2026.03.24.1"></script>
   <script>initLang();</script>
   <link rel="stylesheet" href="/static/tailwind.css">
 
@@ -1655,15 +1655,18 @@ function renderSteps(steps,to){
 function renderNarrative(steps,from,to){
   if(steps.length<=1)return'';
   let amt=parseFloat(document.getElementById('amount').value)||500;
+  const verbs=[t('step_narrative_send')||'Send',t('step_narrative_then')||'Then give',t('step_narrative_finally')||'Finally, send'];
+  const receive=t('step_narrative_receive')||'receive';
+  const inWord=t('step_narrative_in')||'in';
   const lines=steps.map((s,i)=>{
     const give=amt;
     const rate=s.exchange_rate||1.0;
     const received=give*rate*(1-s.fee_pct/100);
-    amt=received; // carry forward to next step
-    const verb=i===0?'Send':i===steps.length-1?'Finally, send':'Then give';
+    amt=received;
+    const verb=i===0?verbs[0]:i===steps.length-1?verbs[2]:verbs[1];
     return`<div class="flex gap-2 mb-1.5">
       <span class="text-cyan-500 dark:text-cyan-600 font-bold text-[10px] mt-px shrink-0">${i+1}.</span>
-      <span>${verb} <strong>${fmtNum(give,s.from_currency)} ${s.from_currency}</strong> → receive <strong>${fmtNum(received,s.to_currency)} ${s.to_currency}</strong> in ${esc(s.via)}</span>
+      <span>${verb} <strong>${fmtNum(give,s.from_currency)} ${s.from_currency}</strong> → ${receive} <strong>${fmtNum(received,s.to_currency)} ${s.to_currency}</strong> ${inWord} ${esc(s.via)}</span>
     </div>`;
   });
   return`<div class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">${lines.join('')}</div>`;
@@ -1758,7 +1761,7 @@ function renderFeaturedCard(r,from,to,insideTied=false){
           <div class="pt-3 border-t border-gray-100 dark:border-gray-800 grid grid-cols-1 ${r.steps.length>1?'sm:grid-cols-2':''} gap-4">
             <div>${renderSteps(r.steps,to)}</div>
             ${r.steps.length>1?`<div class="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 self-start">
-              <div class="text-[10px] text-gray-400 uppercase tracking-wide font-medium mb-2">Step by step</div>
+              <div class="text-[10px] text-gray-400 uppercase tracking-wide font-medium mb-2">${t('step_by_step')}</div>
               ${renderNarrative(r.steps,from,to)}
             </div>`:''}
           </div>
@@ -1813,7 +1816,7 @@ function renderCompactRow(r,from,to){
         <div class="px-5 py-4 grid grid-cols-1 ${r.steps.length>1?'sm:grid-cols-2':''} gap-4">
           <div>${renderSteps(r.steps,to)}</div>
           ${r.steps.length>1?`<div class="bg-gray-50 dark:bg-gray-800/40 rounded-xl p-3 self-start">
-            <div class="text-[10px] text-gray-400 uppercase tracking-wide font-medium mb-2">Step by step</div>
+            <div class="text-[10px] text-gray-400 uppercase tracking-wide font-medium mb-2">${t('step_by_step')}</div>
             ${renderNarrative(r.steps,from,to)}
           </div>`:''}
         </div>

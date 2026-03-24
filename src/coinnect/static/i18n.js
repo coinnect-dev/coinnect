@@ -93,6 +93,8 @@ en:{
   fb_thanks:'Thanks for the feedback!',fb_note:'Optional note',
   read_more:'Read more — data sources & refresh rates',fee_source:'Published fees',
   similar_cost:'Similar cost',n_routes:'{n} routes',
+  step_narrative_send:'Send',step_narrative_then:'Then give',step_narrative_finally:'Finally, send',
+  step_narrative_receive:'receive',step_narrative_in:'in',step_by_step:'Step by step',
 },
 es:{
   nav_api:'API docs',nav_whitepaper:'Libro blanco',nav_pricing:'Precios',nav_support:'❤️ Apoyar',
@@ -168,6 +170,8 @@ es:{
   fb_thanks:'¡Gracias por el feedback!',fb_note:'Nota opcional',
   read_more:'Leer más — fuentes de datos y frecuencia de actualización',fee_source:'Comisiones publicadas',
   similar_cost:'Costo similar',n_routes:'{n} rutas',
+  step_narrative_send:'Envía',step_narrative_then:'Luego da',step_narrative_finally:'Finalmente, envía',
+  step_narrative_receive:'recibe',step_narrative_in:'en',step_by_step:'Paso a paso',
 },
 pt:{
   nav_api:'API docs',nav_whitepaper:'White paper',nav_pricing:'Preços',nav_support:'❤️ Apoiar',
