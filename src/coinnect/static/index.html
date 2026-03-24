@@ -1649,15 +1649,14 @@ function renderNarrative(steps,from,to){
   if(steps.length<=1)return'';
   let amt=parseFloat(document.getElementById('amount').value)||500;
   const lines=steps.map((s,i)=>{
-    const give=fmtNum(amt,s.from_currency);
-    const hasRate=s.exchange_rate&&s.exchange_rate!==1.0;
-    const received=hasRate?amt*s.exchange_rate*(1-s.fee_pct/100):amt*(1-s.fee_pct/100);
-    const get=fmtNum(received,s.to_currency);
-    if(hasRate)amt=received;
+    const give=amt;
+    const rate=s.exchange_rate||1.0;
+    const received=give*rate*(1-s.fee_pct/100);
+    amt=received; // carry forward to next step
     const verb=i===0?'Send':i===steps.length-1?'Finally, send':'Then give';
     return`<div class="flex gap-2 mb-1.5">
       <span class="text-cyan-500 dark:text-cyan-600 font-bold text-[10px] mt-px shrink-0">${i+1}.</span>
-      <span>${verb} <strong>${give} ${s.from_currency}</strong> → receive <strong>${get} ${s.to_currency}</strong> in ${esc(s.via)}</span>
+      <span>${verb} <strong>${fmtNum(give,s.from_currency)} ${s.from_currency}</strong> → receive <strong>${fmtNum(received,s.to_currency)} ${s.to_currency}</strong> in ${esc(s.via)}</span>
     </div>`;
   });
   return`<div class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">${lines.join('')}</div>`;
