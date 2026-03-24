@@ -1986,9 +1986,11 @@ async def _ofx_get_token(client: httpx.AsyncClient) -> str | None:
         return None
     try:
         resp = await client.post(
-            "https://api.ofx.com/v1/oauth/token",
-            data={"grant_type": "client_credentials", "scope": "ofxrates"},
-            auth=(cid, secret),
+            "https://sandbox.api.ofx.com/v1/oauth/token",
+            data={"grant_type": "client_credentials",
+                  "client_id": cid, "client_secret": secret,
+                  "scope": "ofxrates"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=10,
         )
         resp.raise_for_status()
@@ -2034,8 +2036,7 @@ async def get_ofx_edges() -> list[Edge]:
             for source, dest in corridors:
                 try:
                     resp = await client.get(
-                        "https://api.ofx.com/v1/rates",
-                        params={"source": source, "destination": dest, "amount": "1000"},
+                        f"https://sandbox.api.ofx.com/v1/rates/spot?CCYPair={source}{dest}",
                         headers={"Authorization": f"Bearer {token}"},
                     )
                     resp.raise_for_status()
