@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — Coinnect</title>
+  <meta name="description" content="Coinnect is an open money routing engine. Built by KOA Labs from Mexico City. No custody, no KYC, no affiliate fees. Free for humans and AI agents.">
+  <link rel="canonical" href="https://coinnect.bot/about">
+  <meta name="theme-color" content="#0F172A">
+  <meta property="og:title" content="About Coinnect">
+  <meta property="og:description" content="Open money routing. Built in Mexico City. Free, neutral, no custody.">
+  <meta property="og:image" content="https://coinnect.bot/static/og-image.png">
+  <meta property="og:url" content="https://coinnect.bot/about">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+  <link rel="stylesheet" href="/static/tailwind.css">
+  <style>
+    body { background: #0F172A; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .legal { max-width: 780px; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+    .legal h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; }
+    .legal .updated { color: #64748b; font-size: 0.875rem; margin-bottom: 2.5rem; }
+    .legal h2 { font-size: 1.25rem; font-weight: 600; margin: 2.25rem 0 0.75rem; color: #e2e8f0; }
+    .legal p, .legal li { font-size: 0.95rem; line-height: 1.7; color: #94a3b8; }
+    .legal ul, .legal ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .legal li { margin-bottom: 0.35rem; }
+    .legal a { color: #6366f1; text-decoration: none; }
+    .legal a:hover { text-decoration: underline; }
+    .legal strong { color: #e2e8f0; }
+    .legal .highlight { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .legal .nav-back { display: inline-block; margin-bottom: 2rem; color: #6366f1; font-size: 0.9rem; }
+    .legal .stat-row { display: flex; flex-wrap: wrap; gap: 24px; margin: 1.5rem 0; }
+    .legal .stat-row .stat { flex: 1; min-width: 150px; }
+    .legal .stat .num { font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .legal .stat .lbl { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin-top: 4px; font-weight: 600; }
+    @media (max-width: 600px) { .legal h1 { font-size: 1.5rem; } }
+  </style>
+</head>
+<body>
+<div class="legal">
+  <a href="/" class="nav-back">&larr; Back to Coinnect</a>
+  <h1>About Coinnect</h1>
+  <p class="updated">Built in Mexico City &middot; KOA Labs</p>
+
+  <div class="highlight">
+    <p><strong>Coinnect is an open money routing engine.</strong> We compare 80+ exchanges, remittance providers, and P2P markets to find the cheapest path between any two currencies. Free for humans, free for AI agents, no custody, no KYC, no affiliate fees.</p>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="num">80+</div><div class="lbl">Currency exchanges</div></div>
+    <div class="stat"><div class="num">15</div><div class="lbl">Live corridors</div></div>
+    <div class="stat"><div class="num">3 min</div><div class="lbl">Refresh interval</div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">Affiliate fees</div></div>
+  </div>
+
+  <h2>Why Coinnect exists</h2>
+  <p>Moving money between currencies should be transparent, neutral, and free. Most "comparison" sites either run hidden affiliate fees, push you to one provider, or simply lie about rates. We built Coinnect to do the opposite: surface the real cost of every route — including the spread the provider doesn't show you — and let you decide.</p>
+  <p>We don't custody funds. We don't process payments. We don't collect personal data. Coinnect is a <strong>read-only routing engine</strong>: you ask "USD to MXN $500", we tell you the cheapest 5 routes ranked by total cost, and you take it from there with the provider of your choice.</p>
+
+  <h2>How it works</h2>
+  <ul>
+    <li><strong>CCXT</strong> for crypto exchanges (Kraken, Binance, Coinbase, Bitso, and more)</li>
+    <li><strong>Wise</strong> static fiat rates</li>
+    <li><strong>Yellow Card</strong> Africa rails (NGN, KES, GHS, UGX)</li>
+    <li><strong>Western Union + MoneyGram</strong> baseline rates</li>
+    <li><strong>x402</strong> micropayment support for agentic usage</li>
+    <li><strong>Background refresh every 3 minutes</strong>, history persisted in SQLite</li>
+  </ul>
+
+  <h2>Built for AI agents</h2>
+  <p>Coinnect was designed from day one to be agent-friendly. The full API is documented at <a href="/docs">/docs</a>, the <code>llms.txt</code> at <a href="/llms.txt">/llms.txt</a> declares discoverability, and there's a native MCP server (<code>python -m coinnect.mcp_server</code>) so any Claude/GPT/local LLM can quote and explain rates without scraping.</p>
+  <p>Tools available via MCP: <code>coinnect_quote</code>, <code>coinnect_corridors</code>, <code>coinnect_explain_route</code>.</p>
+
+  <h2>Who we are</h2>
+  <p><strong>Coinnect is a project by <a href="https://koalabs.ai">KOA Labs</a></strong>, a small technology studio in Mexico City. We build tools, protocols, and products that we think should exist and that don't.</p>
+  <p>Other things we build: <a href="https://lacartelera.app">lacartelera.app</a> (comedy directory MX), <a href="https://sociales.lat">sociales.lat</a> (social dance LATAM), <a href="https://lemonadeprice.com">lemonadeprice.com</a> (global cost-of-living index), <a href="https://ceiba.to">ceiba.to</a> (community protocol), and several more.</p>
+
+  <h2>Independence and funding</h2>
+  <p>Coinnect is <strong>self-funded by KOA Labs</strong>. No venture capital, no investor pressure, no roadmap dictated by anyone but us. We chose this on purpose: a money routing engine financed by a money exchange would be a conflict of interest.</p>
+  <p>If Coinnect ever charges, it will be for premium features (higher rate limits, real-time SLAs, white-label embeds) — never for the public API or the free comparison.</p>
+
+  <h2>Open code, open data</h2>
+  <p>The core comparison engine is open source. The historical rate data is exportable. The MCP server is published on PyPI. The methodology is documented at <a href="/docs">/docs</a>.</p>
+  <p>If you find a bug or want a new exchange added, open an issue on <a href="https://github.com/koalabs/coinnect">github.com/koalabs/coinnect</a> or write us at <a href="mailto:hello@coinnect.bot">hello@coinnect.bot</a>.</p>
+
+  <h2>Contact</h2>
+  <ul>
+    <li>General: <a href="mailto:hello@coinnect.bot">hello@coinnect.bot</a></li>
+    <li>Privacy / legal: <a href="mailto:legal@coinnect.bot">legal@coinnect.bot</a></li>
+    <li>Security disclosures: <a href="mailto:security@coinnect.bot">security@coinnect.bot</a></li>
+  </ul>
+
+  <p style="margin-top:3rem;color:#64748b;font-size:0.85rem;">Coinnect &middot; 2026 &middot; Built by <a href="https://koalabs.ai">KOA Labs</a> in Mexico City</p>
+</div>
+</body>
+</html>
