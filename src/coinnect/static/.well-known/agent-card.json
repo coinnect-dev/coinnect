@@ -1,0 +1,235 @@
+{
+  "name": "Coinnect",
+  "description": "Open money transfer routing engine. Finds the cheapest path to send money between any two currencies — fiat, crypto, and P2P — across 80+ adapters worldwide.",
+  "url": "https://coinnect.bot",
+  "version": "2026.03.24.2",
+  "provider": {
+    "organization": "KOA Labs",
+    "url": "https://koalabs.ai"
+  },
+  "documentationUrl": "https://coinnect.bot/docs",
+  "tags": [
+    "money-transfer",
+    "exchange-rates",
+    "remittances",
+    "crypto",
+    "forex",
+    "mpp",
+    "x402",
+    "payments"
+  ],
+  "protocolVersion": "0.3",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "authentication": {
+    "schemes": [
+      {
+        "scheme": "anonymous",
+        "description": "No key required. Rate-limited to 20 requests/day per IP.",
+        "rateLimit": "20/day"
+      },
+      {
+        "scheme": "apiKey",
+        "description": "Free API key via POST /v1/keys — no signup, no email. 1,000 req/day, 100 req/hour.",
+        "in": "header",
+        "name": "X-Api-Key",
+        "registrationUrl": "https://coinnect.bot/v1/keys",
+        "rateLimit": "1000/day"
+      }
+    ]
+  },
+  "defaultInputModes": ["application/json", "text/plain"],
+  "defaultOutputModes": ["application/json", "text/plain"],
+  "skills": [
+    {
+      "id": "coinnect_quote",
+      "name": "Quote",
+      "description": "Find the cheapest routes to send money between two currencies. Returns ranked routes with fees, times, and step-by-step instructions.",
+      "tags": ["money-transfer", "exchange-rates", "routing"],
+      "examples": [
+        "How much does it cost to send 500 USD to MXN?",
+        "Find the cheapest way to send 1000 EUR to NGN"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "parameters": {
+        "from_currency": {
+          "type": "string",
+          "description": "Source currency code (e.g. USD, EUR, BTC)",
+          "required": true
+        },
+        "to_currency": {
+          "type": "string",
+          "description": "Destination currency code (e.g. MXN, NGN, BRL)",
+          "required": true
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount to send in source currency (e.g. 500)",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "coinnect_corridors",
+      "name": "Corridors",
+      "description": "List all supported currency pairs (corridors) with available providers and transfer methods.",
+      "tags": ["money-transfer", "discovery"],
+      "examples": [
+        "What currency pairs does Coinnect support?",
+        "List available corridors"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "parameters": {}
+    },
+    {
+      "id": "coinnect_explain_route",
+      "name": "Explain Route",
+      "description": "Get a plain-language explanation of a money transfer route — what happens at each step, fees, and estimated time.",
+      "tags": ["money-transfer", "explanation"],
+      "examples": [
+        "Explain this USD to MXN route via Binance and Bitso"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json", "text/plain"],
+      "parameters": {
+        "from_currency": {
+          "type": "string",
+          "description": "Source currency code",
+          "required": true
+        },
+        "to_currency": {
+          "type": "string",
+          "description": "Destination currency code",
+          "required": true
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount in source currency",
+          "required": true
+        },
+        "route": {
+          "type": "string",
+          "description": "Route description or label to explain",
+          "required": true
+        }
+      }
+    },
+    {
+      "id": "coinnect_verify",
+      "name": "Verify Rate",
+      "description": "Report a real exchange rate you observed at a provider. Helps Coinnect calibrate estimated rates toward real-world values.",
+      "tags": ["community", "verification"],
+      "examples": [
+        "I see USD/MXN at 17.45 on Wise right now"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "parameters": {
+        "from_currency": {
+          "type": "string",
+          "description": "Source currency code",
+          "required": true
+        },
+        "to_currency": {
+          "type": "string",
+          "description": "Destination currency code",
+          "required": true
+        },
+        "provider": {
+          "type": "string",
+          "description": "Provider name where you observed the rate",
+          "required": true
+        },
+        "rate": {
+          "type": "number",
+          "description": "The exchange rate you observed",
+          "required": true
+        },
+        "fee_pct": {
+          "type": "number",
+          "description": "Fee percentage if known",
+          "required": false
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount you were quoting",
+          "required": false
+        }
+      }
+    },
+    {
+      "id": "coinnect_quests",
+      "name": "Quests",
+      "description": "List open rate verification bounties — corridors where Coinnect needs real rate data from the community.",
+      "tags": ["community", "bounties"],
+      "examples": [
+        "What rate verification quests are open?",
+        "Show me bounties I can claim"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "parameters": {}
+    },
+    {
+      "id": "coinnect_payment_route",
+      "name": "Payment Route",
+      "description": "Pick the optimal MPP (Machine Payment Protocol, mpp.dev) method for an agent-to-API transaction. Coinnect /v1/quote accepts MPP with Tempo USDC (micropayments, $0.0001/req) and optionally Stripe (card, $1.00/req). Free tier remains for low-volume use.",
+      "tags": ["payments", "mpp", "micropayments"],
+      "examples": [
+        "What's the cheapest way to pay $0.0001 for a quote?",
+        "Best MPP method for streaming quote calls"
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"],
+      "parameters": {
+        "amount_usd": {
+          "type": "number",
+          "description": "Payment amount in USD (e.g. 0.0001 for a Tempo micropayment, 1.00 for Stripe)",
+          "required": true
+        },
+        "frequency": {
+          "type": "string",
+          "description": "Payment frequency: one-off, session, or streaming",
+          "required": true
+        },
+        "available_methods": {
+          "type": "array",
+          "description": "Agent's available payment methods: usdc_tempo, fiat_card, free_tier. Legacy 'usdc_base' is treated as usdc_tempo.",
+          "required": false
+        },
+        "recipient_accepts": {
+          "type": "array",
+          "description": "What the server accepts: mpp, free_tier. Legacy 'x402' is treated as mpp.",
+          "required": false
+        }
+      }
+    }
+  ],
+  "payment": {
+    "protocol": "mpp",
+    "spec": "https://mpp.dev",
+    "endpoints": ["/v1/quote"],
+    "methods": [
+      {
+        "method": "tempo",
+        "currency": "USDC",
+        "chain_id": 42431,
+        "network_note": "Tempo Moderato testnet — mainnet (4217) when ready",
+        "price_usd": 0.0001
+      }
+    ],
+    "header": "Authorization: Payment <base64-credential>",
+    "challenge_header": "WWW-Authenticate: Payment ...",
+    "receipt_header": "Payment-Receipt: ..."
+  },
+  "a2a": {
+    "endpoint": "https://coinnect.bot/a2a",
+    "version": "0.1",
+    "status": "planned"
+  }
+}

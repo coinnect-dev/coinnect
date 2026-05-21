@@ -9,6 +9,7 @@ Tools:
     coinnect_quote          — ranked routes between two currencies
     coinnect_corridors      — list supported currency pairs
     coinnect_explain_route  — natural language explanation of a route
+    coinnect_payment_route  — optimal payment protocol for agent-to-API transactions
 """
 
 import asyncio
@@ -143,6 +144,40 @@ async def list_tools() -> list[Tool]:
                 "required": ["from_currency", "to_currency", "amount", "route"]
             }
         ),
+        Tool(
+            name="coinnect_payment_route",
+            description=(
+                "Given a payment context (amount, frequency, available methods), return the optimal "
+                "MPP (Machine Payment Protocol, mpp.dev) method for an agent-to-API transaction. "
+                "Coinnect /v1/quote accepts MPP with Tempo (USDC, micropayments) and optionally Stripe "
+                "(card, premium). Use this before making paid API calls to pick the cheapest rail."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "amount_usd": {
+                        "type": "number",
+                        "description": "Payment amount in USD (e.g. 0.0001 for a Tempo micropayment, 1.00 for Stripe)"
+                    },
+                    "frequency": {
+                        "type": "string",
+                        "enum": ["one-off", "session", "streaming"],
+                        "description": "How often payments will be made: one-off, session, or streaming"
+                    },
+                    "available_methods": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "What the agent can pay with. Options: usdc_tempo, fiat_card, free_tier. Legacy 'usdc_base' is treated as usdc_tempo. Default: all."
+                    },
+                    "recipient_accepts": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "What the server accepts. Options: mpp, free_tier. Legacy 'x402' is treated as mpp. Default: [mpp, free_tier]."
+                    }
+                },
+                "required": ["amount_usd", "frequency"]
+            }
+        ),
     ]
 
 
@@ -161,6 +196,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return await _handle_quests()
     elif name == "coinnect_explain_route":
         return [TextContent(type="text", text=_explain_route(arguments))]
+    elif name == "coinnect_payment_route":
+        return [TextContent(type="text", text=json.dumps(_compute_payment_route(arguments), indent=2))]
     else:
         return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -392,6 +429,128 @@ def _explain_route(args: dict) -> str:
     ]
 
     return "\n".join(lines)
+
+
+def _compute_payment_route(args: dict) -> dict:
+    """Core routing logic for MPP payment method selection.
+
+    Coinnect /v1/quote speaks MPP (Machine Payment Protocol, mpp.dev). The
+    server-side rails currently enabled are Tempo (USDC) and, when configured,
+    Stripe (card). This tool tells an agent which method to use given its
+    available payment instruments, the request amount, and the call frequency.
+    """
+    amount = float(args.get("amount_usd", 0))
+    frequency = str(args.get("frequency", "one-off"))
+    available = args.get("available_methods") or [
+        "usdc_tempo", "fiat_card", "free_tier"
+    ]
+    recipient = args.get("recipient_accepts") or ["mpp", "free_tier"]
+
+    available = [m.lower() for m in available]
+    recipient = [r.lower() for r in recipient]
+    # Backwards compat: callers passing legacy values are treated as MPP / Tempo.
+    if "x402" in recipient and "mpp" not in recipient:
+        recipient.append("mpp")
+    if "usdc_base" in available and "usdc_tempo" not in available:
+        available.append("usdc_tempo")
+
+    has_usdc_tempo = "usdc_tempo" in available
+    has_fiat = "fiat_card" in available
+    accepts_mpp = "mpp" in recipient
+    accepts_free = "free_tier" in recipient
+
+    # Server-side prices come from the mpp_middleware defaults; keep in sync.
+    tempo_price = 0.0001
+    stripe_price = 1.00
+
+    tempo_option = {
+        "protocol": "mpp",
+        "method": "tempo",
+        "chain": "Tempo Moderato testnet (chain 42431) — mainnet (4217) when ready",
+        "currency": "USDC (pathUSD on testnet)",
+        "price_per_request": tempo_price,
+        "total_cost": round(max(amount, tempo_price), 6),
+        "latency": "<1s",
+        "setup_required": "EVM wallet with Tempo USDC",
+        "note": "Per-request settlement; sub-cent gas. Recommended for micropayments and streaming.",
+    }
+    stripe_option = {
+        "protocol": "mpp",
+        "method": "stripe",
+        "chain": "Stripe Business Network",
+        "currency": "USD (card)",
+        "price_per_request": stripe_price,
+        "total_cost": round(max(amount, stripe_price), 6),
+        "latency": "~1-2s",
+        "setup_required": "Stripe SPT-compatible client",
+        "note": (
+            f"Per-request charge; Stripe per-charge minimum sets a {stripe_price} USD floor "
+            f"so this is not viable below that. Use for premium quotes or batched calls."
+        ),
+    }
+    free_option = {
+        "protocol": "free_tier",
+        "method": None,
+        "chain": None,
+        "currency": None,
+        "price_per_request": 0,
+        "total_cost": 0,
+        "latency": "instant",
+        "setup_required": "None (or X-Api-Key header for higher quota)",
+        "note": "20 req/day / 50/hr anonymous · 1,000/day with free API key · 5,000/day agent key",
+    }
+
+    recommended = None
+    alternatives: list[dict] = []
+    notes: list[str] = []
+
+    if not accepts_mpp and accepts_free:
+        recommended = free_option
+        notes.append("Recipient does not accept paid MPP for this resource; serving via free tier.")
+        return {"recommended": recommended, "alternatives": [], "analysis": " ".join(notes)}
+
+    tempo_viable = accepts_mpp and has_usdc_tempo
+    stripe_viable = accepts_mpp and has_fiat and amount <= stripe_price * 50  # arbitrary upper bound
+
+    if tempo_viable:
+        recommended = tempo_option
+        if stripe_viable and amount >= stripe_price:
+            alternatives.append(stripe_option)
+        notes.append(
+            f"Recommending MPP/tempo at {tempo_price} USDC/req — cheapest rail, per-request settle, no session setup."
+        )
+    elif stripe_viable:
+        recommended = stripe_option
+        notes.append(
+            f"Recommending MPP/stripe at {stripe_price} USD/req — agent has no Tempo USDC. "
+            f"Note: minimum charge applies; cheaper rails require Tempo USDC."
+        )
+    elif accepts_free:
+        recommended = free_option
+        notes.append(
+            "No compatible MPP method between agent and server. Falling back to free tier."
+        )
+    else:
+        return {
+            "error": "No compatible payment method between agent and recipient.",
+            "available_methods": available,
+            "recipient_accepts": recipient,
+        }
+
+    if accepts_free and recommended is not free_option:
+        alternatives.append(free_option)
+
+    if frequency in ("session", "streaming") and recommended is tempo_option:
+        notes.append(
+            "Streaming-friendly: per-request Tempo settles are sub-cent; session/channel mode "
+            "will be added when pympp ships SessionIntent."
+        )
+
+    return {
+        "recommended": recommended,
+        "alternatives": alternatives,
+        "analysis": " ".join(notes),
+    }
 
 
 def _fmt_time(minutes: int) -> str:

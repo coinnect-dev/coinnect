@@ -23,17 +23,14 @@ logger = logging.getLogger(__name__)
 _bitso_cache: dict = {"edges": [], "ts": 0.0}
 _buda_cache: dict = {"edges": [], "ts": 0.0}
 _coingecko_cache: dict = {"edges": [], "ts": 0.0}
-_strike_cache: dict = {"edges": [], "ts": 0.0}
 _frankfurter_cache: dict = {"edges": [], "ts": 0.0}
 _currencyapi_cache: dict = {"edges": [], "ts": 0.0}
 _flutterwave_cache: dict = {"edges": [], "ts": 0.0}
 _bluelytics_cache: dict = {"edges": [], "ts": 0.0}
-_dolarsi_cache: dict = {"edges": [], "ts": 0.0}
 _criptoya_cache: dict = {"edges": [], "ts": 0.0}
 _bcb_cache: dict = {"edges": [], "ts": 0.0}
 _banxico_cache: dict = {"edges": [], "ts": 0.0}
 _trm_cache: dict = {"edges": [], "ts": 0.0}
-_lirarate_cache: dict = {"edges": [], "ts": 0.0}
 _yadio_cache: dict = {"edges": [], "ts": 0.0}
 _valr_cache: dict = {"edges": [], "ts": 0.0}
 _coindcx_cache: dict = {"edges": [], "ts": 0.0}
@@ -62,17 +59,14 @@ _cryptocompare_cache: dict = {"edges": [], "ts": 0.0}
 BITSO_TTL = 180       # 3 minutes
 BUDA_TTL = 180        # 3 minutes
 COINGECKO_TTL = 300   # 5 minutes
-STRIKE_TTL = 180      # 3 minutes
 FRANKFURTER_TTL = 1800  # 30 minutes (ECB updates daily)
 CURRENCYAPI_TTL = 1800  # 30 minutes
 FLUTTERWAVE_TTL = 300   # 5 minutes
 BLUELYTICS_TTL = 900    # 15 minutes
-DOLARSI_TTL = 900       # 15 minutes
 CRIPTOYA_TTL = 300      # 5 minutes
 BCB_TTL = 3600          # 60 minutes (updates once daily)
 BANXICO_TTL = 3600      # 60 minutes (updates once daily)
 TRM_TTL = 3600          # 60 minutes
-LIRARATE_TTL = 1800     # 30 minutes
 YADIO_TTL = 300         # 5 minutes
 VALR_TTL = 180          # 3 minutes
 COINDCX_TTL = 180       # 3 minutes
@@ -308,62 +302,12 @@ async def get_coingecko_edges() -> list[Edge]:
     return edges
 
 
-# ── Strike ──────────────────────────────────────────────────────────────────
-
-STRIKE_FEE = 0.50
+# ── Strike (stub) ──────────────────────────────────────────────────────────
 
 
 async def get_strike_edges() -> list[Edge]:
-    """Fetch BTC/USD rate from Strike public ticker (Lightning Network)."""
-    now = time.monotonic()
-    if _strike_cache["edges"] and (now - _strike_cache["ts"]) < STRIKE_TTL:
-        return _strike_cache["edges"]
-
-    edges: list[Edge] = []
-    try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
-            resp = await client.get("https://api.strike.me/v1/rates/ticker")
-            resp.raise_for_status()
-            data = resp.json()
-
-        # data is a list of rate objects; find BTC/USD
-        btc_usd_rate = None
-        for rate in data if isinstance(data, list) else []:
-            amount = rate.get("amount")
-            source = rate.get("sourceCurrency", "").upper()
-            target = rate.get("targetCurrency", "").upper()
-            if source == "BTC" and target == "USD" and amount:
-                btc_usd_rate = float(amount)
-                break
-
-        if btc_usd_rate:
-            edges.append(Edge(
-                from_currency="BTC",
-                to_currency="USD",
-                via="Strike",
-                fee_pct=STRIKE_FEE,
-                estimated_minutes=5,
-                instructions="Sell BTC for USD via Strike (Lightning Network)",
-                exchange_rate=btc_usd_rate,
-            ))
-            edges.append(Edge(
-                from_currency="USD",
-                to_currency="BTC",
-                via="Strike",
-                fee_pct=STRIKE_FEE,
-                estimated_minutes=5,
-                instructions="Buy BTC with USD via Strike (Lightning Network)",
-                exchange_rate=1.0 / btc_usd_rate,
-            ))
-
-        _strike_cache["edges"] = edges
-        _strike_cache["ts"] = now
-        logger.info(f"Strike: loaded {len(edges)} edges")
-    except Exception as e:
-        logger.warning(f"Strike adapter failed: {e}")
-        return _strike_cache["edges"]
-
-    return edges
+    """Strike live API removed (requires auth). Static corridors in remittance_adapter."""
+    return []
 
 
 # ── Frankfurter (ECB reference rates) ──────────────────────────────────────
@@ -638,73 +582,12 @@ async def get_bluelytics_edges() -> list[Edge]:
     return edges
 
 
-# ── DolarSi (Argentina all dollar variants) ───────────────────────────────
-
-# Map DolarSi names to display names
-_DOLARSI_NAME_MAP = {
-    "Dolar Blue": "Dolar Blue (AR)",
-    "Dolar Oficial": "Dolar Oficial (AR)",
-    "Dolar Bolsa": "MEP (AR)",
-    "Dolar Contado con Liqui": "CCL (AR)",
-}
-
-
-def _parse_ar_number(s: str) -> float | None:
-    """Parse an Argentine-formatted number (comma as decimal separator)."""
-    if not s:
-        return None
-    try:
-        # "1.280,50" → "1280.50"  or  "1280,50" → "1280.50"
-        cleaned = s.replace(".", "").replace(",", ".")
-        return float(cleaned)
-    except (ValueError, TypeError):
-        return None
+# ── DolarSi (stub) ────────────────────────────────────────────────────────
 
 
 async def get_dolarsi_edges() -> list[Edge]:
-    """Fetch all Argentine dollar variants from DolarSi."""
-    now = time.monotonic()
-    if _dolarsi_cache["edges"] and (now - _dolarsi_cache["ts"]) < DOLARSI_TTL:
-        return _dolarsi_cache["edges"]
-
-    edges: list[Edge] = []
-    try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
-            resp = await client.get(
-                "https://www.dolarsi.com/api/api.php?type=valoresprincipales"
-            )
-            resp.raise_for_status()
-            data = resp.json()
-
-        for item in data:
-            casa = item.get("casa", {})
-            nombre = casa.get("nombre", "")
-            via = _DOLARSI_NAME_MAP.get(nombre)
-            if not via:
-                continue
-
-            venta = _parse_ar_number(casa.get("venta", ""))
-            if not venta:
-                continue
-
-            edges.append(Edge(
-                from_currency="USD",
-                to_currency="ARS",
-                via=via,
-                fee_pct=0.0,
-                estimated_minutes=0,
-                instructions="Argentine parallel market rate — reference only",
-                exchange_rate=venta,
-            ))
-
-        _dolarsi_cache["edges"] = edges
-        _dolarsi_cache["ts"] = now
-        logger.info(f"DolarSi: loaded {len(edges)} edges")
-    except Exception as e:
-        logger.warning(f"DolarSi adapter failed: {e}")
-        return _dolarsi_cache["edges"]
-
-    return edges
+    """DolarSi removed (site dead; Bluelytics + CriptoYa cover Argentina)."""
+    return []
 
 
 # ── CriptoYa (Argentina crypto exchange rates) ────────────────────────────
@@ -900,70 +783,12 @@ async def get_trm_edges() -> list[Edge]:
     return edges
 
 
-# ── LiraRate (Lebanon parallel rate) ───────────────────────────────────────
+# ── LiraRate (stub) ────────────────────────────────────────────────────────
 
 
 async def get_lirarate_edges() -> list[Edge]:
-    """Fetch USD/LBP parallel rate from LiraRate."""
-    now = time.monotonic()
-    if _lirarate_cache["edges"] and (now - _lirarate_cache["ts"]) < LIRARATE_TTL:
-        return _lirarate_cache["edges"]
-
-    edges: list[Edge] = []
-    try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
-            resp = await client.get(
-                "https://lirarate.org/wp-json/starter/v1/rates"
-            )
-            resp.raise_for_status()
-            data = resp.json()
-
-        # Response structure may vary; try common patterns
-        rate = None
-        if isinstance(data, dict):
-            # Try direct "usd" or "USD" key
-            for key in ("usd", "USD", "buy", "sell"):
-                val = data.get(key)
-                if val and isinstance(val, (int, float, str)):
-                    try:
-                        rate = float(str(val).replace(",", ""))
-                        break
-                    except (ValueError, TypeError):
-                        continue
-            # Try nested structure
-            if rate is None:
-                for key, val in data.items():
-                    if isinstance(val, dict):
-                        for subkey in ("buy", "sell", "rate", "value"):
-                            sv = val.get(subkey)
-                            if sv:
-                                try:
-                                    rate = float(str(sv).replace(",", ""))
-                                    break
-                                except (ValueError, TypeError):
-                                    continue
-                    if rate:
-                        break
-
-        if rate and rate > 1000:  # sanity check — LBP should be in thousands
-            edges.append(Edge(
-                from_currency="USD",
-                to_currency="LBP",
-                via="Parallel (LB)",
-                fee_pct=0.0,
-                estimated_minutes=0,
-                instructions="Lebanese parallel market rate — reference only",
-                exchange_rate=rate,
-            ))
-
-        _lirarate_cache["edges"] = edges
-        _lirarate_cache["ts"] = now
-        logger.info(f"LiraRate: loaded {len(edges)} edges")
-    except Exception as e:
-        logger.warning(f"LiraRate adapter failed: {e}")
-        return _lirarate_cache["edges"]
-
-    return edges
+    """LiraRate removed (endpoint 404, Lebanon niche)."""
+    return []
 
 
 # ── Yadio (LatAm P2P rates) ─────────────────────────────────────────────
@@ -2093,7 +1918,7 @@ async def get_ofx_edges() -> list[Edge]:
 
 # ── Coinbase (USD pairs) ─────────────────────────────────────────────────
 
-COINBASE_PAIRS = ["BTC-USD", "ETH-USD", "USDC-USD", "USDT-USD"]
+COINBASE_PAIRS = ["BTC-USD", "ETH-USD", "USDT-USD"]
 COINBASE_FEE = 0.60
 
 

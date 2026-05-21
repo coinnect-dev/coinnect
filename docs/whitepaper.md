@@ -43,7 +43,7 @@ The difference is structural, not ethical. Affiliate platforms may have good int
 
 ### 1.3 Closed worlds that don't speak to each other
 
-The deeper problem is fragmentation. Global money flows through dozens of separate ecosystems:
+The deeper problem is fragmentation. Global money flows through dozens of separate networks:
 
 - **M-Pesa** (Kenya, Tanzania, 8 African countries) — 50 million users, SMS-based
 - **GCash** (Philippines) — 80 million users, telco-backed
@@ -94,7 +94,7 @@ Coinnect does not execute the transfer. It does not hold funds. It does not requ
 
 Coinnect is not just a route finder. It is an open, neutral reference for the global money infrastructure — a Wikipedia for how money moves.
 
-**Three layers, one platform:**
+**Three layers:**
 
 1. **Route engine** — "How do I move money from A to B at the lowest cost?" The core search. Real-time, multi-hop, crypto + fiat + P2P.
 
@@ -104,7 +104,7 @@ Coinnect is not just a route finder. It is an open, neutral reference for the gl
 
 These three layers reinforce each other. The route engine shows you the best path today. The provider profiles give you confidence in who you're trusting. The rate history shows you whether today's rate is normal or exceptional.
 
-Together, they form something that doesn't exist yet: **an open, agnostic, complete reference for global money movement.** Not owned by any provider. Not funded by affiliate commissions. Not gated behind an account. Available to humans browsing the web, AI agents calling an API, and researchers downloading open datasets.
+Together, they form **an open, agnostic reference for global money movement**: routes, provider facts, and rate history in one place. Not owned by any provider. Not funded by affiliate commissions. Not gated behind an account. Available to humans browsing the web, AI agents calling an API, and researchers downloading open datasets.
 
 The closest analogy is not Google Flights or Monito. It's closer to Wikipedia + Waze: a community-maintained, machine-readable knowledge base that happens to also give you real-time directions.
 
@@ -114,7 +114,7 @@ The internet moves data through routers. Routers don't read your emails. They ju
 
 Coinnect is the router for money. It doesn't touch the transfer. It finds the path.
 
-**The value is in the information, not the transaction.** Because Coinnect never touches transactions, it needs no money transmitter license and carries minimal regulatory risk under current interpretations, and has no reason — structural or financial — to favor any ecosystem.
+**The value is in the information, not the transaction.** Because Coinnect never touches transactions, it needs no money transmitter license and carries minimal regulatory risk under current interpretations, and has no reason — structural or financial — to favor any provider.
 
 ### 2.4 For humans, machines, and self-hosters
 
@@ -266,7 +266,7 @@ A password-protected admin panel at `/admin` provides search analytics, provider
 
 Free API tiers have a structural flaw: they require account creation, email verification, abuse monitoring, and a support system. They punish honest users (rate limits, quotas) and reward abusers (throwaway accounts). For an AI agent operating autonomously, even generating an API key is friction.
 
-The x402 protocol solves this. It extends HTTP with a payment layer: instead of a 401 Unauthorized, a server returns a 402 Payment Required with a machine-readable price. The client pays automatically in USDC on Base L2 (Ethereum Layer 2), and the server unlocks the response. No accounts. No keys. No friction.
+The x402 protocol solves this. It extends HTTP with a payment layer: instead of a 401 Unauthorized, a server returns a 402 Payment Required with a machine-readable price. The client pays automatically in USDC on Base L2 (Ethereum Layer 2), and the server unlocks the response. No accounts. No keys.
 
 ### 4.2 How it works
 
@@ -532,13 +532,13 @@ This is fundamentally different from blockchain:
 
 The directory is the protocol. Any node that speaks MRP (Money Routing Protocol) can join the network, replicate the edge data, and serve queries. The source of truth for rate data comes from the provider APIs themselves — not from a central server or a consensus mechanism.
 
-Think of it as: providers publish their rates → nodes replicate the directory → agents query any node → the network grows organically. Like DNS resolvers, not like miners.
+Think of it as: providers publish their rates → nodes replicate the directory → agents query any node → the network grows without central coordination. Like DNS resolvers, not like miners.
 
 ---
 
 ## 13. Provider Adoption & Open Participation
 
-Coinnect lists providers whether or not they participate. A remittance service with published pricing appears in route results from day one — with estimated fees, labeled accordingly. This creates a natural incentive loop: providers see their listing, notice the accuracy gap, and benefit from closing it.
+Coinnect lists providers whether or not they participate. A remittance service with published pricing appears in route results from day one — with estimated fees, labeled accordingly. This creates an incentive loop: providers see their listing, notice the accuracy gap, and benefit from closing it.
 
 ### 13.1 Integration tiers
 
@@ -568,7 +568,7 @@ This is structurally similar to how mapping platforms work: a business appears o
 
 At scale, Coinnect becomes a thin, low-cost information layer between users (or agents) and providers. The routing query costs fractions of a cent (Section 4). The provider supplies the rate data for free because accurate listings drive volume. The user pays nothing because the information is the product, not the transaction.
 
-In a financial ecosystem trending toward openness — open banking APIs, real-time payment rails, public exchange order books — the providers with the most transparent data win. Coinnect simply makes that transparency legible.
+As open banking APIs, real-time payment rails, and public exchange order books become more common, the providers with the most transparent data win. Coinnect simply makes that transparency legible.
 
 ---
 
@@ -584,7 +584,7 @@ That is the arc of Coinnect. Standard. Free. Open. For humans and bots.
 
 Today: we show you the routes and the providers — a complete reference for how money moves.
 Tomorrow: the reference updates itself with community data, rate verification, and provider contributions.
-Eventually: machines consult it automatically, researchers cite it openly, and money moves at its natural cost — without anyone extracting a tax from ignorance.
+Eventually: machines consult it automatically, researchers cite it openly, and money moves at its actual cost — without anyone extracting a tax from ignorance.
 
 **The money already knows how to move. Coinnect maps every path, documents every provider, and records every rate — so you always know the best way.**
 

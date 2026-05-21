@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Coinnect</title>
+  <meta name="description" content="Privacy policy for Coinnect — open money routing engine. We don't collect personal data, hold funds, or run KYC.">
+  <link rel="canonical" href="https://coinnect.bot/privacy">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+  <link rel="stylesheet" href="/static/tailwind.css">
+  <style>
+    body { background: #0F172A; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .legal { max-width: 780px; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+    .legal h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: #f1f5f9; }
+    .legal .updated { color: #64748b; font-size: 0.875rem; margin-bottom: 2.5rem; }
+    .legal h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: #e2e8f0; }
+    .legal h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: #cbd5e1; }
+    .legal p, .legal li { font-size: 0.95rem; line-height: 1.7; color: #94a3b8; }
+    .legal ul, .legal ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    .legal li { margin-bottom: 0.35rem; }
+    .legal a { color: #6366f1; text-decoration: none; }
+    .legal a:hover { text-decoration: underline; }
+    .legal strong { color: #e2e8f0; }
+    .legal .highlight { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .legal .nav-back { display: inline-block; margin-bottom: 2rem; color: #6366f1; font-size: 0.9rem; }
+    @media (max-width: 600px) { .legal h1 { font-size: 1.5rem; } }
+  </style>
+</head>
+<body>
+<div class="legal">
+  <a href="/" class="nav-back">&larr; Back to Coinnect</a>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: April 6, 2026</p>
+
+  <div class="highlight">
+    <p><strong>Short version:</strong> Coinnect does not collect personal information, does not hold funds, does not run KYC, and does not share user data with third parties. We exist to show you the cheapest path between currencies — that's it.</p>
+  </div>
+
+  <h2>1. Who we are</h2>
+  <p><strong>Coinnect</strong> is a free, open-source money routing engine operated by <strong>KOA Labs</strong>. We compare 30+ exchange and remittance providers to surface the cheapest path between any two currencies — fiat, crypto, or P2P.</p>
+  <p>Contact for privacy matters: <a href="mailto:legal@coinnect.bot">legal@coinnect.bot</a></p>
+
+  <h2>2. What we do NOT collect</h2>
+  <ul>
+    <li><strong>No accounts, no signups, no passwords.</strong> Coinnect has no user accounts.</li>
+    <li><strong>No KYC.</strong> We never ask for ID, name, address, or any government documents.</li>
+    <li><strong>No funds custody.</strong> Coinnect never holds, transfers, or processes money. We only show you routes — each provider handles its own transfers.</li>
+    <li><strong>No payment information.</strong> We don't collect card numbers, bank details, or wallet addresses.</li>
+    <li><strong>No biometric, sensitive, or special-category data.</strong></li>
+  </ul>
+
+  <h2>3. What we DO collect (the minimum to operate)</h2>
+  <h3>Anonymous usage analytics</h3>
+  <p>We use Google Analytics 4 to count page views and route queries in aggregate. This is loaded only after you accept the cookie banner. Analytics data includes:</p>
+  <ul>
+    <li>Approximate location (country / city), inferred from IP — IP itself is not stored long-term by Google</li>
+    <li>Browser type and language</li>
+    <li>Pages visited and search/quote queries (currency pairs, amounts — no personal context)</li>
+  </ul>
+  <p>You can opt out by clicking "Reject" on the cookie banner, by adding <code>?notrack</code> to any URL, or by setting <code>localStorage.ga_optout = '1'</code> in your browser.</p>
+
+  <h3>API request logs (server-side)</h3>
+  <p>Like every web service, our server records technical information for each API request: timestamp, IP address, user-agent, endpoint hit, and response time. These logs are retained for up to <strong>30 days</strong> for security and abuse prevention, then automatically deleted. They are never shared.</p>
+
+  <h3>API keys (only if you create one)</h3>
+  <p>Commercial API users may request an API key. To issue a key we ask for a contact email. The key and email are stored in our database. You can request deletion at any time.</p>
+
+  <h2>4. Third-party data sources</h2>
+  <p>Coinnect queries public market data from exchanges (Kraken, Binance, Coinbase, Bitso, etc.) via the <a href="https://github.com/ccxt/ccxt" target="_blank" rel="noopener">CCXT library</a>. These are <strong>read-only</strong> calls to public price feeds — no user data is sent to those exchanges.</p>
+  <p>We also use static rate sheets from Wise, Yellow Card, Western Union, and MoneyGram for baseline comparison. None of these providers receive any information about you when you use Coinnect.</p>
+
+  <h2>5. Cookies</h2>
+  <p>Coinnect uses minimal cookies and browser storage:</p>
+  <ul>
+    <li><strong>Functional:</strong> theme preference (dark/light), language preference, locale defaults — stored in <code>localStorage</code>, never sent to a server.</li>
+    <li><strong>Analytics:</strong> Google Analytics cookies (only after cookie-banner consent).</li>
+    <li><strong>Service Worker cache:</strong> stores pages for offline use. Local to your browser only.</li>
+  </ul>
+  <p>You can clear cookies any time from your browser settings or by reloading the cookie banner.</p>
+
+  <h2>6. Data sharing</h2>
+  <p><strong>We do not sell, rent, or trade any user data.</strong> Period.</p>
+  <p>Aggregated, non-identifying usage statistics may be published in our open transparency reports (e.g., "X queries per month, top corridors: USD-MXN, BTC-EUR"). Individual users are never identifiable.</p>
+
+  <h2>7. Your rights</h2>
+  <p>Because we collect almost nothing, there is rarely anything to access, rectify, or delete. But if you do interact with us (commercial API key, support email, bug report) and want to:</p>
+  <ul>
+    <li>Access the data we hold about you</li>
+    <li>Correct or delete it</li>
+    <li>Withdraw consent</li>
+    <li>Request a copy in a portable format</li>
+  </ul>
+  <p>Email us at <a href="mailto:legal@coinnect.bot">legal@coinnect.bot</a>. We will respond within <strong>30 days</strong>.</p>
+  <p>Mexican users may also exercise ARCO rights under the LFPDPPP. EU users may exercise rights under GDPR Articles 15–22. UK users may exercise rights under UK GDPR.</p>
+
+  <h2>8. Children</h2>
+  <p>Coinnect is not directed at children under 13 and we do not knowingly collect data from them. The service is intended for adults using financial information.</p>
+
+  <h2>9. Security</h2>
+  <p>All traffic to Coinnect is encrypted in transit (HTTPS / TLS 1.2+). Server access is restricted to authorized maintainers. The codebase is open source — you can audit our data handling at <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener">github.com/coinnect-dev/coinnect</a>.</p>
+
+  <h2>10. Mobile app (Android)</h2>
+  <p>The Coinnect Android app is a Trusted Web Activity wrapper around <a href="https://coinnect.bot">coinnect.bot</a>. The app does not request any device permissions beyond network access. It does not access contacts, photos, location, microphone, camera, files, or any other device data. All processing happens via the web app loaded inside the wrapper.</p>
+
+  <h2>11. International transfers</h2>
+  <p>Coinnect servers are located in the United States. By using the service, you consent to your data (limited as it is) being processed there.</p>
+
+  <h2>12. Changes to this policy</h2>
+  <p>We may update this Privacy Policy. The "Last updated" date at the top will reflect the most recent version. Material changes will be announced on the homepage.</p>
+
+  <h2>13. Contact</h2>
+  <p>
+    <strong>KOA Labs</strong><br>
+    Privacy: <a href="mailto:legal@coinnect.bot">legal@coinnect.bot</a><br>
+    Source code: <a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener">github.com/coinnect-dev/coinnect</a>
+  </p>
+</div>
+</body>
+</html>

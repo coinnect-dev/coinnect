@@ -1,0 +1,17 @@
+{
+  "id": "https://coinnect.bot/",
+  "name": "coinnect",
+  "description": "Open money routing layer — find the cheapest path between any two currencies",
+  "url": "https://coinnect.bot/",
+  "protocol_version": "0.4",
+  "api_base": "https://coinnect.bot/v1",
+  "openapi_url": "https://coinnect.bot/docs",
+  "authoritative_types": ["exchange", "corridor", "adapter"],
+  "connector_types": ["ceiba:routes_via", "ceiba:converts_to"],
+  "edit_history": false,
+  "claim_enabled": false,
+  "karma": { "enabled": false },
+  "seed_url": "https://ceiba.to/",
+  "federation": { "sync_pull": false },
+  "mcp_url": "https://coinnect.bot/mcp"
+}

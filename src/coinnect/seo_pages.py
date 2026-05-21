@@ -216,6 +216,19 @@ CURRENCY_NAMES: dict[str, str] = {
     "PYG": "Paraguayan Guaraní", "UYU": "Uruguayan Peso",
 }
 
+CURRENCY_COUNTRIES: dict[str, str] = {
+    "USD": "the USA", "EUR": "Europe", "GBP": "the UK", "CAD": "Canada",
+    "AED": "the UAE", "MXN": "Mexico", "BRL": "Brazil",
+    "INR": "India", "PHP": "the Philippines", "NGN": "Nigeria",
+    "COP": "Colombia", "PKR": "Pakistan", "BDT": "Bangladesh",
+    "KES": "Kenya", "GHS": "Ghana", "TRY": "Turkey",
+    "HKD": "Hong Kong", "SGD": "Singapore", "IDR": "Indonesia",
+    "THB": "Thailand", "VND": "Vietnam", "AUD": "Australia",
+    "CLP": "Chile", "PEN": "Peru", "EGP": "Egypt",
+    "ARS": "Argentina", "JPY": "Japan", "ZAR": "South Africa",
+    "PYG": "Paraguay", "UYU": "Uruguay",
+}
+
 # ── HTML cache ────────────────────────────────────────────────────────────────
 
 _html_cache: dict[str, tuple[float, str]] = {}
@@ -372,6 +385,8 @@ def render_corridor_page(
     amount = DEFAULT_AMOUNTS.get(from_c, 500)
     from_name = html.escape(CURRENCY_NAMES.get(from_c, from_c))
     to_name = html.escape(CURRENCY_NAMES.get(to_c, to_c))
+    from_country = html.escape(CURRENCY_COUNTRIES.get(from_c, from_c))
+    to_country = html.escape(CURRENCY_COUNTRIES.get(to_c, to_c))
     path = f"/send/{from_c.lower()}-to-{to_c.lower()}"
     canonical = f"{BASE_URL}{path}"
 
@@ -410,7 +425,7 @@ def render_corridor_page(
         table_html = f"""<div class="card">
 <h2>Routes for {html.escape(from_c)} to {html.escape(to_c)}</h2>
 <p>No live routes available right now. Rates refresh every 3 minutes — check back soon or
-<a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}">try the interactive search</a>.</p>
+<a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}" rel="nofollow">try the interactive search</a>.</p>
 </div>"""
         meta_desc = (
             f"Send {html.escape(from_c)} to {html.escape(to_c)} — compare routes across "
@@ -424,7 +439,7 @@ def render_corridor_page(
     json_ld = {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": f"Send {from_c} to {to_c} — Cheapest Routes Today",
+        "name": f"Send Money to {CURRENCY_COUNTRIES.get(to_c, to_c)} from {CURRENCY_COUNTRIES.get(from_c, from_c)} — Best {from_c} to {to_c} Rate",
         "description": meta_desc,
         "url": canonical,
         "provider": {
@@ -561,18 +576,18 @@ def render_corridor_page(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Send {html.escape(from_c)} to {html.escape(to_c)} — Cheapest Routes Today | Coinnect</title>
+  <title>Send Money to {to_country} from {from_country} — Find the Best {html.escape(from_c)} to {html.escape(to_c)} Rate | Coinnect</title>
   <meta name="description" content="{html.escape(meta_desc)}">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="{canonical}">
 {_hreflang_tags(path)}
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Send {html.escape(from_c)} to {html.escape(to_c)} — Coinnect">
+  <meta property="og:title" content="Send Money to {to_country} from {from_country} — Best {html.escape(from_c)} to {html.escape(to_c)} Rate">
   <meta property="og:description" content="{html.escape(og_desc)}">
   <meta property="og:url" content="{canonical}">
   <meta property="og:site_name" content="Coinnect">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Send {html.escape(from_c)} to {html.escape(to_c)} — Coinnect">
+  <meta name="twitter:title" content="Send Money to {to_country} from {from_country} — Find the Best Rate">
   <meta name="twitter:description" content="{html.escape(og_desc)}">
   <script type="application/ld+json">{json.dumps(json_ld)}</script>
   <script type="application/ld+json">{json.dumps(faq_ld)}</script>
@@ -585,15 +600,15 @@ def render_corridor_page(
   <nav class="breadcrumb">
     <a href="/">Home</a> &rsaquo; <a href="/send/{from_c.lower()}-to-{to_c.lower()}">Send {html.escape(from_c)} to {html.escape(to_c)}</a>
   </nav>
-  <h1>Send {from_name} ({html.escape(from_c)}) to {to_name} ({html.escape(to_c)})</h1>
+  <h1>Send Money to {to_country} from {from_country} — Find the Best {html.escape(from_c)} to {html.escape(to_c)} Rate</h1>
   <time datetime="{now_iso}" style="font-size:12px;color:#9ca3af">Last updated: {now_str} &middot; Refreshes every 3 minutes</time>
-  <p class="subtitle">Compare the cheapest routes to convert {html.escape(from_c)} to {html.escape(to_c)} — updated every 3 minutes across 15+ providers.</p>
+  <p class="subtitle">Compare the cheapest ways to send money from {from_country} to {to_country}. {html.escape(from_c)} to {html.escape(to_c)} rates updated every 3 minutes across 15+ providers.</p>
 
   {answer_box}
   {table_html}
 
   <div style="text-align:center;margin:1.5rem 0">
-    <a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}&amount={amount:g}" class="cta"
+    <a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}&amount={amount:g}" class="cta" rel="nofollow"
        style="display:inline-block;padding:.7rem 2rem;font-size:1.05rem;border-radius:10px">
       Try it yourself &mdash; search {html.escape(from_c)} &rarr; {html.escape(to_c)}
     </a>
@@ -607,7 +622,7 @@ def render_corridor_page(
 
   <div class="card" style="text-align:center">
     <p style="font-size:1.05rem;font-weight:600;margin-bottom:.5rem">Want a custom amount?</p>
-    <p><a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}" class="cta" style="display:inline-block;padding:.6rem 1.5rem;font-size:1rem">Search {html.escape(from_c)} &rarr; {html.escape(to_c)} on Coinnect</a></p>
+    <p><a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}" class="cta" rel="nofollow" style="display:inline-block;padding:.6rem 1.5rem;font-size:1rem">Search {html.escape(from_c)} &rarr; {html.escape(to_c)} on Coinnect</a></p>
   </div>
 </main>
 {_footer_html()}
@@ -805,23 +820,8 @@ def generate_sitemap_xml() -> str:
     for country_slug in COUNTRY_DATA:
         urls.append((f"https://coinnect.bot/rates/{country_slug}", "hourly", "0.85"))
 
-    # Country-based corridor pages (e.g. /send/united-states/mexico)
-    _seen_pairs = set()
-    for from_slug, from_data in COUNTRY_DATA.items():
-        from_kebab = from_data["name"].lower().replace(" ", "-")
-        for to_slug, to_data in COUNTRY_DATA.items():
-            if from_slug == to_slug:
-                continue
-            pair_key = (from_data["currency"], to_data["currency"])
-            if pair_key in _seen_pairs:
-                continue
-            # Only add if this is a real corridor (appears in outbound/inbound)
-            for fc, tc in from_data.get("outbound", []):
-                if tc == to_data["currency"]:
-                    to_kebab = to_data["name"].lower().replace(" ", "-")
-                    urls.append((f"https://coinnect.bot/send/{from_kebab}/{to_kebab}", "hourly", "0.85"))
-                    _seen_pairs.add(pair_key)
-                    break
+    # Country-based corridor pages removed from sitemap — they canonical to /send/{from}-to-{to}
+    # and were causing crawl budget waste + content cannibalization.
 
     # Exchange directory and profile pages
     urls.append(("https://coinnect.bot/exchanges", "weekly", "0.8"))

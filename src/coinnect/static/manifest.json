@@ -1,0 +1,27 @@
+{
+  "name": "Coinnect",
+  "short_name": "Coinnect",
+  "description": "Find the best rate to move money anywhere. Free open map for global money — fiat, crypto, P2P.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0F172A",
+  "background_color": "#0F172A",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/static/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"]
+}

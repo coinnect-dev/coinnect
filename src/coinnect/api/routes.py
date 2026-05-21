@@ -161,17 +161,18 @@ async def quote(
     from_ = from_.upper()
     to = to.upper()
 
-    # ── Rate limiting ────────────────────────────────────────────────────────
-    from coinnect.db.keys import check_rate_limit, check_anonymous
-    if x_api_key:
-        allowed, info = check_rate_limit(x_api_key)
-        if not allowed:
-            raise _rate_limit_error(info)
-    else:
-        ip = _get_client_ip(request)
-        allowed, info = check_anonymous(ip)
-        if not allowed:
-            raise _rate_limit_error(info)
+    # ── Rate limiting (skipped for paid MPP requests) ────────────────────────
+    if not getattr(request.state, "mpp_paid", False):
+        from coinnect.db.keys import check_rate_limit, check_anonymous
+        if x_api_key:
+            allowed, info = check_rate_limit(x_api_key)
+            if not allowed:
+                raise _rate_limit_error(info)
+        else:
+            ip = _get_client_ip(request)
+            allowed, info = check_anonymous(ip)
+            if not allowed:
+                raise _rate_limit_error(info)
 
     # ── Fetch edges from background cache (instant, no network calls) ────────
     from coinnect.main import get_cached_edges
@@ -322,7 +323,7 @@ async def providers_status():
         _floatrates_cache, _yadio_cache, _bluelytics_cache,
         _criptoya_cache, _bcb_cache, _banxico_cache, _trm_cache,
         _frankfurter_cache, _currencyapi_cache, _binance_p2p_cache,
-        _uphold_cache, _strike_cache,
+        _uphold_cache,
     )
     from coinnect.exchanges.wise_adapter import _wise_rate_cache, _rate_cache as _wise_fx_cache
 
@@ -337,7 +338,6 @@ async def providers_status():
         'Banxico (MX)': _banxico_cache, 'TRM (CO)': _trm_cache,
         'Frankfurter': _frankfurter_cache, 'CurrencyAPI': _currencyapi_cache,
         'Binance P2P (live)': _binance_p2p_cache, 'Uphold': _uphold_cache,
-        'Strike': _strike_cache,
     }
 
     edges = get_cached_edges()
@@ -674,6 +674,81 @@ async def claim_quest_endpoint(quest_id: int, report_id: int = Query(...), reque
         "status": "claimed",
         "message": "Quest claimed! Reward will be distributed in the next payout cycle.",
     }
+
+
+class ContributorSignup(BaseModel):
+    name: str  # agent name or human name
+    type: str = "agent"  # agent or human
+    url: str | None = None  # agent URL or website
+    corridors: list[str] | None = None  # corridors they can verify, e.g. ["USD-MXN", "EUR-NGN"]
+    capabilities: str | None = None  # what they can do: "visual_verification", "api_scraping", "local_rates"
+    contact: str | None = None  # optional email or handle
+
+
+@router.post("/contributors", summary="Register as a rate verification contributor", tags=["Community"])
+async def register_contributor(body: ContributorSignup):
+    """
+    Sign up to help verify exchange rates. Agents and humans welcome.
+    We'll notify you when quests match your corridors and capabilities.
+    """
+    from coinnect.db.analytics import save_contributor
+    contributor_id = save_contributor(
+        name=body.name,
+        type=body.type,
+        url=body.url,
+        corridors=body.corridors,
+        capabilities=body.capabilities,
+        contact=body.contact,
+    )
+    return {
+        "ok": True,
+        "contributor_id": contributor_id,
+        "message": f"Welcome {body.name}! You're registered as a contributor. Check /v1/quests for open verification tasks.",
+    }
+
+
+@router.get("/contributors", summary="List registered contributors", tags=["Community"])
+async def list_contributors():
+    """List all registered rate verification contributors."""
+    from coinnect.db.analytics import get_contributors
+    return {"contributors": get_contributors()}
+
+
+@router.get("/payment-route", summary="Optimal payment protocol for agent-to-API transactions", tags=["Payments"])
+async def payment_route(
+    amount: float = Query(..., description="Payment amount in USD (e.g. 0.002 for a micropayment)"),
+    frequency: str = Query("one-off", description="one-off, session, or streaming"),
+    available_methods: str = Query(
+        None,
+        description="Comma-separated list of agent payment methods: usdc_tempo, fiat_card, free_tier. Legacy 'usdc_base' is treated as usdc_tempo."
+    ),
+    recipient_accepts: str = Query(
+        None,
+        description="Comma-separated list of what the server accepts: mpp, free_tier. Legacy 'x402' is treated as mpp."
+    ),
+):
+    """
+    Given a payment context, return the optimal MPP (Machine Payment Protocol, mpp.dev) method
+    for an agent-to-API transaction. Coinnect /v1/quote accepts MPP with Tempo USDC (micropayments)
+    and optionally Stripe (premium card). Free tier remains for low-volume use.
+    """
+    if frequency not in ("one-off", "session", "streaming"):
+        raise HTTPException(400, "frequency must be one-off, session, or streaming")
+    if amount < 0:
+        raise HTTPException(400, "amount must be >= 0")
+
+    from coinnect.mcp_server import _compute_payment_route
+
+    args = {
+        "amount_usd": amount,
+        "frequency": frequency,
+    }
+    if available_methods:
+        args["available_methods"] = [m.strip() for m in available_methods.split(",")]
+    if recipient_accepts:
+        args["recipient_accepts"] = [r.strip() for r in recipient_accepts.split(",")]
+
+    return _compute_payment_route(args)
 
 
 @router.get("/keys/usage", summary="Check usage for a key", tags=["API Keys"])

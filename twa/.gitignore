@@ -1,0 +1,12 @@
+# Android build artifacts — NUNCA commitear
+*.apk
+*.apk.idsig
+*.aab
+*.keystore
+.gradle/
+build/
+
+# Mantener manifest, gradle config y gradlew (reproducible build)
+!build.gradle
+!gradle/
+!gradle.properties

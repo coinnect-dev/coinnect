@@ -475,6 +475,57 @@ def claim_quest(quest_id: int, report_id: int, claimer: str) -> bool:
         return True
 
 
+def save_contributor(name: str, type: str, url: str | None, corridors: list[str] | None,
+                     capabilities: str | None, contact: str | None) -> int:
+    """Register a new rate verification contributor."""
+    import json
+    now = datetime.now(UTC).isoformat()
+    with _connect() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS contributors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                type TEXT DEFAULT 'agent',
+                url TEXT,
+                corridors TEXT,
+                capabilities TEXT,
+                contact TEXT,
+                registered_at TEXT NOT NULL,
+                verifications INTEGER DEFAULT 0,
+                trust_score REAL DEFAULT 0.5
+            )
+        """)
+        cur = conn.execute("""
+            INSERT INTO contributors (name, type, url, corridors, capabilities, contact, registered_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (name, type, url, json.dumps(corridors or []), capabilities, contact, now))
+        return cur.lastrowid
+
+
+def get_contributors() -> list[dict]:
+    """List all registered contributors."""
+    with _connect() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS contributors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                type TEXT DEFAULT 'agent',
+                url TEXT,
+                corridors TEXT,
+                capabilities TEXT,
+                contact TEXT,
+                registered_at TEXT NOT NULL,
+                verifications INTEGER DEFAULT 0,
+                trust_score REAL DEFAULT 0.5
+            )
+        """)
+        rows = conn.execute("""
+            SELECT id, name, type, url, corridors, capabilities, registered_at, verifications, trust_score
+            FROM contributors ORDER BY registered_at DESC
+        """).fetchall()
+        return [dict(r) for r in rows]
+
+
 def get_calibration_data() -> list[dict]:
     """
     Aggregate rate reports: avg reported_rate per provider/corridor

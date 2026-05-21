@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-0PS6GYS5BZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-0PS6GYS5BZ');
+  </script>
   <title>Coinnect — The free open map for global money</title>
   <meta name="description" content="Find the best rate to move money anywhere. Free API for humans and AI agents. Mission-driven, no affiliate fees.">
 
@@ -13,6 +21,14 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+  <link rel="apple-touch-icon" href="/static/logo-192.png">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Coinnect">
 
   <!-- Open Graph / Social sharing -->
   <meta property="og:type" content="website">
@@ -36,7 +52,7 @@
   {"@context":"https://schema.org","@type":"Organization","name":"Coinnect","url":"https://coinnect.bot","logo":"https://coinnect.bot/static/logo.svg","contactPoint":{"@type":"ContactPoint","email":"miguel@coinnect.bot","contactType":"customer support"},"sameAs":["https://github.com/coinnect-dev/coinnect"]}
   </script>
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Coinnect?","acceptedAnswer":{"@type":"Answer","text":"Coinnect is a free, open-source money routing engine that finds the cheapest path between any two currencies — fiat, crypto, or P2P. It compares 30+ providers in real time without charging fees or holding funds."}},{"@type":"Question","name":"How does Coinnect make money?","acceptedAnswer":{"@type":"Answer","text":"Coinnect is free for everyone. Revenue comes from x402 micropayments by AI agents ($0.002/query), commercial API tiers, and voluntary donations. No affiliate fees, no ads."}},{"@type":"Question","name":"Is Coinnect safe to use?","acceptedAnswer":{"@type":"Answer","text":"Coinnect never holds funds, never processes payments, and never collects identity information. It only shows you the routes — each provider handles its own transfers and KYC."}}]}
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Coinnect?","acceptedAnswer":{"@type":"Answer","text":"Coinnect is a free, open-source money routing engine that finds the cheapest path between any two currencies — fiat, crypto, or P2P. It compares 30+ providers in real time without charging fees or holding funds."}},{"@type":"Question","name":"How does Coinnect make money?","acceptedAnswer":{"@type":"Answer","text":"Coinnect is free for everyone. Revenue comes from MPP (Machine Payment Protocol) micropayments by AI agents — $0.0001/quote via Tempo USDC, with Stripe card as a premium option — plus commercial API tiers and voluntary donations. No affiliate fees, no ads."}},{"@type":"Question","name":"Is Coinnect safe to use?","acceptedAnswer":{"@type":"Answer","text":"Coinnect never holds funds, never processes payments, and never collects identity information. It only shows you the routes — each provider handles its own transfers and KYC."}}]}
   </script>
 
   <!-- Prevent theme flash -->
@@ -235,7 +251,7 @@
         Compare every way to send money <span class="text-cyan-600 dark:text-cyan-400">anywhere</span>
       </h1>
       <p class="text-gray-500 dark:text-gray-400 text-sm max-w-md mx-auto" data-i18n="hero_sub">
-        The cheapest path between any two currencies — fiat, crypto, P2P. Standard. Free. Open. For humans &amp; bots.
+        The cheapest path between any two currencies — banks, digital currencies, P2P. Free. Open. For humans &amp; bots.
       </p>
       <p class="mt-2 text-base text-cyan-600 dark:text-cyan-400 font-medium" id="taglineRotator"></p>
       <!-- Stats -->
@@ -316,7 +332,7 @@
             <option value="SGD">🇸🇬 SGD — Singapore Dollar</option>
             <option value="HKD">🇭🇰 HKD — Hong Kong Dollar</option>
           </optgroup>
-          <optgroup label="Crypto">
+          <optgroup label="Digital Currencies">
             <option value="BTC">₿ BTC — Bitcoin</option>
             <option value="ETH">Ξ ETH — Ethereum</option>
             <option value="USDC">◈ USDC — USD Coin</option>
@@ -394,7 +410,7 @@
             <option value="SGD">🇸🇬 SGD — Singapore Dollar</option>
             <option value="HKD">🇭🇰 HKD — Hong Kong Dollar</option>
           </optgroup>
-          <optgroup label="Crypto">
+          <optgroup label="Digital Currencies">
             <option value="BTC">₿ BTC — Bitcoin</option>
             <option value="ETH">Ξ ETH — Ethereum</option>
             <option value="USDC">◈ USDC — USD Coin</option>
@@ -470,7 +486,7 @@
       <button class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" data-filter="cheap" onclick="setFilter('cheap')" data-i18n="filter_cheap">Best rate</button>
       <button class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" data-filter="fast" onclick="setFilter('fast')" data-i18n="filter_fast">Fastest</button>
       <button class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" data-filter="nocrypto" onclick="setFilter('nocrypto')" data-i18n="filter_nocrypto">Bank only</button>
-      <button class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" data-filter="crypto" onclick="setFilter('crypto')" data-i18n="filter_crypto">Crypto</button>
+      <button class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" data-filter="crypto" onclick="setFilter('crypto')" data-i18n="filter_crypto">Digital currencies</button>
       <!-- Access filter toggle -->
       <button onclick="document.getElementById('accessFilters').classList.toggle('hidden')" class="filter-btn text-xs border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1.5 transition-all text-gray-500 dark:text-gray-400" title="Filter by what documents/accounts you have">🔑 Access</button>
       <div class="ml-auto flex items-center gap-2">
@@ -888,11 +904,76 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 
 <footer class="text-xs text-gray-400 dark:text-gray-600 py-8 border-t border-gray-100 dark:border-gray-800">
+  <!-- SEO link hub: internal links to corridor, rates, and exchange pages -->
+  <div class="max-w-5xl mx-auto px-4 mb-8">
+    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Popular Money Transfer Routes</h3>
+    <div class="flex flex-wrap gap-x-4 gap-y-1.5 mb-5">
+      <a href="/send/usd-to-mxn" class="hover:text-cyan-500 transition-colors">USD to MXN</a>
+      <a href="/send/usd-to-inr" class="hover:text-cyan-500 transition-colors">USD to INR</a>
+      <a href="/send/usd-to-php" class="hover:text-cyan-500 transition-colors">USD to PHP</a>
+      <a href="/send/usd-to-ngn" class="hover:text-cyan-500 transition-colors">USD to NGN</a>
+      <a href="/send/usd-to-brl" class="hover:text-cyan-500 transition-colors">USD to BRL</a>
+      <a href="/send/usd-to-cop" class="hover:text-cyan-500 transition-colors">USD to COP</a>
+      <a href="/send/usd-to-pkr" class="hover:text-cyan-500 transition-colors">USD to PKR</a>
+      <a href="/send/usd-to-kes" class="hover:text-cyan-500 transition-colors">USD to KES</a>
+      <a href="/send/usd-to-ghs" class="hover:text-cyan-500 transition-colors">USD to GHS</a>
+      <a href="/send/usd-to-bdt" class="hover:text-cyan-500 transition-colors">USD to BDT</a>
+      <a href="/send/eur-to-mxn" class="hover:text-cyan-500 transition-colors">EUR to MXN</a>
+      <a href="/send/eur-to-ngn" class="hover:text-cyan-500 transition-colors">EUR to NGN</a>
+      <a href="/send/eur-to-inr" class="hover:text-cyan-500 transition-colors">EUR to INR</a>
+      <a href="/send/eur-to-try" class="hover:text-cyan-500 transition-colors">EUR to TRY</a>
+      <a href="/send/gbp-to-inr" class="hover:text-cyan-500 transition-colors">GBP to INR</a>
+      <a href="/send/gbp-to-php" class="hover:text-cyan-500 transition-colors">GBP to PHP</a>
+      <a href="/send/gbp-to-ngn" class="hover:text-cyan-500 transition-colors">GBP to NGN</a>
+      <a href="/send/aed-to-inr" class="hover:text-cyan-500 transition-colors">AED to INR</a>
+      <a href="/send/aed-to-php" class="hover:text-cyan-500 transition-colors">AED to PHP</a>
+      <a href="/send/cad-to-php" class="hover:text-cyan-500 transition-colors">CAD to PHP</a>
+      <a href="/send/mxn-to-usd" class="hover:text-cyan-500 transition-colors">MXN to USD</a>
+      <a href="/send/brl-to-usd" class="hover:text-cyan-500 transition-colors">BRL to USD</a>
+      <a href="/send/inr-to-usd" class="hover:text-cyan-500 transition-colors">INR to USD</a>
+      <a href="/send/ngn-to-usd" class="hover:text-cyan-500 transition-colors">NGN to USD</a>
+    </div>
+    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Rates by Country</h3>
+    <div class="flex flex-wrap gap-x-4 gap-y-1.5 mb-5">
+      <a href="/rates/mexico" class="hover:text-cyan-500 transition-colors">Mexico</a>
+      <a href="/rates/india" class="hover:text-cyan-500 transition-colors">India</a>
+      <a href="/rates/philippines" class="hover:text-cyan-500 transition-colors">Philippines</a>
+      <a href="/rates/nigeria" class="hover:text-cyan-500 transition-colors">Nigeria</a>
+      <a href="/rates/brazil" class="hover:text-cyan-500 transition-colors">Brazil</a>
+      <a href="/rates/colombia" class="hover:text-cyan-500 transition-colors">Colombia</a>
+      <a href="/rates/pakistan" class="hover:text-cyan-500 transition-colors">Pakistan</a>
+      <a href="/rates/kenya" class="hover:text-cyan-500 transition-colors">Kenya</a>
+      <a href="/rates/ghana" class="hover:text-cyan-500 transition-colors">Ghana</a>
+      <a href="/rates/turkey" class="hover:text-cyan-500 transition-colors">Turkey</a>
+      <a href="/rates/bangladesh" class="hover:text-cyan-500 transition-colors">Bangladesh</a>
+      <a href="/rates/united-kingdom" class="hover:text-cyan-500 transition-colors">United Kingdom</a>
+      <a href="/rates/germany" class="hover:text-cyan-500 transition-colors">Germany</a>
+      <a href="/rates/united-states" class="hover:text-cyan-500 transition-colors">United States</a>
+      <a href="/rates/canada" class="hover:text-cyan-500 transition-colors">Canada</a>
+      <a href="/rates/uae" class="hover:text-cyan-500 transition-colors">UAE</a>
+    </div>
+    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3">Exchanges & Providers</h3>
+    <div class="flex flex-wrap gap-x-4 gap-y-1.5">
+      <a href="/exchanges" class="hover:text-cyan-500 transition-colors font-medium">All exchanges</a>
+      <a href="/exchange/wise" class="hover:text-cyan-500 transition-colors">Wise</a>
+      <a href="/exchange/binance" class="hover:text-cyan-500 transition-colors">Binance</a>
+      <a href="/exchange/remitly" class="hover:text-cyan-500 transition-colors">Remitly</a>
+      <a href="/exchange/western-union" class="hover:text-cyan-500 transition-colors">Western Union</a>
+      <a href="/exchange/moneygram" class="hover:text-cyan-500 transition-colors">MoneyGram</a>
+      <a href="/exchange/coinbase" class="hover:text-cyan-500 transition-colors">Coinbase</a>
+      <a href="/exchange/kraken" class="hover:text-cyan-500 transition-colors">Kraken</a>
+      <a href="/exchange/okx" class="hover:text-cyan-500 transition-colors">OKX</a>
+      <a href="/exchange/bitso" class="hover:text-cyan-500 transition-colors">Bitso</a>
+      <a href="/exchange/worldremit" class="hover:text-cyan-500 transition-colors">WorldRemit</a>
+      <a href="/exchange/xe" class="hover:text-cyan-500 transition-colors">XE</a>
+    </div>
+  </div>
   <div class="max-w-5xl mx-auto px-4 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-5 mb-6">
     <!-- Column 1: Project -->
     <div>
       <h4 class="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Project</h4>
       <ul class="space-y-1.5">
+        <li><a href="/about" class="hover:text-cyan-500 transition-colors">About</a></li>
         <li><a href="/whitepaper" class="hover:text-cyan-500 transition-colors">Whitepaper</a></li>
         <li><a href="https://github.com/coinnect-dev/coinnect" target="_blank" rel="noopener" onclick="trackOutbound(this.href,'github_footer')" class="inline-flex items-center gap-1 hover:text-cyan-500 transition-colors">
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -938,6 +1019,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div>
       <h4 class="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Legal</h4>
       <ul class="space-y-1.5">
+        <li><a href="/privacy" class="hover:text-cyan-500 transition-colors">Privacy</a></li>
         <li><button onclick="openDisclaimer()" class="hover:text-cyan-500 transition-colors text-left" data-i18n="footer_disclaimer">Disclaimer</button></li>
         <li><button onclick="removeTracking()" class="hover:text-cyan-500 transition-colors text-left" data-i18n="footer_notrack">Disable tracking</button></li>
         <li><a href="/.well-known/security.txt" class="hover:text-cyan-500 transition-colors">Security</a></li>
@@ -961,6 +1043,8 @@ document.addEventListener('DOMContentLoaded',function(){
       </a>
       <span>·</span>
       <span>MIT License</span>
+      <span>·</span>
+      <a href="https://koalabs.ai" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Built by KOA Labs</a>
       <span>·</span>
       <span class="opacity-50">v2026.03.24.2</span>
     </div>
@@ -2235,7 +2319,11 @@ async function getQuote(){
 
     // 2. Fetch live data (may take 1-5s)
     let data;
-    for(let attempt=0;attempt<2;attempt++){
+    const MAX_ATTEMPTS=3;
+    const PARSE_BACKOFF_MS=[1500,4000];
+    const SVC_BACKOFF_MS=[2000,5000];
+    for(let attempt=0;attempt<MAX_ATTEMPTS;attempt++){
+      const isLast=attempt===MAX_ATTEMPTS-1;
       try{
         const controller=new AbortController();
         const tid=setTimeout(()=>controller.abort(),20000);
@@ -2243,19 +2331,19 @@ async function getQuote(){
         clearTimeout(tid);
         const text=await res.text();
         try{data=JSON.parse(text);}catch(e){
-          if(attempt===0){await new Promise(r=>setTimeout(r,1500));continue;}
+          if(!isLast){await new Promise(r=>setTimeout(r,PARSE_BACKOFF_MS[attempt]));continue;}
           console.error('Non-JSON response:',text.substring(0,200));
           throw new Error('Server returned an unexpected response. Please retry.');
         }
         if(!res.ok){
-          if(res.status===503&&attempt===0){await new Promise(r=>setTimeout(r,2000));continue;}
+          if(res.status===503&&!isLast){await new Promise(r=>setTimeout(r,SVC_BACKOFF_MS[attempt]));continue;}
           if(showedCached)break;
           throw new Error(data.detail||'No routes found');
         }
         break;
       }catch(e){
         if(e.name==='AbortError'){
-          if(attempt===0){continue;}
+          if(!isLast){continue;}
           if(showedCached)break;
           throw new Error('Request timed out. Please try again.');
         }
@@ -2755,5 +2843,15 @@ async function getFingerprint(){
 
 <!-- Floating bug report button -->
 <button onclick="openFeedback('bug')" class="fixed bottom-4 right-4 z-40 w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all shadow-sm flex items-center justify-center text-sm" title="Report a bug">🐛</button>
+
+<!-- PWA: Service Worker registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
 </body>
 </html>

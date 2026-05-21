@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 
 from coinnect.api.routes import router
 from coinnect.api.admin_routes import admin_router, suggest_router
@@ -21,7 +21,7 @@ from coinnect.db.analytics import init_analytics_db
 from coinnect.seo_pages import (
     render_corridor_page, render_country_page, generate_sitemap_xml,
     generate_exchange_page, generate_exchanges_directory, resolve_country_corridor,
-    TOP_CORRIDORS, COUNTRY_DATA, _cache_get, _cache_set,
+    TOP_CORRIDORS, COUNTRY_DATA, CURRENCY_NAMES, _cache_get, _cache_set,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,10 +49,10 @@ async def _refresh_once(force: bool = False) -> int:
     from coinnect.exchanges.remittance_adapter import get_remittance_edges
     from coinnect.exchanges.direct_api_adapter import (
         get_bitso_edges, get_buda_edges, get_coingecko_edges,
-        get_strike_edges, get_frankfurter_edges, get_currencyapi_edges,
+        get_frankfurter_edges, get_currencyapi_edges,
         get_flutterwave_edges,
-        get_bluelytics_edges, get_dolarsi_edges, get_criptoya_edges,
-        get_bcb_edges, get_banxico_edges, get_trm_edges, get_lirarate_edges,
+        get_bluelytics_edges, get_criptoya_edges,
+        get_bcb_edges, get_banxico_edges, get_trm_edges,
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
         get_binance_p2p_edges,
@@ -70,9 +70,9 @@ async def _refresh_once(force: bool = False) -> int:
     (
         crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges,
         bitso_edges, buda_edges, cg_edges,
-        strike_edges, frank_edges, curapi_edges, fw_edges,
-        bluelytics_edges, dolarsi_edges, criptoya_edges,
-        bcb_edges, banxico_edges, trm_edges, lirarate_edges,
+        frank_edges, curapi_edges, fw_edges,
+        bluelytics_edges, criptoya_edges,
+        bcb_edges, banxico_edges, trm_edges,
         yadio_edges, valr_edges, coindcx_edges,
         wazirx_edges, satoshitango_edges, floatrates_edges,
         binance_p2p_edges,
@@ -92,17 +92,14 @@ async def _refresh_once(force: bool = False) -> int:
         get_bitso_edges(),
         get_buda_edges(),
         get_coingecko_edges(),
-        get_strike_edges(),
         get_frankfurter_edges(),
         get_currencyapi_edges(),
         get_flutterwave_edges(),
         get_bluelytics_edges(),
-        get_dolarsi_edges(),
         get_criptoya_edges(),
         get_bcb_edges(),
         get_banxico_edges(),
         get_trm_edges(),
-        get_lirarate_edges(),
         get_yadio_edges(),
         get_valr_edges(),
         get_coindcx_edges(),
@@ -132,9 +129,9 @@ async def _refresh_once(force: bool = False) -> int:
     all_edges = (
         crypto_edges + wise_edges + trad_edges + yc_edges + remit_edges
         + bitso_edges + buda_edges + cg_edges
-        + strike_edges + frank_edges + curapi_edges + fw_edges
-        + bluelytics_edges + dolarsi_edges + criptoya_edges
-        + bcb_edges + banxico_edges + trm_edges + lirarate_edges
+        + frank_edges + curapi_edges + fw_edges
+        + bluelytics_edges + criptoya_edges
+        + bcb_edges + banxico_edges + trm_edges
         + yadio_edges + valr_edges + coindcx_edges
         + wazirx_edges + satoshitango_edges + floatrates_edges
         + binance_p2p_edges
@@ -170,6 +167,33 @@ async def _refresh_once(force: bool = False) -> int:
             logger.debug(f"Snapshot failed {from_c}→{to_c}: {e}")
 
     return len(all_edges)
+
+
+async def _warm_seo_cache() -> None:
+    """Pre-render all corridor + country SSR pages into the HTML cache."""
+    from coinnect.seo_pages import render_corridor_page, render_country_page, TOP_CORRIDORS, COUNTRY_DATA, _cache_set
+    edges = get_cached_edges()
+    if not edges:
+        return
+    warmed = 0
+    for from_c, to_c in TOP_CORRIDORS:
+        cache_key = f"corridor:{from_c}:{to_c}"
+        try:
+            html = render_corridor_page(from_c, to_c, edges)
+            _cache_set(cache_key, html)
+            warmed += 1
+        except Exception:
+            pass
+    for slug in COUNTRY_DATA:
+        cache_key = f"country:{slug}"
+        try:
+            html = render_country_page(slug, edges)
+            if html:
+                _cache_set(cache_key, html)
+                warmed += 1
+        except Exception:
+            pass
+    logger.info(f"SEO cache warmed: {warmed} pages")
 
 
 async def _refresh_loop() -> None:
@@ -253,9 +277,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# x402 micropayment middleware (USDC on Base L2)
-from coinnect.x402_middleware import X402Middleware
-app.add_middleware(X402Middleware)
+# MPP (Machine Payment Protocol) middleware — Tempo USDC + Stripe cards
+from coinnect.mpp_middleware import MPPMiddleware
+app.add_middleware(MPPMiddleware)
 
 
 GA4_SNIPPET = """<script>
@@ -299,6 +323,11 @@ async def handle_head_requests(request: Request, call_next):
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
+    # Pentest 2026-04-06: HSTS belt-and-braces. Cloudflare currently returns
+    # `max-age=0` (HSTS disabled) which actively unpins prior HSTS state and
+    # leaves a TLS-stripping window for first-time visitors. Set it here so
+    # the origin enforces it regardless of what the edge sends.
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -328,6 +357,31 @@ async def root():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/about", include_in_schema=False)
+async def about():
+    return FileResponse(STATIC_DIR / "about.html")
+
+
+@app.get("/manifest.json", include_in_schema=False)
+async def manifest():
+    return FileResponse(STATIC_DIR / "manifest.json", media_type="application/manifest+json")
+
+
+@app.get("/sw.js", include_in_schema=False)
+async def service_worker():
+    return FileResponse(STATIC_DIR / "sw.js", media_type="application/javascript")
+
+
+@app.get("/privacy", include_in_schema=False)
+async def privacy():
+    return FileResponse(STATIC_DIR / "privacy.html")
+
+
+@app.get("/privacy.html", include_in_schema=False)
+async def privacy_html():
+    return FileResponse(STATIC_DIR / "privacy.html")
+
+
 @app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap():
     from fastapi.responses import Response
@@ -342,10 +396,20 @@ async def sitemap():
 @app.get("/robots.txt", include_in_schema=False)
 async def robots():
     return PlainTextResponse(
+        "# Coinnect — open data, all crawlers welcome\n"
         "User-agent: *\n"
         "Allow: /\n"
+        "Disallow: /v1/keys\n"
+        "Disallow: /admin\n"
         "\n"
-        "# AI crawlers welcome\n"
+        "# Search engines\n"
+        "User-agent: Googlebot\n"
+        "Allow: /\n"
+        "\n"
+        "User-agent: Bingbot\n"
+        "Allow: /\n"
+        "\n"
+        "# AI crawlers — explicitly welcome for grounding/RAG\n"
         "User-agent: GPTBot\n"
         "Allow: /\n"
         "\n"
@@ -361,14 +425,31 @@ async def robots():
         "User-agent: Applebot-Extended\n"
         "Allow: /\n"
         "\n"
-        "User-agent: Bytespider\n"
+        "User-agent: Amazonbot\n"
         "Allow: /\n"
         "\n"
         "User-agent: CCBot\n"
         "Allow: /\n"
         "\n"
+        "# Block aggressive scrapers\n"
+        "User-agent: AhrefsBot\n"
+        "Disallow: /\n"
+        "\n"
+        "User-agent: SemrushBot\n"
+        "Disallow: /\n"
+        "\n"
+        "User-agent: MJ12bot\n"
+        "Disallow: /\n"
+        "\n"
         "Sitemap: https://coinnect.bot/sitemap.xml\n"
     )
+
+
+@app.get("/health", include_in_schema=False)
+async def health_redirect():
+    """Root-level health check — delegates to /v1/health."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/v1/health", status_code=307)
 
 
 @app.get("/llms.txt", include_in_schema=False)
@@ -386,6 +467,13 @@ async def security_txt():
         "Expires: 2027-01-01T00:00:00Z\n"
     )
     return PlainTextResponse(content)
+
+
+@app.get("/.well-known/ceiba.json", include_in_schema=False)
+async def ceiba_manifest():
+    import json
+    p = Path(__file__).parent.parent.parent / "ceiba.json"
+    return JSONResponse(json.loads(p.read_text()))
 
 
 @app.get("/.well-known/agent", include_in_schema=False)
@@ -429,6 +517,16 @@ async def well_known_agent():
     return JSONResponse(agent_manifest)
 
 
+@app.get("/.well-known/agent-card.json", include_in_schema=False)
+@app.get("/.well-known/agent.json", include_in_schema=False)
+async def well_known_agent_card():
+    """A2A Agent Card — machine-readable agent capability descriptor."""
+    return FileResponse(
+        STATIC_DIR / ".well-known" / "agent-card.json",
+        media_type="application/json",
+    )
+
+
 async def _get_all_edges_cached() -> list:
     """Fetch all edges from all adapters (uses each adapter's internal cache)."""
     from coinnect.exchanges.ccxt_adapter import get_all_edges
@@ -437,10 +535,10 @@ async def _get_all_edges_cached() -> list:
     from coinnect.exchanges.remittance_adapter import get_remittance_edges
     from coinnect.exchanges.direct_api_adapter import (
         get_bitso_edges, get_buda_edges, get_coingecko_edges,
-        get_strike_edges, get_frankfurter_edges, get_currencyapi_edges,
+        get_frankfurter_edges, get_currencyapi_edges,
         get_flutterwave_edges,
-        get_bluelytics_edges, get_dolarsi_edges, get_criptoya_edges,
-        get_bcb_edges, get_banxico_edges, get_trm_edges, get_lirarate_edges,
+        get_bluelytics_edges, get_criptoya_edges,
+        get_bcb_edges, get_banxico_edges, get_trm_edges,
         get_yadio_edges, get_valr_edges, get_coindcx_edges,
         get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
         get_binance_p2p_edges,
@@ -462,17 +560,14 @@ async def _get_all_edges_cached() -> list:
         get_bitso_edges(),
         get_buda_edges(),
         get_coingecko_edges(),
-        get_strike_edges(),
         get_frankfurter_edges(),
         get_currencyapi_edges(),
         get_flutterwave_edges(),
         get_bluelytics_edges(),
-        get_dolarsi_edges(),
         get_criptoya_edges(),
         get_bcb_edges(),
         get_banxico_edges(),
         get_trm_edges(),
-        get_lirarate_edges(),
         get_yadio_edges(),
         get_valr_edges(),
         get_coindcx_edges(),
@@ -1062,27 +1157,21 @@ async def suggest_page():
 
 @app.get("/send/{from_country}/{to_country}", include_in_schema=False)
 async def corridor_page_by_country(from_country: str, to_country: str):
-    """SEO corridor page by country name: /send/united-states/mexico"""
+    """Redirect country-based corridors to canonical currency-pair URL."""
+    from fastapi.responses import RedirectResponse
     pair = resolve_country_corridor(from_country, to_country)
     if not pair:
         return HTMLResponse(
-            "<html><body><h2>Country not found</h2>"
+            "<html><head><meta name='robots' content='noindex'></head><body>"
+            "<h2>Country not found</h2>"
             "<p><a href='/explore'>See all corridors</a></p></body></html>",
             status_code=404,
         )
     from_c, to_c = pair
-    cache_key = f"corridor:{from_c}:{to_c}"
-    cached = _cache_get(cache_key)
-    if cached:
-        return HTMLResponse(cached)
-
-    edges = await _get_all_edges_cached()
-    if not edges:
-        return HTMLResponse("<html><body><h2>Exchange data temporarily unavailable</h2><p><a href='/'>Back</a></p></body></html>", status_code=503)
-
-    page_html = render_corridor_page(from_c, to_c, edges)
-    _cache_set(cache_key, page_html)
-    return HTMLResponse(page_html)
+    return RedirectResponse(
+        url=f"/send/{from_c.lower()}-to-{to_c.lower()}",
+        status_code=301,
+    )
 
 
 @app.get("/send/{corridor}", include_in_schema=False)
@@ -1094,18 +1183,44 @@ async def corridor_page(corridor: str):
         return HTMLResponse("<html><body><h2>Invalid corridor</h2><p><a href='/'>Back</a></p></body></html>", status_code=404)
 
     from_c, to_c = parts[0].upper(), parts[1].upper()
+
+    # Validate currencies — return 404 + noindex for unknown pairs.
+    # Pentest 2026-04-06: html.escape user-controlled path components to
+    # prevent reflected XSS via crafted /send/<...>-to-<...> URLs.
+    if from_c not in CURRENCY_NAMES or to_c not in CURRENCY_NAMES:
+        safe_from = html.escape(from_c)
+        safe_to = html.escape(to_c)
+        return HTMLResponse(
+            "<html><head><meta name='robots' content='noindex, nofollow'></head>"
+            "<body><h2>Unknown currency pair</h2>"
+            f"<p>We don't have data for {safe_from} to {safe_to}.</p>"
+            "<p><a href='/'>Find your corridor</a></p></body></html>",
+            status_code=404,
+        )
+
     cache_key = f"corridor:{from_c}:{to_c}"
     cached = _cache_get(cache_key)
     if cached:
-        return HTMLResponse(cached)
+        resp = HTMLResponse(cached)
+        resp.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+        return resp
 
-    edges = await _get_all_edges_cached()
+    edges = get_cached_edges()
     if not edges:
-        return HTMLResponse("<html><body><h2>Exchange data temporarily unavailable</h2><p><a href='/'>Back</a></p></body></html>", status_code=503)
+        return HTMLResponse(
+            "<html><body><h2>Loading exchange data...</h2>"
+            "<p>Rates are being refreshed. Please try again in 30 seconds.</p>"
+            "<p><a href='/'>Back to Coinnect</a></p>"
+            '<meta http-equiv="refresh" content="30"></body></html>',
+            status_code=503,
+            headers={"Retry-After": "30"},
+        )
 
     page_html = render_corridor_page(from_c, to_c, edges)
     _cache_set(cache_key, page_html)
-    return HTMLResponse(page_html)
+    resp = HTMLResponse(page_html)
+    resp.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+    return resp
 
 
 @app.get("/rates/{slug}", include_in_schema=False)
@@ -1127,9 +1242,16 @@ async def rates_page(slug: str):
             status_code=404,
         )
 
-    edges = await _get_all_edges_cached()
+    edges = get_cached_edges()
     if not edges:
-        return HTMLResponse("<html><body><h2>Exchange data temporarily unavailable</h2><p><a href='/'>Back</a></p></body></html>", status_code=503)
+        return HTMLResponse(
+            "<html><body><h2>Loading exchange data...</h2>"
+            "<p>Rates are being refreshed. Please try again in 30 seconds.</p>"
+            "<p><a href='/'>Back to Coinnect</a></p>"
+            '<meta http-equiv="refresh" content="30"></body></html>',
+            status_code=503,
+            headers={"Retry-After": "30"},
+        )
 
     page_html = render_country_page(slug, edges)
     if not page_html:

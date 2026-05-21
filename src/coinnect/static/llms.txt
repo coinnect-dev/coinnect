@@ -1,35 +1,51 @@
 # Coinnect
 
-> Open protocol for global money routing. Finds the best rate between any two currencies — fiat, crypto, P2P. Free, open source, for humans and bots.
+> Open money routing engine. Finds the cheapest path between any two currencies — fiat, crypto, P2P — across 80+ adapters worldwide. Free API, agent-friendly, community-verified.
 
-Coinnect compares 30+ exchanges and remittance providers in real time to find the cheapest way to move money across borders. No affiliate fees, no custody, no sign-up required.
+## What Coinnect does
 
-## API
+Coinnect compares 80+ exchanges and remittance providers in real time to find the cheapest way to move money across borders. No affiliate fees, no custody, no sign-up required.
 
-- [API Documentation](https://coinnect.bot/docs): OpenAPI 3.0 spec with all endpoints
-- [Quote endpoint](https://coinnect.bot/v1/quote?from=USD&to=MXN&amount=500): GET /v1/quote — ranked routes for any transfer
-- [Corridors](https://coinnect.bot/v1/corridors): Most active currency pairs
-- [Exchanges](https://coinnect.bot/v1/exchanges): All integrated providers
-- [Health](https://coinnect.bot/v1/health): API status check
+The corridor and adapter graph is public and free. Anyone can query rates, discover routes, and build products on top.
 
-## MCP Server
+## API Endpoints
 
-Coinnect provides an MCP (Model Context Protocol) server for direct AI agent integration:
-- Install: `pip install coinnect` then `python -m coinnect.mcp_server`
-- Tools: `coinnect_quote`, `coinnect_corridors`, `coinnect_explain_route`
+- Quote: GET /v1/quote?from=USD&to=MXN&amount=500 — ranked routes with fees and times
+- Corridors: GET /v1/corridors — all supported currency pairs
+- Exchanges: GET /v1/exchanges — all integrated providers
+- History: GET /v1/history — historical rate data
+- Health: GET /v1/health — API status
+- Verify: POST /v1/verify — report a real exchange rate you observed
+- Quests: GET /v1/quests — open rate verification bounties
+- Docs: /docs — full OpenAPI 3.0 spec
 
-## Key Pages
+## Rate Verification (Help Wanted)
 
-- [Send USD to MXN](https://coinnect.bot/send-money/united-states/mexico): USA to Mexico comparison
-- [Send USD to INR](https://coinnect.bot/send-money/united-states/india): USA to India comparison
-- [Send GBP to NGN](https://coinnect.bot/send-money/united-kingdom/nigeria): UK to Nigeria comparison
-- [Whitepaper](https://coinnect.bot/static/whitepaper.md): Full technical documentation
-- [GitHub](https://github.com/coinnect-dev/coinnect): Source code (MIT license)
+Coinnect estimates rates from APIs, but many real-world exchange channels have no API:
+- Cash exchange houses (casas de cambio)
+- Informal P2P markets
+- Local bank branches with posted rates
+- Remittance pickup points
+- WhatsApp/Telegram exchange groups
+
+We need help verifying real rates from these channels. If you or your human can see a real exchange rate somewhere, report it via POST /v1/verify with: from_currency, to_currency, provider, rate, and optionally fee_pct and amount.
+
+Every verification improves routing accuracy for everyone.
+
+## Agent Integration
+
+- Agent Card: /.well-known/agent-card.json (A2A protocol v0.3)
+- MCP Server: pip install coinnect && python -m coinnect.mcp_server
+- Skills: coinnect_quote, coinnect_corridors, coinnect_explain_route, coinnect_verify, coinnect_quests, coinnect_payment_route
 
 ## Coverage
 
-50+ currencies, 30+ data sources, 21 crypto exchanges (live order book), 9 central banks, 21 remittance providers. Rates refresh every 3 minutes.
+80+ adapters. 50+ currencies. 21 crypto exchanges (live order books). 9 central banks. 21+ remittance providers. Rates refresh every 3 minutes.
 
 ## Pricing
 
-Free for everyone — humans and bots. Anonymous: 20 req/day. Free API key: 1,000/day. x402 micropayment: unlimited ($0.002/request USDC on Base L2).
+Free for everyone. Anonymous: 20 req/day. Free API key (no signup): 1,000/day via POST /v1/keys. Pay-per-request on /v1/quote via MPP (Machine Payment Protocol, https://mpp.dev): Tempo USDC at $0.0001/req (Moderato testnet currently, mainnet pending). Stripe card at $1.00/req available when configured. Standard 402 challenge: WWW-Authenticate / Authorization / Payment-Receipt headers.
+
+## Part of KOA Labs
+
+Built by KOA Labs (koalabs.ai). Part of the ceiba.to community network. Open source.
