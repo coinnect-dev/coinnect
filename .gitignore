@@ -27,3 +27,11 @@ docs/internal-map-plan.md
 docs/internal-50-founders.md
 docs/internal-api-access-research.md
 backups/
+
+# Runtime logs (HF model upload, server start logs)
+*.log
+
+# Files moved to .attic on 2026-06-22 (refactor leftovers from March 2026,
+# orphaned in subdirs that no longer match the codebase layout). Triage
+# in 99_docs/audit/coinnect-attic-2026-06-22.md.
+.attic/
