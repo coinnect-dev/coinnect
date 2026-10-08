@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Daily upload of rate snapshots to Hugging Face.
-Run via cron: 0 0 * * * /home/inge/coinnect/.venv/bin/python /home/inge/coinnect/scripts/upload_hf.py
+Run via cron: 0 0 * * * /path/to/coinnect/.venv/bin/python /path/to/coinnect/scripts/upload_hf.py
 
 Uploads yesterday's rate snapshots as a CSV to:
   huggingface.co/datasets/coinnect-dev/coinnect-rates

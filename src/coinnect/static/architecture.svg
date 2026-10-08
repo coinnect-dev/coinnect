@@ -79,7 +79,7 @@
   <rect x="280" y="95" width="180" height="36" rx="14" fill="url(#cyan)" opacity="0.9"/>
   <rect x="280" y="117" width="180" height="14" rx="0" fill="url(#cyan)" opacity="0.9"/>
   <text x="370" y="118" text-anchor="middle" font-size="12" font-weight="700" fill="white">FastAPI — coinnect.bot</text>
-  <text x="370" y="133" text-anchor="middle" font-size="9" fill="#e0f7ff">ash:8100  ·  uvicorn  ·  asyncio</text>
+  <text x="370" y="133" text-anchor="middle" font-size="9" fill="#e0f7ff">prod:8100  ·  uvicorn  ·  asyncio</text>
 
   <!-- Endpoints inside FastAPI box -->
   <text x="297" y="158" font-size="10" fill="#7dd3fc" font-weight="600">API Endpoints</text>

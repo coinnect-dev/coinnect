@@ -86,7 +86,7 @@ A Telegram bot that wraps the Coinnect API for conversational use.
 **Infrastructure:**
 - Python bot using `python-telegram-bot`
 - Connects to `https://coinnect.bot/v1/`
-- Can run on ash (systemd service) or bob
+- Can run as a systemd service on any small VPS
 - No user data stored
 
 ---

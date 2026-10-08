@@ -258,7 +258,7 @@ IETF draft for a root domain naming system for LLM agents. Introduces `agentdns:
 
 ### 4.1 n8n Workflows
 
-Coinnect is already deployed on ash alongside n8n. This is a natural distribution channel.
+Coinnect is already deployed alongside an n8n instance. This is a natural distribution channel.
 
 **Actions:**
 - Build n8n workflow templates that use the Coinnect API:

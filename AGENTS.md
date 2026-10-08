@@ -1,7 +1,7 @@
 <!-- KOA-MANUAL -->
 # AGENTS.md — Coinnect
 
-> Cross-agente. **Nota:** este repo NO está dentro de `~/koa/`. Es repo independiente en Forgejo `git.koanet/inge/coinnect`. La actividad aquí no se registra en `~/koa/04_llm/activity.jsonl` salvo que pases `KOA_ACTIVITY_LEDGER` a `koa-bootstrap`.
+> Cross-agente. **Nota:** este repo es independiente — no depende de ninguna infraestructura interna para contribuir. Si corrés tu propio orquestador de agentes, llevá tu propio ledger de actividad vía las env vars que tu tooling soporte.
 
 ## Qué es
 
@@ -17,16 +17,16 @@ Exchange router multi-corredor: stable → MXN/local con rutas rankeadas. Web `c
 ## Build & Deploy
 
 ```bash
-cd /home/inge/coinnect
+cd coinnect
 pip install -e .[dev]
 pytest
-# deploy
-rsync -avz . inge@100.64.0.1:/home/inge/coinnect/
-ssh inge@100.64.0.1 "systemctl --user restart coinnect"
+# deploy (adapt to your own host/user)
+rsync -avz . <user>@<prod-host>:/path/to/coinnect/
+ssh <user>@<prod-host> "systemctl --user restart coinnect"
 curl -fsS https://coinnect.bot/v1/quote?from=USD\&to=MXN\&amount=500 | head
 ```
 
-Servicio prod: ash:8100 (`coinnect.service`).
+Servicio prod corre en puerto 8100 (`coinnect.service`, systemd user unit).
 
 ## Reglas
 
