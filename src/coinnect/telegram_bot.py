@@ -37,6 +37,10 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger("coinnect.telegram")
+# httpx logs every request URL at INFO, and Telegram puts the bot token in the
+# URL path (/bot<TOKEN>/getUpdates) — keep it out of the journal.
+for _noisy in ("httpx", "httpcore"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 API_BASE = os.getenv("COINNECT_API_URL", "http://localhost:8100")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
