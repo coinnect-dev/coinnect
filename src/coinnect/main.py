@@ -248,6 +248,8 @@ async def lifespan(app: FastAPI):
         await refresh_task
     except asyncio.CancelledError:
         pass
+    from coinnect.exchanges.ccxt_adapter import shutdown_reapers
+    await shutdown_reapers()
 
 
 # ── App ─────────────────────────────────────────────────────────────────────
