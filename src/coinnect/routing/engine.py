@@ -200,16 +200,22 @@ def build_quote(
     cheapest_idx = min(range(len(raw_routes)), key=lambda i: raw_routes[i][0])
     fastest_idx = min(range(len(raw_routes)), key=lambda i: sum(e.estimated_minutes for e in raw_routes[i][2]))
 
-    # Assign labels: Cheapest + Fastest featured, rest as Option N
-    featured_indices = []
-    for idx in [cheapest_idx, fastest_idx]:
-        if idx not in featured_indices:
-            featured_indices.append(idx)
+    label_by_idx = {cheapest_idx: "Cheapest"}
+    if fastest_idx != cheapest_idx:
+        label_by_idx[fastest_idx] = "Fastest"
 
-    labels = ["Cheapest", "Fastest"]
-    featured_order = [(idx, labels[i]) for i, idx in enumerate(featured_indices)]
-    extra_indices = [i for i in range(len(raw_routes)) if i not in set(featured_indices)]
-    all_ordered = featured_order + [(i, f"Option {j+1}") for j, i in enumerate(extra_indices)]
+    # Rank every route by cost (ascending), labelling Cheapest/Fastest wherever
+    # they land and the rest as Option N — keeps result.routes sorted by
+    # total_cost_pct regardless of which routes are featured.
+    sorted_indices = sorted(range(len(raw_routes)), key=lambda i: raw_routes[i][0])
+    all_ordered = []
+    option_n = 0
+    for idx in sorted_indices:
+        if idx in label_by_idx:
+            all_ordered.append((idx, label_by_idx[idx]))
+        else:
+            option_n += 1
+            all_ordered.append((idx, f"Option {option_n}"))
 
     routes = []
     for rank, (raw_idx, label) in enumerate(all_ordered, start=1):
