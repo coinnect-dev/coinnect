@@ -29,6 +29,27 @@ STATIC_DIR = Path(__file__).parent / "static"
 DOCS_DIR = Path(__file__).parent.parent.parent / "docs"
 
 
+def _benign_asyncio_exception_handler(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """Demote uvloop's "Future exception was never retrieved" / ConnectionResetError noise.
+
+    Outbound HTTPS calls to flaky forex/exchange adapters sometimes get reset
+    mid-TLS-handshake; uvloop's SSLProtocol sets the exception on an internal
+    waiter Future nobody awaits (single frame inside uvloop/sslproto.pyx, no app
+    code involved). asyncio's default handler logs that via the 'asyncio' logger
+    at ERROR, which Sentry's logging integration reports as a real bug
+    (GlitchTip auto-ine#6). Anything else still goes to the default handler.
+    """
+    exc = context.get("exception")
+    if context.get("message") == "Future exception was never retrieved" and isinstance(
+        exc, ConnectionResetError
+    ):
+        logger.warning(
+            "asyncio: handshake TLS saliente reseteado (benigno): %r", context.get("future")
+        )
+        return
+    loop.default_exception_handler(context)
+
+
 # ── Global edge store + quote cache ────────────────────────────────────────
 _edges_store: dict = {"edges": [], "ts": 0.0}
 _quote_cache: dict[str, dict] = {}
@@ -233,6 +254,7 @@ async def _refresh_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    asyncio.get_running_loop().set_exception_handler(_benign_asyncio_exception_handler)
     init_db()
     init_keys_db()
     init_analytics_db()
