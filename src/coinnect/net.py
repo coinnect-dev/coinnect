@@ -29,10 +29,9 @@ def _is_cloudflare(ip) -> bool:
 def client_ip(request: Request) -> str:
     """The caller's IP, usable as a rate-limit key.
 
-    Caddy overwrites X-Forwarded-For with the peer it saw, so only the last hop is
-    trustworthy. The origin is also reachable without going through Cloudflare, so
-    CF-Connecting-IP counts only when that peer really is Cloudflare; otherwise
-    anyone could pick their own rate-limit bucket by sending the header.
+    The reverse proxy overwrites X-Forwarded-For with the peer it saw, so only the last
+    hop is trustworthy. CF-Connecting-IP counts only when that peer really is Cloudflare;
+    otherwise anyone could pick their own rate-limit bucket by sending the header.
     """
     forwarded = request.headers.get("x-forwarded-for", "")
     peer = forwarded.rsplit(",", 1)[-1].strip() or (request.client.host if request.client else "unknown")

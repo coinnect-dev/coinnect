@@ -179,7 +179,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Without a registered handler PTB logs every exception at ERROR with a
     traceback, so a dropped connection to api.telegram.org (polling retries it
-    on its own) opened a GlitchTip issue each time. NetworkError (and its
+    on its own) opened an error-tracker issue each time. NetworkError (and its
     subclass TimedOut) is transient: one WARNING line. BadRequest also inherits
     from NetworkError in PTB but is our bug, so it — and anything else — still
     goes out at ERROR with the traceback."""
