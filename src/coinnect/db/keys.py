@@ -8,6 +8,7 @@ Tiers (per_day / per_hour):
   pro        — 50,000/day, 2,000/hour (future)
 """
 
+import hashlib
 import logging
 import secrets
 import sqlite3
@@ -59,6 +60,11 @@ def _reset_if_needed() -> None:
         _hour_str = h
 
 
+def _hash_key(api_key: str) -> str:
+    """Keys are 192-bit random tokens, so a plain SHA-256 is enough at rest."""
+    return "sha256:" + hashlib.sha256(api_key.encode()).hexdigest()
+
+
 def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH), timeout=10)
     conn.row_factory = sqlite3.Row
@@ -79,10 +85,20 @@ def init_keys_db() -> None:
                 created_at  TEXT NOT NULL,
                 label       TEXT DEFAULT NULL
             );
-            CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key);
+            DROP INDEX IF EXISTS idx_api_keys_key;
         """)
+        _hash_plaintext_keys(conn)
     _warm_key_cache()
     logger.info("API keys DB ready")
+
+
+def _hash_plaintext_keys(conn: sqlite3.Connection) -> None:
+    """One-way migration of rows stored before keys were hashed. Idempotent."""
+    rows = conn.execute("SELECT api_key FROM api_keys WHERE api_key NOT LIKE 'sha256:%'").fetchall()
+    for row in rows:
+        conn.execute("UPDATE api_keys SET api_key = ? WHERE api_key = ?", (_hash_key(row["api_key"]), row["api_key"]))
+    if rows:
+        logger.info(f"Hashed {len(rows)} plaintext API keys")
 
 
 def _warm_key_cache() -> None:
@@ -104,23 +120,24 @@ def create_key(tier: str = "free", label: str | None = None) -> str:
     with _connect() as conn:
         conn.execute(
             "INSERT INTO api_keys (api_key, tier, created_at, label) VALUES (?,?,?,?)",
-            (api_key, tier, now, label)
+            (_hash_key(api_key), tier, now, label)
         )
-    _key_tier_cache[api_key] = tier
+    _key_tier_cache[_hash_key(api_key)] = tier
     logger.info(f"New API key created: tier={tier}")
     return api_key
 
 
 def get_key_tier(api_key: str) -> str | None:
-    if api_key in _key_tier_cache:
-        return _key_tier_cache[api_key]
+    hashed = _hash_key(api_key)
+    if hashed in _key_tier_cache:
+        return _key_tier_cache[hashed]
     try:
         with _connect() as conn:
             row = conn.execute(
-                "SELECT tier FROM api_keys WHERE api_key = ?", (api_key,)
+                "SELECT tier FROM api_keys WHERE api_key = ?", (hashed,)
             ).fetchone()
             if row:
-                _key_tier_cache[api_key] = row["tier"]
+                _key_tier_cache[hashed] = row["tier"]
                 return row["tier"]
     except Exception:
         pass
@@ -140,16 +157,17 @@ def check_rate_limit(api_key: str) -> tuple[bool, dict]:
     if tier is None:
         return False, {"reason": "unknown_key"}
     limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
-    day_used  = _day_counts.get(api_key, 0)
-    hour_used = _hour_counts.get(api_key, 0)
+    hashed = _hash_key(api_key)
+    day_used  = _day_counts.get(hashed, 0)
+    hour_used = _hour_counts.get(hashed, 0)
 
     if day_used >= limits["day"]:
         return False, {"reason": "daily_limit",  "limit": limits["day"],  "used": day_used,  "tier": tier}
     if hour_used >= limits["hour"]:
         return False, {"reason": "hourly_limit", "limit": limits["hour"], "used": hour_used, "tier": tier}
 
-    _day_counts[api_key]  = day_used  + 1
-    _hour_counts[api_key] = hour_used + 1
+    _day_counts[hashed]  = day_used  + 1
+    _hour_counts[hashed] = hour_used + 1
     return True, {
         "day_used":   day_used  + 1, "day_limit":  limits["day"],
         "hour_used":  hour_used + 1, "hour_limit": limits["hour"],
@@ -187,8 +205,9 @@ def get_usage(api_key: str) -> dict:
     if tier is None:
         return {"error": "unknown_key"}
     limits = TIER_LIMITS.get(tier, TIER_LIMITS["free"])
-    day_used  = _day_counts.get(api_key, 0)
-    hour_used = _hour_counts.get(api_key, 0)
+    hashed = _hash_key(api_key)
+    day_used  = _day_counts.get(hashed, 0)
+    hour_used = _hour_counts.get(hashed, 0)
     return {
         "api_key":         api_key[:8] + "…",
         "tier":            tier,

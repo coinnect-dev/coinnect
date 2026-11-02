@@ -30,6 +30,7 @@ import re
 
 import httpx
 from telegram import Update
+from telegram.error import BadRequest, NetworkError
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
 logging.basicConfig(
@@ -37,6 +38,10 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger("coinnect.telegram")
+# httpx logs every request URL at INFO, and Telegram puts the bot token in the
+# URL path (/bot<TOKEN>/getUpdates) — keep it out of the journal.
+for _noisy in ("httpx", "httpcore"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 API_BASE = os.getenv("COINNECT_API_URL", "http://localhost:8100")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -171,6 +176,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await msg.edit_text(reply, parse_mode="Markdown")
 
 
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Without a registered handler PTB logs every exception at ERROR with a
+    traceback, so a dropped connection to api.telegram.org (polling retries it
+    on its own) opened an error-tracker issue each time. NetworkError (and its
+    subclass TimedOut) is transient: one WARNING line. BadRequest also inherits
+    from NetworkError in PTB but is our bug, so it — and anything else — still
+    goes out at ERROR with the traceback."""
+    err = context.error
+    if isinstance(err, NetworkError) and not isinstance(err, BadRequest):
+        logger.warning("Telegram network error (transient): %s", err)
+        return
+    logger.error("Unhandled bot error", exc_info=err)
+
+
 def main() -> None:
     if not BOT_TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN not set. Exiting.")
@@ -182,6 +201,7 @@ def main() -> None:
     app.add_handler(CommandHandler("help", cmd_start))
     app.add_handler(CommandHandler("quote", cmd_quote))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_error_handler(on_error)
 
     logger.info("Coinnect Telegram bot starting (polling)...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)

@@ -360,24 +360,33 @@ async def _fetch_xrate(
         if r.status_code != 200:
             return None
 
-        # The result is in HTML like: <span class="ccOutputRs">20.345678</span>
-        # or in a pattern like "1.00 USD = 20.3456 MXN"
+        # Current markup (verified 2026-10-16):
+        #   <span class="ccOutputTxt">1.00 USD =</span>
+        #   <span class="ccOutputRslt">18.48<span class="ccOutputTrail">9505</span>
+        #     <span class="ccOutputCode"> MXN</span></span>
+        # ccOutputTxt is the *input* echo ("1.00") — matching it was the bug
+        # (it made every pair resolve to rate 1.0). The real rate lives in
+        # ccOutputRslt (+ ccOutputTrail for extra decimal precision).
         text = r.text
 
-        # Try pattern: class="ccOutputRs">NUMBER</span>
-        match = re.search(r'class="ccOutputRs">\s*([\d.,]+)\s*</span>', text)
+        match = re.search(
+            r'class="ccOutputRslt">\s*([\d.,]+)(?:<span class="ccOutputTrail">(\d+)</span>)?',
+            text,
+        )
         if not match:
-            # Try pattern: "1 USD = NUMBER MXN"
+            # Legacy markup fallback (class="ccOutputRs">NUMBER</span>)
+            match = re.search(r'class="ccOutputRs">\s*([\d.,]+)\s*</span>', text)
+        if not match:
+            # Fallback: "1 USD = NUMBER MXN" in plain text
             match = re.search(
                 rf'1(?:\.00?)?\s*{re.escape(from_ccy)}\s*=\s*([\d.,]+)\s*{re.escape(to_ccy)}',
                 text
             )
-        if not match:
-            # Try generic number near the output area
-            match = re.search(r'ccOutputTxt[^>]*>.*?([\d]+\.[\d]{2,6})', text, re.DOTALL)
 
         if match:
             rate_str = match.group(1).replace(",", "")
+            if len(match.groups()) > 1 and match.group(2):
+                rate_str += match.group(2)
             rate = float(rate_str)
             if rate > 0:
                 return Edge(

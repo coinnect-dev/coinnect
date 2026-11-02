@@ -46,17 +46,63 @@ BRIDGE = "USDC"
 _cache: dict = {"edges": [], "updated_at": None}
 CACHE_TTL_SECONDS = 180
 
+# Strong refs so the background reapers below aren't garbage-collected mid-run.
+_reapers: set[asyncio.Task] = set()
+
+
+async def _reap_stray_session(exchange) -> None:
+    """Close aiohttp sessions reopened by requests ccxt left running.
+
+    Some exchanges (bybit) load markets with an asyncio.gather of several
+    requests (spot/linear/inverse/option). When one fails the gather raises
+    but its siblings keep running, and the first to reach ``fetch()`` after
+    our ``close()`` opens a brand-new session that nobody closes — logged as
+    "Unclosed client session". Watch for one request timeout and close any
+    session that reappears.
+    """
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + exchange.timeout / 1000 + 5
+    try:
+        while loop.time() < deadline:
+            await asyncio.sleep(0.5)
+            if exchange.session is not None:
+                await exchange.close()
+    finally:
+        # Also on cancellation (shutdown): never leave a session behind.
+        if exchange.session is not None:
+            await asyncio.shield(exchange.close())
+
+
+async def _close_exchange(exchange, failed: bool) -> None:
+    """Close the exchange; after a failure, also reap stray sessions in background."""
+    await exchange.close()
+    if failed:
+        task = asyncio.create_task(_reap_stray_session(exchange))
+        _reapers.add(task)
+        task.add_done_callback(_reapers.discard)
+
+
+async def shutdown_reapers() -> None:
+    """Cancel pending reapers on shutdown; each closes its session on the way out."""
+    for task in list(_reapers):
+        task.cancel()
+    await asyncio.gather(*_reapers, return_exceptions=True)
+
 
 async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
     """Fetch available conversion edges from a single exchange."""
     edges = []
+    # A new instance each cycle on purpose: keeping parsed markets around costs ~300 MB
+    # of RSS and saves only ~1 s of CPU per refresh (measured 2026-11-02).
     exchange = config["class"]({"enableRateLimit": True})
     fee = config["fee_pct"]
+    failed = False
 
     try:
         tickers = await exchange.fetch_tickers()
         for symbol, ticker in tickers.items():
-            if "/" not in symbol:
+            # "BTC/USDT:USDT" is a perpetual, not a way to move money.
+            if "/" not in symbol or ":" in symbol:
                 continue
             base, quote = symbol.split("/", 1)
             bid = ticker.get("bid")
@@ -89,9 +135,13 @@ async def fetch_edges_from_exchange(name: str, config: dict) -> list[Edge]:
                 exchange_rate=1.0 / ask,
             ))
     except Exception as e:
+        failed = True
         logger.warning(f"Failed to fetch from {name}: {e}")
+    except BaseException:  # cancelled mid-fetch: siblings may still be running
+        failed = True
+        raise
     finally:
-        await exchange.close()
+        await _close_exchange(exchange, failed)
 
     return edges
 

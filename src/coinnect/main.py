@@ -3,8 +3,13 @@ Coinnect API — entry point
 """
 
 import asyncio
+import ctypes
+import gc
 import html
 import logging
+import multiprocessing
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,7 +20,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 
 from coinnect.api.routes import router
 from coinnect.api.admin_routes import admin_router, suggest_router
-from coinnect.db.history import init_db, record_snapshot, prune_old, TRACKED_CORRIDORS
+from coinnect.db.history import init_db, record_snapshot, compact_history, TRACKED_CORRIDORS
 from coinnect.db.keys import init_keys_db
 from coinnect.db.analytics import init_analytics_db
 from coinnect.seo_pages import (
@@ -29,6 +34,27 @@ STATIC_DIR = Path(__file__).parent / "static"
 DOCS_DIR = Path(__file__).parent.parent.parent / "docs"
 
 
+def _benign_asyncio_exception_handler(loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """Demote uvloop's "Future exception was never retrieved" / ConnectionResetError noise.
+
+    Outbound HTTPS calls to flaky forex/exchange adapters sometimes get reset
+    mid-TLS-handshake; uvloop's SSLProtocol sets the exception on an internal
+    waiter Future nobody awaits (single frame inside uvloop/sslproto.pyx, no app
+    code involved). asyncio's default handler logs that via the 'asyncio' logger
+    at ERROR, which Sentry's logging integration reports as a real bug.
+    Anything else still goes to the default handler.
+    """
+    exc = context.get("exception")
+    if context.get("message") == "Future exception was never retrieved" and isinstance(
+        exc, ConnectionResetError
+    ):
+        logger.warning(
+            "asyncio: handshake TLS saliente reseteado (benigno): %r", context.get("future")
+        )
+        return
+    loop.default_exception_handler(context)
+
+
 # ── Global edge store + quote cache ────────────────────────────────────────
 _edges_store: dict = {"edges": [], "ts": 0.0}
 _quote_cache: dict[str, dict] = {}
@@ -36,7 +62,25 @@ _quote_cache: dict[str, dict] = {}
 
 def get_cached_edges() -> list:
     """Return edges from the last background refresh (instant, no network calls)."""
-    return _edges_store.get("edges", [])
+    return _edges_store["edges"]
+
+
+def get_edges_snapshot() -> dict:
+    """Edges and their timestamp, consistent with each other: the refresher swaps the whole dict."""
+    return _edges_store
+
+
+def quote_cache_key(from_c: str, to_c: str, amount: float) -> str:
+    return f"{from_c}-{to_c}-{float(amount)}"
+
+
+def _release_memory() -> None:
+    """Hand freed refresh garbage back to the OS instead of letting RSS ratchet up."""
+    gc.collect()
+    try:
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        pass  # not glibc
 
 
 # ── Background rate refresh ─────────────────────────────────────────────────
@@ -65,7 +109,7 @@ async def _refresh_once(force: bool = False) -> int:
         get_cryptocompare_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
-    from coinnect.routing.engine import build_quote
+    from coinnect.routing.engine import build_public_quote, build_quote
 
     (
         crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges,
@@ -149,19 +193,20 @@ async def _refresh_once(force: bool = False) -> int:
         return 0
 
     # Store edges globally for instant access by quote endpoint
-    _edges_store["edges"] = all_edges
-    _edges_store["ts"] = __import__('time').monotonic()
+    global _edges_store
+    _edges_store = {"edges": all_edges, "ts": time.monotonic()}
 
-    # Record snapshot + pre-compute quote cache for tracked corridors
+    # Record snapshot + pre-compute the public quote for tracked corridors
     for from_c, to_c, amount in TRACKED_CORRIDORS:
         try:
-            result = build_quote(all_edges, from_c, to_c, amount)
-            if result.routes:
-                await record_snapshot(from_c, to_c, amount, result.routes)
-                # Cache the full result for instant loading
-                _quote_cache[f"{from_c}-{to_c}-{amount}"] = {
-                    "result": result,
-                    "ts": __import__('time').monotonic(),
+            raw = build_quote(all_edges, from_c, to_c, amount)
+            if raw.routes:
+                await record_snapshot(from_c, to_c, amount, raw.routes)
+            public, _ = build_public_quote(all_edges, from_c, to_c, amount)
+            if public.routes:
+                _quote_cache[quote_cache_key(from_c, to_c, amount)] = {
+                    "result": public,
+                    "ts": time.monotonic(),
                 }
         except Exception as e:
             logger.debug(f"Snapshot failed {from_c}→{to_c}: {e}")
@@ -169,85 +214,89 @@ async def _refresh_once(force: bool = False) -> int:
     return len(all_edges)
 
 
-async def _warm_seo_cache() -> None:
-    """Pre-render all corridor + country SSR pages into the HTML cache."""
-    from coinnect.seo_pages import render_corridor_page, render_country_page, TOP_CORRIDORS, COUNTRY_DATA, _cache_set
-    edges = get_cached_edges()
-    if not edges:
-        return
-    warmed = 0
-    for from_c, to_c in TOP_CORRIDORS:
-        cache_key = f"corridor:{from_c}:{to_c}"
-        try:
-            html = render_corridor_page(from_c, to_c, edges)
-            _cache_set(cache_key, html)
-            warmed += 1
-        except Exception:
-            pass
-    for slug in COUNTRY_DATA:
-        cache_key = f"country:{slug}"
-        try:
-            html = render_country_page(slug, edges)
-            if html:
-                _cache_set(cache_key, html)
-                warmed += 1
-        except Exception:
-            pass
-    logger.info(f"SEO cache warmed: {warmed} pages")
-
-
 async def _refresh_loop() -> None:
-    """Background task: refresh rates every 3 minutes, prune DB weekly."""
-    prune_counter = 0
-    quest_counter = 0
+    """Refresh rates every 3 minutes; compact history daily and regenerate quests hourly."""
+    last_compaction = 0.0
+    last_quests = time.monotonic()
     while True:
         try:
             count = await _refresh_once(force=True)
             logger.info(f"Rate refresh: {count} edges loaded")
         except Exception as e:
             logger.error(f"Rate refresh failed: {e}")
+        _release_memory()
 
-        prune_counter += 1
-        if prune_counter >= 336:  # ~7 days at 3-min intervals
+        if time.monotonic() - last_compaction >= 86400 or last_compaction == 0.0:
+            last_compaction = time.monotonic()
             try:
-                deleted = prune_old(keep_days=30)
-                logger.info(f"History pruned: {deleted} old rows removed")
-                prune_counter = 0
+                removed = compact_history()
+                logger.info(f"History compacted: {removed} rows archived")
             except Exception as e:
-                logger.error(f"Prune failed: {e}")
+                logger.error(f"History compaction failed: {e}")
 
-        quest_counter += 1
-        if quest_counter >= 20:  # ~1 hour at 3-min intervals
+        if time.monotonic() - last_quests >= 3600:
+            last_quests = time.monotonic()
             try:
                 from coinnect.db.analytics import generate_quests
                 created = generate_quests()
                 if created:
                     logger.info(f"Generated {created} new quests")
-                quest_counter = 0
             except Exception as e:
                 logger.error(f"Quest generation failed: {e}")
 
         await asyncio.sleep(180)  # 3 minutes
 
 
+class _Refresher:
+    """Runs the refresh loop on its own thread and event loop.
+
+    Fetching and parsing rates is CPU-heavy; on the API's loop every burst froze all
+    in-flight requests. Run a single uvicorn worker: each process has its own refresher,
+    so more workers would multiply upstream calls and snapshot rows.
+    """
+
+    def __init__(self) -> None:
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._task: asyncio.Task | None = None
+        self._thread = threading.Thread(target=self._run, name="coinnect-refresh", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def _run(self) -> None:
+        asyncio.run(self._main())
+
+    async def _main(self) -> None:
+        from coinnect.exchanges.ccxt_adapter import shutdown_reapers
+        self._loop = asyncio.get_running_loop()
+        self._loop.set_exception_handler(_benign_asyncio_exception_handler)
+        self._task = asyncio.current_task()
+        try:
+            await _refresh_loop()
+        except asyncio.CancelledError:
+            pass
+        finally:
+            await shutdown_reapers()
+
+    def stop(self) -> None:
+        if self._thread.is_alive() and self._loop and self._task:
+            self._loop.call_soon_threadsafe(self._task.cancel)
+            self._thread.join(timeout=10)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    asyncio.get_running_loop().set_exception_handler(_benign_asyncio_exception_handler)
     init_db()
     init_keys_db()
     init_analytics_db()
-    # Do one immediate refresh (no force — use cache if warm)
-    asyncio.create_task(_refresh_once(force=False))
-    # Start background loop
-    refresh_task = asyncio.create_task(_refresh_loop())
+    if multiprocessing.parent_process() is not None:
+        logger.warning("Running under multiple uvicorn workers: each one refreshes rates and writes snapshots")
+    refresher = _Refresher()
+    refresher.start()
     logger.info("Coinnect started — background refresh active (3 min interval)")
     yield
-    # Shutdown
-    refresh_task.cancel()
-    try:
-        await refresh_task
-    except asyncio.CancelledError:
-        pass
+    refresher.stop()
 
 
 # ── App ─────────────────────────────────────────────────────────────────────
@@ -264,7 +313,7 @@ app = FastAPI(
         "Rate limits: 20 req/day / 50/hr anonymous (beta) · 1,000/day free key · "
         "5,000/day agent key · see coinnect.bot/#pricing"
     ),
-    version="2026.03.24.2",
+    version="2026.11.02.2",
     contact={"name": "Coinnect", "url": "https://coinnect.bot"},
     license_info={"name": "MIT"},
     lifespan=lifespan,
@@ -482,7 +531,7 @@ async def well_known_agent():
         "name": "Coinnect",
         "description": "Open protocol for global money routing. Finds the cheapest path between any two currencies — fiat, crypto, P2P.",
         "url": "https://coinnect.bot",
-        "version": "2026.03.24.2",
+        "version": "2026.11.02.2",
         "license": "MIT",
         "contact": "miguel@coinnect.bot",
         "capabilities": {
@@ -525,79 +574,6 @@ async def well_known_agent_card():
         STATIC_DIR / ".well-known" / "agent-card.json",
         media_type="application/json",
     )
-
-
-async def _get_all_edges_cached() -> list:
-    """Fetch all edges from all adapters (uses each adapter's internal cache)."""
-    from coinnect.exchanges.ccxt_adapter import get_all_edges
-    from coinnect.exchanges.wise_adapter import get_wise_edges, get_traditional_edges
-    from coinnect.exchanges.yellowcard_adapter import get_yellowcard_edges
-    from coinnect.exchanges.remittance_adapter import get_remittance_edges
-    from coinnect.exchanges.direct_api_adapter import (
-        get_bitso_edges, get_buda_edges, get_coingecko_edges,
-        get_frankfurter_edges, get_currencyapi_edges,
-        get_flutterwave_edges,
-        get_bluelytics_edges, get_criptoya_edges,
-        get_bcb_edges, get_banxico_edges, get_trm_edges,
-        get_yadio_edges, get_valr_edges, get_coindcx_edges,
-        get_wazirx_edges, get_satoshitango_edges, get_floatrates_edges,
-        get_binance_p2p_edges,
-        get_tcmb_edges, get_nrb_edges, get_nbp_edges, get_cnb_edges,
-        get_nbu_edges, get_nbg_edges, get_boi_edges, get_bnr_edges,
-        # get_cbr_edges removed — sanctioned country
-        get_uphold_edges, get_ofx_edges,
-        get_coinbase_edges, get_gemini_edges, get_bithumb_edges,
-        get_bitflyer_edges, get_independentreserve_edges,
-        get_cryptocompare_edges,
-    )
-    from coinnect.exchanges.calculator_adapter import get_calculator_edges
-    results = await asyncio.gather(
-        get_all_edges(),
-        get_wise_edges(),
-        get_traditional_edges(),
-        get_yellowcard_edges(),
-        get_remittance_edges(),
-        get_bitso_edges(),
-        get_buda_edges(),
-        get_coingecko_edges(),
-        get_frankfurter_edges(),
-        get_currencyapi_edges(),
-        get_flutterwave_edges(),
-        get_bluelytics_edges(),
-        get_criptoya_edges(),
-        get_bcb_edges(),
-        get_banxico_edges(),
-        get_trm_edges(),
-        get_yadio_edges(),
-        get_valr_edges(),
-        get_coindcx_edges(),
-        get_wazirx_edges(),
-        get_satoshitango_edges(),
-        get_floatrates_edges(),
-        get_binance_p2p_edges(),
-        get_tcmb_edges(),
-        get_nrb_edges(),
-        get_nbp_edges(),
-        get_cnb_edges(),
-        get_nbu_edges(),
-        get_nbg_edges(),
-        get_boi_edges(),
-        get_bnr_edges(),
-        # get_cbr_edges() removed — sanctioned country
-        get_uphold_edges(),
-        get_ofx_edges(),
-        get_coinbase_edges(),
-        get_gemini_edges(),
-        get_bithumb_edges(),
-        get_bitflyer_edges(),
-        get_independentreserve_edges(),
-        get_cryptocompare_edges(),
-        get_calculator_edges(),
-    )
-    all_edges = []
-    for batch in results:
-        all_edges.extend(batch)
-    return all_edges
 
 
 @app.get("/explore", include_in_schema=False)

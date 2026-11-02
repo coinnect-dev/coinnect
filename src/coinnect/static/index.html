@@ -14,10 +14,7 @@
   <title>Coinnect — The free open map for global money</title>
   <meta name="description" content="Find the best rate to move money anywhere. Free API for humans and AI agents. Mission-driven, no affiliate fees.">
 
-  <!-- Fonts: CJK support for zh-CN/zh-TW/ja -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" media="print" onload="this.media='all'">
+  <!-- CJK fonts load on demand: _ensureCjkFont() in i18n.js -->
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
@@ -46,7 +43,7 @@
 
   <!-- Structured data -->
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebApplication","name":"Coinnect","url":"https://coinnect.bot","description":"Open protocol for global money routing. Find the best rate between any two currencies — fiat, crypto, P2P. Free. Open. For humans and bots.","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Miguel","email":"miguel@coinnect.bot"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"featureList":["Compare 30+ exchange and remittance providers","Real-time rates refreshed every 3 minutes","Multi-hop route optimization","REST API and MCP server for AI agents","17 languages supported","Open source (MIT license)"],"screenshot":"https://coinnect.bot/static/logo.svg","softwareVersion":"2026.03.24.1"}
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Coinnect","url":"https://coinnect.bot","description":"Open protocol for global money routing. Find the best rate between any two currencies — fiat, crypto, P2P. Free. Open. For humans and bots.","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Miguel","email":"miguel@coinnect.bot"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"featureList":["Compare 30+ exchange and remittance providers","Real-time rates refreshed every 3 minutes","Multi-hop route optimization","REST API and MCP server for AI agents","17 languages supported","Open source (MIT license)"],"screenshot":"https://coinnect.bot/static/logo.svg","softwareVersion":"2026.11.02.1"}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Organization","name":"Coinnect","url":"https://coinnect.bot","logo":"https://coinnect.bot/static/logo.svg","contactPoint":{"@type":"ContactPoint","email":"miguel@coinnect.bot","contactType":"customer support"},"sameAs":["https://github.com/coinnect-dev/coinnect"]}
@@ -89,7 +86,22 @@
     if(localStorage.getItem('ga_consent')==='1'&&localStorage.getItem('ga_optout')!=='1'){loadGA4();}
   </script>
 
-  <script src="/static/i18n.js?v=2026.03.24.2"></script>
+  <script>
+    // Cloudflare rate-limits /v1/* to about 10 requests per IP in a short window, answering
+    // with a non-JSON 429 and Retry-After. The app's own 429s are JSON and mean a real limit.
+    function edgeRateLimitDelay(res){
+      if(res.status!==429||(res.headers.get('content-type')||'').includes('json'))return 0;
+      return Math.min(Number(res.headers.get('retry-after'))||10,30)*1000+250;
+    }
+    function whenNear(el,fn){
+      if(!el||!('IntersectionObserver' in window)){fn();return;}
+      const o=new IntersectionObserver(es=>{
+        if(es.some(e=>e.isIntersecting)){o.disconnect();fn();}
+      },{rootMargin:'400px'});
+      o.observe(el);
+    }
+  </script>
+  <script src="/static/i18n.js?v=2026.11.02.1"></script>
   <script>initLang();</script>
   <link rel="stylesheet" href="/static/tailwind.css">
 
@@ -563,6 +575,7 @@
   </div>
 
   <!-- History charts (collapsible) -->
+  <div id="historyAnchor" style="height:1px" aria-hidden="true"></div>
   <div id="historyBar" class="hidden mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
     <!-- Header row: title + period buttons -->
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -826,7 +839,7 @@
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   // Wait for exchangeLogo and esc to be defined
-  setTimeout(function(){
+  whenNear(document.getElementById('providersEstimated'),function(){
     const live=['Binance','Kraken','Okx','Bybit','Kucoin','Gate','Bitget','Mexc','Htx','Cryptocom','Coinbase','Gemini','Bithumb','bitFlyer','IndependentReserve','Bitso','Luno','Bitstamp','Btcturk','Wise','Buda','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P','Binance P2P (live)','Uphold'];
     const official=['Banxico (MX)','TRM (CO)','Blue market (AR)','Official (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)'];
     const reference=['CoinGecko (market)','Yadio (P2P)','Market rate','x-rates.com (mid-market)'];
@@ -881,7 +894,7 @@ document.addEventListener('DOMContentLoaded',function(){
       renderProviders(reference,'providersReference');
       renderProviders(estimated,'providersEstimated');
     });
-  },100);
+  });
 });
 </script>
 <script>
@@ -1046,7 +1059,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <span>·</span>
       <a href="https://koalabs.ai" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Built by KOA Labs</a>
       <span>·</span>
-      <span class="opacity-50">v2026.03.24.2</span>
+      <span class="opacity-50">v2026.11.02.2</span>
     </div>
   </div>
 </footer>
@@ -1684,6 +1697,29 @@ function renderChart(wrapId,labelId,statsId,points,amount,fromC,toC,gradId){
   statsEl.textContent=`${sym(toC)}${fmt(minR)}–${sym(toC)}${fmt(maxR)}`;
 }
 
+// Charts sit below the results: fetch them once the visitor gets near, keeping the
+// latest search. Each page load spends the /v1/* burst budget (see edgeRateLimitDelay).
+let _histPending=null,_histNear=false,_histCheck=null;
+function requestHistory(fromC,toC,minutes){
+  _histFrom=fromC; _histTo=toC; _histMinutes=minutes;
+  const load=()=>{loadHistory(fromC,toC,minutes);loadProviderHistory(fromC,toC,minutes);};
+  if(_histNear){load();return;}
+  _histPending=load;
+  // Checked only on scroll and after results render: a new search collapses the results,
+  // which would bring the anchor into range without the visitor going anywhere.
+  if(!_histCheck){
+    _histCheck=()=>{
+      if(document.getElementById('historyAnchor').getBoundingClientRect().top>innerHeight+400)return;
+      removeEventListener('scroll',_histCheck);
+      _histNear=true;
+      _histPending();
+      _histPending=null;
+    };
+    addEventListener('scroll',_histCheck,{passive:true});
+  }
+  _histCheck();
+}
+
 async function loadHistory(fromC,toC,minutes){
   _histFrom=fromC; _histTo=toC; _histMinutes=minutes||15;
   const bar=document.getElementById('historyBar');
@@ -1799,7 +1835,6 @@ function renderProviderChart(){
 
 // Period button wiring (runs after DOM ready)
 document.addEventListener('DOMContentLoaded',()=>{
-  loadSuggestions();
   document.querySelectorAll('.hist-period').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.hist-period').forEach(b=>{
@@ -2302,7 +2337,7 @@ async function getQuote(){
     let showedCached=false;
     try{
       const cRes=await fetch(`${API}/v1/quote/instant?from=${from}&to=${to}&amount=${amount}`);
-      if(cRes.ok){
+      if(cRes.status===200){
         const cData=await cRes.json();
         if(cData.routes&&cData.routes.length){
           _allRoutes=cData.routes;_quoteTime=Date.now();
@@ -2329,6 +2364,8 @@ async function getQuote(){
         const tid=setTimeout(()=>controller.abort(),20000);
         const res=await fetch(`${API}/v1/quote?from=${from}&to=${to}&amount=${amount}`,{signal:controller.signal});
         clearTimeout(tid);
+        const edgeDelay=edgeRateLimitDelay(res);
+        if(edgeDelay&&!isLast){await new Promise(r=>setTimeout(r,edgeDelay));continue;}
         const text=await res.text();
         try{data=JSON.parse(text);}catch(e){
           if(!isLast){await new Promise(r=>setTimeout(r,PARSE_BACKOFF_MS[attempt]));continue;}
@@ -2380,8 +2417,7 @@ async function getQuote(){
     // Load history in background (active period or default 15m)
     const activePeriod=document.querySelector('.hist-period.active');
     const histMins=activePeriod?parseInt(activePeriod.dataset.min):15;
-    loadHistory(from,to,histMins);
-    loadProviderHistory(from,to,histMins);
+    requestHistory(from,to,histMins);
   }catch(e){
     trackEvent('no_results',{from:from,to:to,amount:amount,error:e.message});
     document.getElementById('results').innerHTML=`
@@ -2508,25 +2544,39 @@ async function generateKey(){
   errorEl.classList.add('hidden');
   btn.textContent=t('key_generating');
   btn.disabled=true;
-  try{
-    const url=`${API}/v1/keys`+(label?`?label=${encodeURIComponent(label)}`:'');
-    const res=await fetch(url,{method:'POST'});
-    const data=await res.json();
-    if(data.api_key){
-      _generatedKey=data.api_key;
-      document.getElementById('keyValue').textContent=data.api_key;
-      resultEl.classList.remove('hidden');
-      trackEvent('api_key_generated',{tier:data.tier});
-    }else{
-      throw new Error(data.detail||'Unknown error');
+  const url=`${API}/v1/keys`+(label?`?label=${encodeURIComponent(label)}`:'');
+  let errorKey='key_error';
+  let waitMs=1000;
+  // Gateway errors, dropped connections and Cloudflare bursts are momentary, so retry once.
+  // The worst a retry can do is leave one unused key behind.
+  for(let attempt=0;attempt<2;attempt++){
+    if(attempt)await new Promise(r=>setTimeout(r,waitMs));
+    try{
+      const res=await fetch(url,{method:'POST',signal:AbortSignal.timeout(20000)});
+      const edgeDelay=edgeRateLimitDelay(res);
+      if(edgeDelay){errorKey='key_error_net';waitMs=edgeDelay;continue;}
+      if(res.status===429){errorKey='key_error_rate';break;}
+      if(res.status>=500){errorKey='key_error_net';waitMs=1000;continue;}
+      const data=await res.json();
+      if(data.api_key){
+        _generatedKey=data.api_key;
+        document.getElementById('keyValue').textContent=data.api_key;
+        resultEl.classList.remove('hidden');
+        trackEvent('api_key_generated',{tier:data.tier});
+        errorKey='';
+      }
+      break;
+    }catch(e){
+      errorKey='key_error_net';
     }
-  }catch(e){
-    errorEl.textContent=t('key_error');
-    errorEl.classList.remove('hidden');
-  }finally{
-    btn.textContent=t('key_gen');
-    btn.disabled=false;
   }
+  if(errorKey){
+    errorEl.textContent=t(errorKey);
+    errorEl.classList.remove('hidden');
+    trackEvent('api_key_failed',{reason:errorKey});
+  }
+  btn.textContent=t('key_gen');
+  btn.disabled=false;
 }
 
 function copyKey(){

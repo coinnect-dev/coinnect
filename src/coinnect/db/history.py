@@ -6,10 +6,13 @@ Used for sparkline charts and trend analysis.
 """
 
 import asyncio
+import gzip
 import json
 import logging
+import os
 import sqlite3
-from datetime import datetime, UTC
+from collections import defaultdict
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -17,6 +20,8 @@ logger = logging.getLogger(__name__)
 # data/history.db relative to repo root
 _REPO_ROOT = Path(__file__).parent.parent.parent.parent  # src/coinnect/db -> repo root
 DB_PATH = _REPO_ROOT / "data" / "history.db"
+# Rows leaving the live table are kept here as gzipped JSONL, one file per month and run.
+ARCHIVE_DIR = _REPO_ROOT / "data" / "archive"
 
 # Key corridors captured on every refresh
 TRACKED_CORRIDORS = [
@@ -45,6 +50,7 @@ TRACKED_CORRIDORS = [
 def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _connect() as conn:
+        conn.execute("PRAGMA auto_vacuum=INCREMENTAL")  # takes effect on new DBs or after VACUUM
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS rate_snapshots (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -239,16 +245,59 @@ def get_snapshot_by_id(snapshot_id: int) -> dict | None:
         conn.close()
 
 
-def prune_old(keep_days: int = 30) -> int:
-    """Delete snapshots older than keep_days. Returns rows deleted."""
+def _archive_rows(rows: list[sqlite3.Row]) -> None:
+    """Write rows to one new file per month, atomically, so a crash can't corrupt an archive."""
+    by_month: dict[str, list[dict]] = defaultdict(list)
+    for row in rows:
+        by_month[row["captured_at"][:7]].append(dict(row))
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    run = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
+    for month, month_rows in by_month.items():
+        final = ARCHIVE_DIR / f"rate_snapshots-{month}-{run}.jsonl.gz"
+        temp = final.with_suffix(".tmp")
+        with gzip.open(temp, "wt") as fh:
+            for row in month_rows:
+                fh.write(json.dumps(row) + "\n")
+        with open(temp, "rb") as fh:
+            os.fsync(fh.fileno())
+        os.replace(temp, final)
+    # The rename must be durable before the caller deletes these rows.
+    dir_fd = os.open(ARCHIVE_DIR, os.O_RDONLY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
+
+
+def compact_history(
+    hourly_after_days: int = 7,
+    keep_days: int = 30,
+    now: datetime | None = None,
+) -> int:
+    """Thin rows older than a week to one per corridor-hour, drop the live table's
+    rows past keep_days, and archive everything removed. Returns rows removed.
+    """
+    now = now or datetime.now(UTC)
+    hourly_cutoff = (now - timedelta(days=hourly_after_days)).isoformat()
+    keep_cutoff = (now - timedelta(days=keep_days)).isoformat()
     conn = _connect()
     try:
-        ts = _normalize_ts("captured_at")
-        cur = conn.execute(f"""
-            DELETE FROM rate_snapshots
-            WHERE {ts} < datetime('now', ? || ' days')
-        """, (f"-{keep_days}",))
+        rows = conn.execute("""
+            SELECT * FROM rate_snapshots
+            WHERE captured_at < :hourly
+              AND (captured_at < :keep OR id NOT IN (
+                  SELECT MIN(id) FROM rate_snapshots
+                  WHERE captured_at < :hourly
+                  GROUP BY from_currency, to_currency, amount, substr(captured_at, 1, 13)
+              ))
+        """, {"hourly": hourly_cutoff, "keep": keep_cutoff}).fetchall()
+        if not rows:
+            return 0
+        # Archive first: a crash here can only duplicate archive rows, never lose them.
+        _archive_rows(rows)
+        conn.executemany("DELETE FROM rate_snapshots WHERE id = ?", ((r["id"],) for r in rows))
         conn.commit()
-        return cur.rowcount
+        conn.execute("PRAGMA incremental_vacuum").fetchall()  # only runs as rows are fetched
+        return len(rows)
     finally:
         conn.close()
