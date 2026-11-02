@@ -478,7 +478,7 @@ async def health():
     return {
         "ok": True,
         "status": "live",
-        "version": "2026.11.02.1",
+        "version": "2026.11.02.2",
         "exchanges_online": len(SUPPORTED_EXCHANGES) + 2,
         "checked_at": datetime.now(UTC).isoformat(),
     }
