@@ -261,6 +261,12 @@ def _archive_rows(rows: list[sqlite3.Row]) -> None:
         with open(temp, "rb") as fh:
             os.fsync(fh.fileno())
         os.replace(temp, final)
+    # The rename must be durable before the caller deletes these rows.
+    dir_fd = os.open(ARCHIVE_DIR, os.O_RDONLY)
+    try:
+        os.fsync(dir_fd)
+    finally:
+        os.close(dir_fd)
 
 
 def compact_history(

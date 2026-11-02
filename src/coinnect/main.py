@@ -7,6 +7,7 @@ import ctypes
 import gc
 import html
 import logging
+import multiprocessing
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -277,9 +278,9 @@ class _Refresher:
             await shutdown_reapers()
 
     def stop(self) -> None:
-        if self._loop and self._task:
+        if self._thread.is_alive() and self._loop and self._task:
             self._loop.call_soon_threadsafe(self._task.cancel)
-        self._thread.join(timeout=10)
+            self._thread.join(timeout=10)
 
 
 @asynccontextmanager
@@ -288,6 +289,8 @@ async def lifespan(app: FastAPI):
     init_db()
     init_keys_db()
     init_analytics_db()
+    if multiprocessing.parent_process() is not None:
+        logger.warning("Running under multiple uvicorn workers: each one refreshes rates and writes snapshots")
     refresher = _Refresher()
     refresher.start()
     logger.info("Coinnect started — background refresh active (3 min interval)")
