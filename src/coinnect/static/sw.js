@@ -1,14 +1,12 @@
 // Coinnect — Service Worker
 // Cache-first for static assets, network-first for API, offline fallback
 
-const CACHE_NAME = 'coinnect-v1';
-const STATIC_CACHE = 'coinnect-static-v1';
+const CACHE_NAME = 'coinnect-v2';
+const STATIC_CACHE = 'coinnect-static-v2';
 
 const PRECACHE_URLS = [
   '/',
   '/static/logo.svg',
-  '/static/logo-192.png',
-  '/static/logo-512.png',
   '/static/tailwind.css'
 ];
 
