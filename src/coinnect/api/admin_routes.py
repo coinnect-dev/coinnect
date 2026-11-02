@@ -11,6 +11,7 @@ import logging
 import time
 from collections import defaultdict
 from fastapi import APIRouter, HTTPException, Header, Query, Request
+from coinnect.net import client_ip as _get_client_ip
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -213,15 +214,6 @@ def _check_ip_rate(ip: str, limit: int) -> bool:
         return False
     _suggest_ip_counts[ip].append(now)
     return True
-
-
-def _get_client_ip(request: Request) -> str:
-    return (
-        request.headers.get("CF-Connecting-IP")
-        or request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-        or request.client.host
-        if request.client else "unknown"
-    )
 
 
 class SuggestionCreate(BaseModel):

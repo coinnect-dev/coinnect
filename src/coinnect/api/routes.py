@@ -5,27 +5,45 @@ FastAPI routes — /v1/quote, /v1/exchanges, /v1/corridors, /v1/health, /v1/hist
 
 import asyncio
 import time
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from datetime import datetime, UTC
 
-from fastapi import APIRouter, Query, HTTPException, Header, Request
+from fastapi import APIRouter, Query, HTTPException, Header, Request, Response
 from pydantic import BaseModel
 
 from coinnect.exchanges.ccxt_adapter import SUPPORTED_EXCHANGES
-from coinnect.routing.engine import build_quote
+from coinnect.net import client_ip as _get_client_ip
+from coinnect.routing.engine import build_public_quote
 
 router = APIRouter(prefix="/v1")
 
 
-def _get_client_ip(request: Request) -> str:
-    """Extract real client IP — respects Cloudflare CF-Connecting-IP, then X-Forwarded-For."""
-    cf_ip = request.headers.get("CF-Connecting-IP")
-    if cf_ip:
-        return cf_ip.strip()
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        return xff.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+# Routing is CPU-bound, so it runs off the event loop and two slots stop a burst of
+# quotes from starving everything else. Results are valid until the edges change.
+_routing_slots = asyncio.Semaphore(2)
+_ROUTE_CACHE_MAX = 512
+_route_cache: OrderedDict[tuple, tuple] = OrderedDict()
+_route_cache_edges_ts: float = -1.0
+
+
+async def _public_quote(all_edges: list, edges_ts: float, from_: str, to: str, amount: float):
+    global _route_cache_edges_ts
+    if edges_ts != _route_cache_edges_ts:
+        _route_cache.clear()
+        _route_cache_edges_ts = edges_ts
+    key = (from_, to, amount)
+    if key in _route_cache:
+        _route_cache.move_to_end(key)
+        return _route_cache[key]
+    async with _routing_slots:
+        if key in _route_cache:  # computed while this request waited for a slot
+            return _route_cache[key]
+        value = await asyncio.to_thread(build_public_quote, all_edges, from_, to, amount)
+    if edges_ts == _route_cache_edges_ts:
+        _route_cache[key] = value
+        while len(_route_cache) > _ROUTE_CACHE_MAX:
+            _route_cache.popitem(last=False)
+    return value
 
 
 def _rate_limit_error(info: dict) -> HTTPException:
@@ -107,13 +125,13 @@ async def quote_instant(
     to: str = Query(..., description="Destination currency"),
     amount: float = Query(..., gt=0),
 ):
-    """Return pre-computed quote from cache (< 3 min old). Falls back to 404 if not cached."""
+    """Return a pre-computed quote for tracked corridors. 204 when nothing is cached:
+    a miss is the normal case for most amounts, not an error."""
     import time
-    from coinnect.main import _quote_cache
-    key = f"{from_.upper()}-{to.upper()}-{amount}"
-    cached = _quote_cache.get(key)
+    from coinnect.main import _quote_cache, quote_cache_key
+    cached = _quote_cache.get(quote_cache_key(from_.upper(), to.upper(), amount))
     if not cached or (time.monotonic() - cached["ts"]) > 300:
-        raise HTTPException(404, "Not cached — use /v1/quote for live data")
+        return Response(status_code=204)
     result = cached["result"]
     return {
         "from_currency": result.from_currency,
@@ -175,95 +193,13 @@ async def quote(
                 raise _rate_limit_error(info)
 
     # ── Fetch edges from background cache (instant, no network calls) ────────
-    from coinnect.main import get_cached_edges
-    all_edges = get_cached_edges()
+    from coinnect.main import get_edges_snapshot
+    snapshot = get_edges_snapshot()
+    all_edges = snapshot["edges"]
     if not all_edges:
         raise HTTPException(503, detail="Exchange data is loading — please retry in 30 seconds")
-    # Reference-only providers — pure data sources, NOT real transfer services.
-    # These should only appear as MIDDLE steps in multi-hop routes.
-    # CriptoYa individual exchange names use the "(AR)" suffix pattern.
-    REFERENCE_PROVIDERS = {
-        # FX reference data (not transfer services)
-        "Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)",
-        "Yadio (P2P)", "CoinGecko (market)",
-        # Central bank official rates (reference only, not transfer services)
-        "BCB PTAX (BR)", "Banxico (MX)", "TRM (CO)", "TCMB (TR)", "NBP (PL)", "CNB (CZ)",
-        "NBU (UA)", "NBG (GE)", "BOI (IL)", "BNR (RO)", "NRB (NP)",
-        # Argentina parallel market rates
-        "Blue market (AR)", "Official (AR)", "Dolar Blue (AR)", "MEP (AR)", "CCL (AR)",
-        # Other
-        "Parallel (LB)",
-    }
-
-    def _is_reference_provider(via: str) -> bool:
-        """Check if a provider is reference-only (pure data source, not a transfer service).
-
-        Matches explicit REFERENCE_PROVIDERS set plus CriptoYa individual exchange
-        names which use the '(AR)' suffix pattern (Argentine exchange aggregator data,
-        not direct transfer services).
-        """
-        if via in REFERENCE_PROVIDERS:
-            return True
-        # CriptoYa individual exchanges: e.g. "ripio (AR)", "belo (AR)", etc.
-        # These are aggregated price data, not direct transfer endpoints.
-        # Exclude known real providers that happen to have (AR) suffix.
-        if via.endswith(" (AR)") and via not in REFERENCE_PROVIDERS:
-            return True
-        return False
-
-    # Split: reference edges only used as intermediate hops, not as direct single-step routes
-    real_edges = [e for e in all_edges if not _is_reference_provider(e.via)]
-    bridge_edges = [e for e in all_edges if _is_reference_provider(e.via)]
-
-    if not real_edges:
-        raise HTTPException(503, "Exchange data temporarily unavailable")
-
-    # Two routing passes:
-    # 1. Full graph (real + bridge) — finds exotic corridors via reference FX bridges
-    # 2. Real-only graph — finds pure crypto multi-hop routes (Binance→Bitso etc.)
-    #    that get crowded out by cheaper reference-bridge paths in pass 1
-    result = build_quote(real_edges + bridge_edges, from_, to, amount)
-    result_real = build_quote(real_edges, from_, to, amount)
-
-    # Merge routes from both passes, dedup by path signature
-    seen_sigs = set()
-    merged = []
-    for r in result.routes + result_real.routes:
-        sig = tuple((s.from_currency, s.to_currency, s.via) for s in r.steps)
-        if sig not in seen_sigs:
-            seen_sigs.add(sig)
-            merged.append(r)
-    result.routes = merged
-
-    # Filter: remove any route containing reference providers
-    if result.routes:
-        result.routes = [r for r in result.routes
-            if (all(not _is_reference_provider(s.via) for s in r.steps)
-                and r.they_receive > 0)]  # sanity: must receive something
-        # Sort by total cost (cheapest first) before re-ranking
-        result.routes.sort(key=lambda r: r.total_cost_pct)
-        # Re-rank and reassign labels
-        if result.routes:
-            result.routes[0].label = "Cheapest"
-            result.routes[0].rank = 1
-            # Find fastest among remaining
-            fastest = min(result.routes, key=lambda r: r.total_time_minutes)
-            if fastest != result.routes[0]:
-                fastest.label = "Fastest"
-            for i, r in enumerate(result.routes):
-                r.rank = i + 1
-                if r.label not in ("Cheapest", "Fastest"):
-                    r.label = f"Option {i + 1}"
-
-    # Compute valid amount range for this corridor
-    valid_edges = [e for e in all_edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
-    if valid_edges:
-        range_min = min(e.min_amount for e in valid_edges)
-        max_amounts_positive = [e.max_amount for e in valid_edges if e.max_amount > 0]
-        range_max = max(max_amounts_positive) if max_amounts_positive else None
-        amount_range = AmountRange(min=range_min, max=range_max)
-    else:
-        amount_range = None
+    result, amount_limits = await _public_quote(all_edges, snapshot["ts"], from_, to, amount)
+    amount_range = AmountRange(min=amount_limits[0], max=amount_limits[1]) if amount_limits else None
 
     source = "api" if x_api_key else "web"
     asyncio.create_task(_log_search(from_, to, amount, len(result.routes), x_api_key, user_agent, source))
@@ -542,7 +478,7 @@ async def health():
     return {
         "ok": True,
         "status": "live",
-        "version": "2026.03.24.2",
+        "version": "2026.11.02.1",
         "exchanges_online": len(SUPPORTED_EXCHANGES) + 2,
         "checked_at": datetime.now(UTC).isoformat(),
     }

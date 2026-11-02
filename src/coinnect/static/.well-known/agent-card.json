@@ -2,7 +2,7 @@
   "name": "Coinnect",
   "description": "Open money transfer routing engine. Finds the cheapest path to send money between any two currencies — fiat, crypto, and P2P — across 80+ adapters worldwide.",
   "url": "https://coinnect.bot",
-  "version": "2026.03.24.2",
+  "version": "2026.11.02.1",
   "provider": {
     "organization": "KOA Labs",
     "url": "https://koalabs.ai"
