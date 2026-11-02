@@ -8,10 +8,13 @@ CoinDCX/WazirX (India), SatoshiTango (Argentina), FloatRates (FX fallback).
 import asyncio
 import logging
 import os
+import ssl
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
+import certifi
 import httpx
 
 from coinnect.routing.engine import Edge
@@ -323,7 +326,7 @@ async def get_frankfurter_edges() -> list[Edge]:
     try:
         async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
             # Fetch USD-based rates
-            resp_usd = await client.get("https://api.frankfurter.app/latest?from=USD")
+            resp_usd = await client.get("https://api.frankfurter.dev/v1/latest?from=USD")
             resp_usd.raise_for_status()
             usd_data = resp_usd.json()
 
@@ -341,7 +344,7 @@ async def get_frankfurter_edges() -> list[Edge]:
                 ))
 
             # Fetch EUR-based rates
-            resp_eur = await client.get("https://api.frankfurter.app/latest?from=EUR")
+            resp_eur = await client.get("https://api.frankfurter.dev/v1/latest?from=EUR")
             resp_eur.raise_for_status()
             eur_data = resp_eur.json()
 
@@ -1301,6 +1304,26 @@ async def get_tcmb_edges() -> list[Edge]:
 # ── NRB (Nepal Rastra Bank) ────────────────────────────────────────────────
 
 
+def _nrb_ssl_context() -> ssl.SSLContext:
+    """nrb.org.np serves the wrong intermediate, so supply the right one.
+
+    The chain is still fully verified up to a root in certifi's store.
+    """
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    ctx.load_verify_locations(cafile=str(Path(__file__).parent / "certs" / "sectigo-dv-r36.pem"))
+    return ctx
+
+
+def _nrb_usd_rate(data: dict) -> float | None:
+    """Latest published NPR-per-USD sell rate from NRB's forex payload."""
+    for day in data.get("data", {}).get("payload", []):
+        for entry in day.get("rates", []):
+            currency = entry.get("currency", {})
+            if currency.get("iso3") == "USD" and entry.get("sell"):
+                return float(entry["sell"]) / (currency.get("unit") or 1)
+    return None
+
+
 async def get_nrb_edges() -> list[Edge]:
     """Fetch official USD/NPR rate from Nepal Rastra Bank JSON API."""
     now = time.monotonic()
@@ -1308,56 +1331,17 @@ async def get_nrb_edges() -> list[Edge]:
         return _nrb_cache["edges"]
 
     edges: list[Edge] = []
+    today = datetime.now(timezone.utc).date()
     try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15, verify=_nrb_ssl_context()) as client:
             resp = await client.get(
                 "https://www.nrb.org.np/api/forex/v1/rates",
-                params={"per_page": 5, "page": 1},
+                params={"per_page": 5, "page": 1, "from": str(today - timedelta(days=5)), "to": str(today)},
             )
             resp.raise_for_status()
             data = resp.json()
 
-        usd_rate = None
-
-        # Deep-search for USD rate in any nested structure
-        def _find_usd_rate(obj, depth=0):
-            """Recursively search for USD exchange rate in nested JSON."""
-            if depth > 5:
-                return None
-            if isinstance(obj, dict):
-                # Check if this dict itself is a USD rate entry
-                for key in ("iso3", "code", "currency_code", "charCode", "cc"):
-                    if obj.get(key) == "USD" or (isinstance(obj.get(key), dict) and obj[key].get("iso3") == "USD"):
-                        for rate_key in ("sell", "buy", "selling", "buying", "rate", "mid", "value"):
-                            val = obj.get(rate_key)
-                            if val:
-                                try:
-                                    return float(str(val).replace(",", ""))
-                                except (ValueError, TypeError):
-                                    continue
-                # Check if "name" contains "Dollar"
-                name = obj.get("name", "") or obj.get("currency", "")
-                if isinstance(name, str) and "dollar" in name.lower() and "us" in name.lower():
-                    for rate_key in ("sell", "buy", "selling", "buying", "rate", "mid", "value"):
-                        val = obj.get(rate_key)
-                        if val:
-                            try:
-                                return float(str(val).replace(",", ""))
-                            except (ValueError, TypeError):
-                                continue
-                # Recurse into values
-                for v in obj.values():
-                    result = _find_usd_rate(v, depth + 1)
-                    if result:
-                        return result
-            elif isinstance(obj, list):
-                for item in obj:
-                    result = _find_usd_rate(item, depth + 1)
-                    if result:
-                        return result
-            return None
-
-        usd_rate = _find_usd_rate(data)
+        usd_rate = _nrb_usd_rate(data)
 
         if usd_rate and usd_rate > 0:
             edges.append(Edge(
@@ -1655,15 +1639,13 @@ async def get_bnr_edges() -> list[Edge]:
     try:
         async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
             resp = await client.get(
-                "https://www.bnr.ro/nbrfxrates.xml"
+                "https://curs.bnr.ro/nbrfxrates.xml"
             )
             resp.raise_for_status()
 
         root = ET.fromstring(resp.text)
-        # Namespace: {http://www.bnr.ro/xsd}
-        ns = {"bnr": "http://www.bnr.ro/xsd"}
         wanted = {"USD", "EUR", "GBP", "CHF"}
-        for rate_elem in root.findall(".//bnr:Rate", ns):
+        for rate_elem in root.findall(".//{*}Rate"):
             code = rate_elem.get("currency", "")
             if code in wanted and rate_elem.text:
                 multiplier = int(rate_elem.get("multiplier", "1"))
