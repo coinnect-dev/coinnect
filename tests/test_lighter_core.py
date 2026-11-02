@@ -320,3 +320,44 @@ def test_failed_archive_leaves_rows_in_the_table(history_db, monkeypatch):
     with history_db._connect() as conn:
         assert conn.execute("SELECT COUNT(*) FROM rate_snapshots").fetchone()[0] == 2
     assert not list(history_db.ARCHIVE_DIR.glob("*.jsonl.gz"))
+
+
+def test_hour_straddling_the_cutoff_keeps_its_first_old_row(history_db):
+    """A newer row in the same hour must not make the old rows look thinnable."""
+    now = datetime(2026, 11, 2, 12, 30, tzinfo=UTC)
+    cutoff = now - timedelta(days=7)
+    first_old = cutoff - timedelta(minutes=20)
+    second_old = cutoff - timedelta(minutes=10)
+    recent = cutoff + timedelta(minutes=5)
+    for when in (first_old, second_old, recent):
+        _insert(history_db, when)
+    history_db.compact_history(now=now)
+    with history_db._connect() as conn:
+        kept = {r[0] for r in conn.execute("SELECT captured_at FROM rate_snapshots")}
+    assert kept == {first_old.isoformat(), recent.isoformat()}
+
+
+def test_interrupted_key_migration_rolls_back_and_retries(keys_db, monkeypatch):
+    with sqlite3.connect(keys_db.DB_PATH) as conn:
+        for key in ("cn_a", "cn_b"):
+            conn.execute("INSERT INTO api_keys (api_key, tier, created_at) VALUES (?, 'free', '2026-01-01')", (key,))
+    keys_db._key_tier_cache.clear()
+
+    real_hash = keys_db._hash_key
+    calls = []
+
+    def dies_on_second(key):
+        calls.append(key)
+        if len(calls) == 2:
+            raise RuntimeError("killed mid-migration")
+        return real_hash(key)
+
+    monkeypatch.setattr(keys_db, "_hash_key", dies_on_second)
+    with pytest.raises(RuntimeError):
+        keys_db.init_keys_db()
+    with sqlite3.connect(keys_db.DB_PATH) as conn:
+        assert {r[0] for r in conn.execute("SELECT api_key FROM api_keys")} == {"cn_a", "cn_b"}
+
+    monkeypatch.setattr(keys_db, "_hash_key", real_hash)
+    keys_db.init_keys_db()
+    assert keys_db.get_key_tier("cn_a") == "free" and keys_db.get_key_tier("cn_b") == "free"
