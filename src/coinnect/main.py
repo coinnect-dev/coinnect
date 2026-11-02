@@ -62,11 +62,12 @@ _quote_cache: dict[str, dict] = {}
 
 def get_cached_edges() -> list:
     """Return edges from the last background refresh (instant, no network calls)."""
-    return _edges_store.get("edges", [])
+    return _edges_store["edges"]
 
 
-def get_edges_ts() -> float:
-    return _edges_store["ts"]
+def get_edges_snapshot() -> dict:
+    """Edges and their timestamp, consistent with each other: the refresher swaps the whole dict."""
+    return _edges_store
 
 
 def quote_cache_key(from_c: str, to_c: str, amount: float) -> str:
@@ -192,8 +193,8 @@ async def _refresh_once(force: bool = False) -> int:
         return 0
 
     # Store edges globally for instant access by quote endpoint
-    _edges_store["edges"] = all_edges
-    _edges_store["ts"] = time.monotonic()
+    global _edges_store
+    _edges_store = {"edges": all_edges, "ts": time.monotonic()}
 
     # Record snapshot + pre-compute the public quote for tracked corridors
     for from_c, to_c, amount in TRACKED_CORRIDORS:

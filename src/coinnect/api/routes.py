@@ -193,11 +193,12 @@ async def quote(
                 raise _rate_limit_error(info)
 
     # ── Fetch edges from background cache (instant, no network calls) ────────
-    from coinnect.main import get_cached_edges, get_edges_ts
-    all_edges = get_cached_edges()
+    from coinnect.main import get_edges_snapshot
+    snapshot = get_edges_snapshot()
+    all_edges = snapshot["edges"]
     if not all_edges:
         raise HTTPException(503, detail="Exchange data is loading — please retry in 30 seconds")
-    result, amount_limits = await _public_quote(all_edges, get_edges_ts(), from_, to, amount)
+    result, amount_limits = await _public_quote(all_edges, snapshot["ts"], from_, to, amount)
     amount_range = AmountRange(min=amount_limits[0], max=amount_limits[1]) if amount_limits else None
 
     source = "api" if x_api_key else "web"
