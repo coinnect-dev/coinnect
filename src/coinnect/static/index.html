@@ -86,6 +86,21 @@
     if(localStorage.getItem('ga_consent')==='1'&&localStorage.getItem('ga_optout')!=='1'){loadGA4();}
   </script>
 
+  <script>
+    // Cloudflare rate-limits /v1/* to about 10 requests per IP in a short window, answering
+    // with a non-JSON 429 and Retry-After. The app's own 429s are JSON and mean a real limit.
+    function edgeRateLimitDelay(res){
+      if(res.status!==429||(res.headers.get('content-type')||'').includes('json'))return 0;
+      return Math.min(Number(res.headers.get('retry-after'))||10,30)*1000+250;
+    }
+    function whenNear(el,fn){
+      if(!el||!('IntersectionObserver' in window)){fn();return;}
+      const o=new IntersectionObserver(es=>{
+        if(es.some(e=>e.isIntersecting)){o.disconnect();fn();}
+      },{rootMargin:'400px'});
+      o.observe(el);
+    }
+  </script>
   <script src="/static/i18n.js?v=2026.11.02.1"></script>
   <script>initLang();</script>
   <link rel="stylesheet" href="/static/tailwind.css">
@@ -560,6 +575,7 @@
   </div>
 
   <!-- History charts (collapsible) -->
+  <div id="historyAnchor" style="height:1px" aria-hidden="true"></div>
   <div id="historyBar" class="hidden mb-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
     <!-- Header row: title + period buttons -->
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -823,7 +839,7 @@
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   // Wait for exchangeLogo and esc to be defined
-  setTimeout(function(){
+  whenNear(document.getElementById('providersEstimated'),function(){
     const live=['Binance','Kraken','Okx','Bybit','Kucoin','Gate','Bitget','Mexc','Htx','Cryptocom','Coinbase','Gemini','Bithumb','bitFlyer','IndependentReserve','Bitso','Luno','Bitstamp','Btcturk','Wise','Buda','VALR','CoinDCX','WazirX','SatoshiTango','Binance P2P','Binance P2P (live)','Uphold'];
     const official=['Banxico (MX)','TRM (CO)','Blue market (AR)','Official (AR)','TCMB (TR)','NBP (PL)','CNB (CZ)','NBU (UA)','NBG (GE)','BOI (IL)','BNR (RO)'];
     const reference=['CoinGecko (market)','Yadio (P2P)','Market rate','x-rates.com (mid-market)'];
@@ -878,7 +894,7 @@ document.addEventListener('DOMContentLoaded',function(){
       renderProviders(reference,'providersReference');
       renderProviders(estimated,'providersEstimated');
     });
-  },100);
+  });
 });
 </script>
 <script>
@@ -1043,7 +1059,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <span>·</span>
       <a href="https://koalabs.ai" target="_blank" rel="noopener" class="hover:text-cyan-500 transition-colors">Built by KOA Labs</a>
       <span>·</span>
-      <span class="opacity-50">v2026.11.02.1</span>
+      <span class="opacity-50">v2026.11.02.2</span>
     </div>
   </div>
 </footer>
@@ -1681,6 +1697,29 @@ function renderChart(wrapId,labelId,statsId,points,amount,fromC,toC,gradId){
   statsEl.textContent=`${sym(toC)}${fmt(minR)}–${sym(toC)}${fmt(maxR)}`;
 }
 
+// Charts sit below the results: fetch them once the visitor gets near, keeping the
+// latest search. Each page load spends the /v1/* burst budget (see edgeRateLimitDelay).
+let _histPending=null,_histNear=false,_histCheck=null;
+function requestHistory(fromC,toC,minutes){
+  _histFrom=fromC; _histTo=toC; _histMinutes=minutes;
+  const load=()=>{loadHistory(fromC,toC,minutes);loadProviderHistory(fromC,toC,minutes);};
+  if(_histNear){load();return;}
+  _histPending=load;
+  // Checked only on scroll and after results render: a new search collapses the results,
+  // which would bring the anchor into range without the visitor going anywhere.
+  if(!_histCheck){
+    _histCheck=()=>{
+      if(document.getElementById('historyAnchor').getBoundingClientRect().top>innerHeight+400)return;
+      removeEventListener('scroll',_histCheck);
+      _histNear=true;
+      _histPending();
+      _histPending=null;
+    };
+    addEventListener('scroll',_histCheck,{passive:true});
+  }
+  _histCheck();
+}
+
 async function loadHistory(fromC,toC,minutes){
   _histFrom=fromC; _histTo=toC; _histMinutes=minutes||15;
   const bar=document.getElementById('historyBar');
@@ -1796,7 +1835,6 @@ function renderProviderChart(){
 
 // Period button wiring (runs after DOM ready)
 document.addEventListener('DOMContentLoaded',()=>{
-  loadSuggestions();
   document.querySelectorAll('.hist-period').forEach(btn=>{
     btn.addEventListener('click',()=>{
       document.querySelectorAll('.hist-period').forEach(b=>{
@@ -2326,6 +2364,8 @@ async function getQuote(){
         const tid=setTimeout(()=>controller.abort(),20000);
         const res=await fetch(`${API}/v1/quote?from=${from}&to=${to}&amount=${amount}`,{signal:controller.signal});
         clearTimeout(tid);
+        const edgeDelay=edgeRateLimitDelay(res);
+        if(edgeDelay&&!isLast){await new Promise(r=>setTimeout(r,edgeDelay));continue;}
         const text=await res.text();
         try{data=JSON.parse(text);}catch(e){
           if(!isLast){await new Promise(r=>setTimeout(r,PARSE_BACKOFF_MS[attempt]));continue;}
@@ -2377,8 +2417,7 @@ async function getQuote(){
     // Load history in background (active period or default 15m)
     const activePeriod=document.querySelector('.hist-period.active');
     const histMins=activePeriod?parseInt(activePeriod.dataset.min):15;
-    loadHistory(from,to,histMins);
-    loadProviderHistory(from,to,histMins);
+    requestHistory(from,to,histMins);
   }catch(e){
     trackEvent('no_results',{from:from,to:to,amount:amount,error:e.message});
     document.getElementById('results').innerHTML=`
@@ -2507,14 +2546,17 @@ async function generateKey(){
   btn.disabled=true;
   const url=`${API}/v1/keys`+(label?`?label=${encodeURIComponent(label)}`:'');
   let errorKey='key_error';
-  // Gateway errors and dropped connections are usually momentary, so retry once.
+  let waitMs=1000;
+  // Gateway errors, dropped connections and Cloudflare bursts are momentary, so retry once.
   // The worst a retry can do is leave one unused key behind.
   for(let attempt=0;attempt<2;attempt++){
-    if(attempt)await new Promise(r=>setTimeout(r,1000));
+    if(attempt)await new Promise(r=>setTimeout(r,waitMs));
     try{
       const res=await fetch(url,{method:'POST',signal:AbortSignal.timeout(20000)});
+      const edgeDelay=edgeRateLimitDelay(res);
+      if(edgeDelay){errorKey='key_error_net';waitMs=edgeDelay;continue;}
       if(res.status===429){errorKey='key_error_rate';break;}
-      if(res.status>=500){errorKey='key_error_net';continue;}
+      if(res.status>=500){errorKey='key_error_net';waitMs=1000;continue;}
       const data=await res.json();
       if(data.api_key){
         _generatedKey=data.api_key;
