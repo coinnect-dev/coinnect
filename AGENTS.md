@@ -1,3 +1,14 @@
+---
+type: agents-card
+name: "Coinnect · reglas para agentes"
+slug: coinnect-agents
+owner: miguel
+status: live
+tags: [agents]
+last_updated: 2026-11-02
+related: [coinnect]
+---
+
 <!-- KOA-MANUAL -->
 # AGENTS.md — Coinnect
 
@@ -11,7 +22,8 @@ Exchange router multi-corredor: stable → MXN/local con rutas rankeadas. Web `c
 
 - FastAPI + CCXT + Wise SDK.
 - SQLite `data/history.db`.
-- Background refresh cada 3 min.
+- Background refresh cada ~3 min en su propio hilo y event loop (`_Refresher` en `main.py`).
+- **Una sola worker de uvicorn** (`--workers 1`): cada proceso corre su propio refresher, así que más workers multiplican llamadas upstream y filas de snapshots, y parten los rate limits en memoria.
 - MCP server: `python -m coinnect.mcp_server` (tools `coinnect_quote`, `coinnect_corridors`, `coinnect_explain_route`).
 
 ## Build & Deploy
@@ -32,7 +44,12 @@ Servicio prod corre en puerto 8100 (`coinnect.service`, systemd user unit).
 
 - Cero credenciales hardcoded. Wise API key vía env. Exchange APIs vía CCXT + env keys.
 - Adapters son plugins en `coinnect/adapters/*.py`. Agregar nuevo = nueva clase + registry.
-- Ratings en `data/history.db` informan ranking. NO eliminar histórico.
+- Ratings en `data/history.db` informan ranking. NO eliminar histórico: `compact_history()` deja una fila por hora tras 7 días y saca la tabla viva a los 30, pero archiva todo lo que quita en `data/archive/*.jsonl.gz`.
+- Rutas: solo pasan por `ROUTING_HUBS` (fiat + USDT/USDC/DAI/BTC/ETH); los altcoins sirven como origen o destino. Ampliar hubs sube el CPU mucho.
+- `build_public_quote` es CPU-bound: nunca en el event loop.
+- IP del cliente para rate limits: siempre `coinnect.net.client_ip` (el origin se alcanza sin Cloudflare; `CF-Connecting-IP` solo vale si el peer es Cloudflare). Actualiza sus CIDR si Cloudflare los cambia.
+- API keys: solo SHA-256 en reposo.
+- Traducciones: `static/i18n/<lang>.js` se cargan bajo demanda; inglés va en `i18n.js`. Sube `_I18N_V` al cambiarlas.
 - Pentest 2026-04-07: XSS reflected/stored fixed, HSTS al origin OK. Cloudflare HSTS edge sigue 0 (toggle pendiente Miguel).
 
 ## Pendientes
