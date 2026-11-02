@@ -4,7 +4,7 @@ Uses Dijkstra on a live currency graph built from exchange rates.
 """
 
 import heapq
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, UTC
 
 
@@ -43,7 +43,7 @@ class QuoteResult:
     routes: list[Route]
 
 
-@dataclass
+@dataclass(slots=True)
 class Edge:
     """A single conversion step between two currencies via an exchange."""
     from_currency: str
@@ -55,6 +55,44 @@ class Edge:
     exchange_rate: float = 1.0  # units of to_currency per 1 from_currency
     min_amount: float = 0.01    # minimum send amount in from_currency
     max_amount: float = 1_000_000.0  # maximum send amount in from_currency
+
+
+# Currencies a route may pass *through*. The ~6,000 altcoins on the exchanges stay
+# usable as a route's source or destination, but exploring them as intermediates
+# multiplied routing CPU by ~50x and never produced a route that was returned.
+CRYPTO_HUBS = frozenset({"USDT", "USDC", "DAI", "BTC", "ETH"})
+FIAT_HUBS = frozenset("""
+    AED AFN ALL AMD ANG AOA ARS AUD AWG AZN BAM BBD BDT BGN BHD BIF BMD BND BOB BRL BSD BTN BWP
+    BYN BZD CAD CDF CHF CLP CNY COP CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP GBP
+    GEL GHS GIP GMD GNF GTQ GYD HKD HNL HTG HUF IDR ILS INR IQD IRR ISK JMD JOD JPY KES KGS KHR
+    KMF KPW KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK
+    MXN MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR
+    SBD SCR SDG SEK SGD SHP SLE SOS SRD SSP STN SVC SYP SZL THB TJS TMT TND TOP TRY TTD TWD TZS
+    UAH UGX USD UYU UZS VES VND VUV WST XAF XCD XOF XPF YER ZAR ZMW ZWL
+""".split())
+ROUTING_HUBS = CRYPTO_HUBS | FIAT_HUBS
+
+# Pure data sources, not transfer services: they can bridge a multi-hop search
+# but a route that uses one is never shown. CriptoYa's per-exchange feeds use the
+# "(AR)" suffix and are aggregated price data too.
+REFERENCE_PROVIDERS = frozenset({
+    "Market rate", "ECB (reference)", "FloatRates", "x-rates.com (mid-market)",
+    "Yadio (P2P)", "CoinGecko (market)",
+    "BCB PTAX (BR)", "Banxico (MX)", "TRM (CO)", "TCMB (TR)", "NBP (PL)", "CNB (CZ)",
+    "NBU (UA)", "NBG (GE)", "BOI (IL)", "BNR (RO)", "NRB (NP)",
+    "Blue market (AR)", "Official (AR)", "Dolar Blue (AR)", "MEP (AR)", "CCL (AR)",
+    "Parallel (LB)",
+})
+
+
+def is_reference_provider(via: str) -> bool:
+    return via in REFERENCE_PROVIDERS or via.endswith(" (AR)")
+
+
+def routable_edges(edges: list[Edge], start: str, end: str) -> list[Edge]:
+    """Keep only edges whose currencies are hubs or this query's endpoints."""
+    allowed = ROUTING_HUBS | {start, end}
+    return [e for e in edges if e.from_currency in allowed and e.to_currency in allowed]
 
 
 def build_graph(edges: list[Edge]) -> dict[str, list[Edge]]:
@@ -184,7 +222,7 @@ def build_quote(
 ) -> QuoteResult:
     # Filter by both min and max amount (max_amount=0 means unlimited)
     valid_edges = [e for e in edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
-    graph = build_graph(valid_edges)
+    graph = build_graph(routable_edges(valid_edges, from_currency, to_currency))
     raw_routes = find_routes(graph, from_currency, to_currency, amount)
 
     if not raw_routes:
@@ -254,3 +292,51 @@ def build_quote(
         generated_at=datetime.now(UTC),
         routes=routes,
     )
+
+
+def build_public_quote(
+    edges: list[Edge],
+    from_currency: str,
+    to_currency: str,
+    amount: float,
+) -> tuple[QuoteResult, tuple[float, float | None] | None]:
+    """The routes users see, plus the (min, max) amount range of the valid edges.
+
+    CPU-bound: call it off the event loop.
+    """
+    real_edges = [e for e in edges if not is_reference_provider(e.via)]
+    result = build_quote(edges, from_currency, to_currency, amount)
+    # Second pass without reference bridges: pure crypto multi-hop routes
+    # (Binance→Bitso etc.) get crowded out by cheaper reference paths in the first.
+    result_real = build_quote(real_edges, from_currency, to_currency, amount)
+
+    seen = set()
+    merged = []
+    for route in result.routes + result_real.routes:
+        signature = tuple((s.from_currency, s.to_currency, s.via) for s in route.steps)
+        if signature not in seen:
+            seen.add(signature)
+            merged.append(route)
+
+    routes = [
+        r for r in merged
+        if r.they_receive > 0 and not any(is_reference_provider(s.via) for s in r.steps)
+    ]
+    routes.sort(key=lambda r: r.total_cost_pct)
+    if routes:
+        routes[0].label = "Cheapest"
+        fastest = min(routes, key=lambda r: r.total_time_minutes)
+        if fastest != routes[0]:
+            fastest.label = "Fastest"
+        for i, route in enumerate(routes):
+            route.rank = i + 1
+            if route.label not in ("Cheapest", "Fastest"):
+                route.label = f"Option {i + 1}"
+    result.routes = routes
+
+    valid = [e for e in edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
+    amount_range = None
+    if valid:
+        positive_maxes = [e.max_amount for e in valid if e.max_amount > 0]
+        amount_range = (min(e.min_amount for e in valid), max(positive_maxes) if positive_maxes else None)
+    return result, amount_range
