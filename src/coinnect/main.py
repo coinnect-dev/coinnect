@@ -42,7 +42,7 @@ def _benign_asyncio_exception_handler(loop: asyncio.AbstractEventLoop, context: 
     waiter Future nobody awaits (single frame inside uvloop/sslproto.pyx, no app
     code involved). asyncio's default handler logs that via the 'asyncio' logger
     at ERROR, which Sentry's logging integration reports as a real bug
-    (GlitchTip auto-ine#6). Anything else still goes to the default handler.
+    Anything else still goes to the default handler.
     """
     exc = context.get("exception")
     if context.get("message") == "Future exception was never retrieved" and isinstance(

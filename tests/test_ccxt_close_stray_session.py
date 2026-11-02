@@ -1,8 +1,8 @@
 """Regression: a failed load_markets must not leak an aiohttp session.
 
 bybit loads markets with an asyncio.gather of several requests; when one fails
-the siblings keep running and reopen the session after our close(). GlitchTip
-auto-ine#3 ("Unclosed client session", 2026-10-14).
+the siblings keep running and reopen the session after our close(), logged as
+"Unclosed client session".
 """
 
 import asyncio

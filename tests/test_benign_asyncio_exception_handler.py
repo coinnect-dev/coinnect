@@ -1,11 +1,11 @@
-"""Regression: uvloop's SSL-handshake Future noise must not reach GlitchTip as an error.
+"""Regression: uvloop's SSL-handshake Future noise must not reach error tracking as an error.
 
 Outbound HTTPS calls (forex/exchange adapters) that get reset mid-TLS-handshake
 leave an internal uvloop Future whose exception nobody retrieves. asyncio's
 default exception handler logs that via the 'asyncio' logger at ERROR, and
 Sentry's logging integration (event_level=ERROR) reports it as a real bug even
 though there's no app frame involved — single-frame stacktrace entirely inside
-uvloop/sslproto.pyx. GlitchTip auto-ine#6 (2026-10-16).
+uvloop/sslproto.pyx.
 """
 
 import asyncio
