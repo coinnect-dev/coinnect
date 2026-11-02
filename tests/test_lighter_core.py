@@ -200,7 +200,7 @@ def test_compaction_thins_old_rows_and_archives_everything_removed(history_db):
     assert history_db.compact_history(now=now) == 0  # idempotent
 
 
-def test_compaction_appends_to_an_existing_archive(history_db):
+def test_later_compactions_keep_earlier_archives(history_db):
     now = datetime(2026, 11, 2, 12, 0, tzinfo=UTC)
     day = now - timedelta(days=10)
     _insert(history_db, day.replace(minute=0))
@@ -303,3 +303,20 @@ def test_quote_cache_key_matches_int_and_float_amounts():
     from coinnect.main import quote_cache_key
 
     assert quote_cache_key("USD", "MXN", 500) == quote_cache_key("USD", "MXN", 500.0)
+
+
+def test_failed_archive_leaves_rows_in_the_table(history_db, monkeypatch):
+    now = datetime(2026, 11, 2, 12, 0, tzinfo=UTC)
+    day = now - timedelta(days=10)
+    _insert(history_db, day.replace(minute=0))
+    _insert(history_db, day.replace(minute=5))
+
+    def fail(*a, **k):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(history_db.os, "replace", fail)
+    with pytest.raises(OSError):
+        history_db.compact_history(now=now)
+    with history_db._connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM rate_snapshots").fetchone()[0] == 2
+    assert not list(history_db.ARCHIVE_DIR.glob("*.jsonl.gz"))

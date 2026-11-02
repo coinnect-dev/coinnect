@@ -9,6 +9,7 @@ import asyncio
 import gzip
 import json
 import logging
+import os
 import sqlite3
 from collections import defaultdict
 from datetime import datetime, timedelta, UTC
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 # data/history.db relative to repo root
 _REPO_ROOT = Path(__file__).parent.parent.parent.parent  # src/coinnect/db -> repo root
 DB_PATH = _REPO_ROOT / "data" / "history.db"
-# Rows leaving the live table are kept here, one gzipped JSONL file per month.
+# Rows leaving the live table are kept here as gzipped JSONL, one file per month and run.
 ARCHIVE_DIR = _REPO_ROOT / "data" / "archive"
 
 # Key corridors captured on every refresh
@@ -245,15 +246,21 @@ def get_snapshot_by_id(snapshot_id: int) -> dict | None:
 
 
 def _archive_rows(rows: list[sqlite3.Row]) -> None:
+    """Write rows to one new file per month, atomically, so a crash can't corrupt an archive."""
     by_month: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         by_month[row["captured_at"][:7]].append(dict(row))
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    run = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
     for month, month_rows in by_month.items():
-        # Appending a new gzip member keeps the file readable as one stream.
-        with gzip.open(ARCHIVE_DIR / f"rate_snapshots-{month}.jsonl.gz", "at") as fh:
+        final = ARCHIVE_DIR / f"rate_snapshots-{month}-{run}.jsonl.gz"
+        temp = final.with_suffix(".tmp")
+        with gzip.open(temp, "wt") as fh:
             for row in month_rows:
                 fh.write(json.dumps(row) + "\n")
+        with open(temp, "rb") as fh:
+            os.fsync(fh.fileno())
+        os.replace(temp, final)
 
 
 def compact_history(
@@ -284,7 +291,7 @@ def compact_history(
         _archive_rows(rows)
         conn.executemany("DELETE FROM rate_snapshots WHERE id = ?", ((r["id"],) for r in rows))
         conn.commit()
-        conn.execute("PRAGMA incremental_vacuum")
+        conn.execute("PRAGMA incremental_vacuum").fetchall()  # only runs as rows are fetched
         return len(rows)
     finally:
         conn.close()
