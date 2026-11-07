@@ -13,6 +13,7 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from coinnect import REFRESH_INTERVAL_S
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -109,7 +110,7 @@ async def _refresh_once(force: bool = False) -> int:
         get_cryptocompare_edges,
     )
     from coinnect.exchanges.calculator_adapter import get_calculator_edges
-    from coinnect.routing.engine import build_public_quote, build_quote
+    from coinnect.routing.engine import build_raw_and_public_quote
 
     (
         crypto_edges, wise_edges, trad_edges, yc_edges, remit_edges,
@@ -199,10 +200,9 @@ async def _refresh_once(force: bool = False) -> int:
     # Record snapshot + pre-compute the public quote for tracked corridors
     for from_c, to_c, amount in TRACKED_CORRIDORS:
         try:
-            raw = build_quote(all_edges, from_c, to_c, amount)
+            raw, public, _ = build_raw_and_public_quote(all_edges, from_c, to_c, amount)
             if raw.routes:
                 await record_snapshot(from_c, to_c, amount, raw.routes)
-            public, _ = build_public_quote(all_edges, from_c, to_c, amount)
             if public.routes:
                 _quote_cache[quote_cache_key(from_c, to_c, amount)] = {
                     "result": public,
@@ -215,7 +215,7 @@ async def _refresh_once(force: bool = False) -> int:
 
 
 async def _refresh_loop() -> None:
-    """Refresh rates every 3 minutes; compact history daily and regenerate quests hourly."""
+    """Refresh rates every REFRESH_INTERVAL_S; compact history daily and regenerate quests hourly."""
     last_compaction = 0.0
     last_quests = time.monotonic()
     while True:
@@ -244,7 +244,7 @@ async def _refresh_loop() -> None:
             except Exception as e:
                 logger.error(f"Quest generation failed: {e}")
 
-        await asyncio.sleep(180)  # 3 minutes
+        await asyncio.sleep(REFRESH_INTERVAL_S)
 
 
 class _Refresher:
@@ -294,7 +294,7 @@ async def lifespan(app: FastAPI):
         logger.warning("Running under multiple uvicorn workers: each one refreshes rates and writes snapshots")
     refresher = _Refresher()
     refresher.start()
-    logger.info("Coinnect started — background refresh active (3 min interval)")
+    logger.info(f"Coinnect started — background refresh active ({REFRESH_INTERVAL_S // 60} min interval)")
     yield
     refresher.stop()
 
@@ -607,7 +607,7 @@ ul{{columns:2;column-gap:2rem;list-style:none;padding:0}} li{{padding:.25rem 0;f
 <ul>{corridors_html}</ul>
 <h2>Countries</h2>
 <ul>{countries_html}</ul>
-<p style="margin-top:2rem;font-size:.75rem;color:#9ca3af">Data updates every 3 minutes · <a href="/v1/snapshot/meta">Open data API</a> · <a href="https://huggingface.co/datasets/coinnect-dev/coinnect-rates">Hugging Face</a></p>
+<p style="margin-top:2rem;font-size:.75rem;color:#9ca3af">Data updates every 5 minutes · <a href="/v1/snapshot/meta">Open data API</a> · <a href="https://huggingface.co/datasets/coinnect-dev/coinnect-rates">Hugging Face</a></p>
 </body></html>""")
 
 
@@ -1178,7 +1178,7 @@ async def corridor_page(corridor: str):
     cached = _cache_get(cache_key)
     if cached:
         resp = HTMLResponse(cached)
-        resp.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+        resp.headers["Cache-Control"] = f"public, max-age={REFRESH_INTERVAL_S}, stale-while-revalidate=600"
         return resp
 
     edges = get_cached_edges()
@@ -1195,7 +1195,7 @@ async def corridor_page(corridor: str):
     page_html = render_corridor_page(from_c, to_c, edges)
     _cache_set(cache_key, page_html)
     resp = HTMLResponse(page_html)
-    resp.headers["Cache-Control"] = "public, max-age=180, stale-while-revalidate=600"
+    resp.headers["Cache-Control"] = f"public, max-age={REFRESH_INTERVAL_S}, stale-while-revalidate=600"
     return resp
 
 

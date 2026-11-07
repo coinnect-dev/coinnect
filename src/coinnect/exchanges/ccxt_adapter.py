@@ -42,7 +42,7 @@ SUPPORTED_EXCHANGES = {
 # Stablecoin used as routing intermediary
 BRIDGE = "USDC"
 
-# Cache: edges refreshed every 3 minutes
+# Cache: edges refreshed every 5 minutes
 _cache: dict = {"edges": [], "updated_at": None}
 CACHE_TTL_SECONDS = 180
 

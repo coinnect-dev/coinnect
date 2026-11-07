@@ -128,9 +128,11 @@ async def quote_instant(
     """Return a pre-computed quote for tracked corridors. 204 when nothing is cached:
     a miss is the normal case for most amounts, not an error."""
     import time
+    from coinnect import REFRESH_INTERVAL_S
     from coinnect.main import _quote_cache, quote_cache_key
     cached = _quote_cache.get(quote_cache_key(from_.upper(), to.upper(), amount))
-    if not cached or (time.monotonic() - cached["ts"]) > 300:
+    # one refresh interval plus the refresh's own run time and some slack
+    if not cached or (time.monotonic() - cached["ts"]) > REFRESH_INTERVAL_S + 120:
         return Response(status_code=204)
     result = cached["result"]
     return {
@@ -333,7 +335,7 @@ async def history(
 ):
     """
     Returns time-series of the best route's fee% and received amount for a corridor.
-    Snapshots captured every 3 minutes for key corridors.
+    Snapshots captured every 5 minutes for key corridors.
     """
     from coinnect.db.history import get_history, get_stats
     if minutes is not None:
@@ -388,7 +390,7 @@ async def snapshot_daily(
     """
     Download a full-day CSV snapshot of best-route rates for all tracked corridors.
 
-    Each row = one 3-minute capture: corridor, amount, best cost %, received amount, provider path.
+    Each row = one 5-minute capture: corridor, amount, best cost %, received amount, provider path.
 
     Free, no key required. Intended for researchers, bots, and bulk analysis.
     Publish the data: cite as Coinnect Open Rate Data (coinnect.bot).
@@ -416,7 +418,7 @@ async def snapshot_daily(
         """, (day,)).fetchall()
 
     if not rows:
-        raise HTTPException(404, f"No data for {day} yet. Snapshots are captured every 3 minutes for key corridors.")
+        raise HTTPException(404, f"No data for {day} yet. Snapshots are captured every 5 minutes for key corridors.")
 
     buf = io.StringIO()
     w = csv.writer(buf)
@@ -465,7 +467,7 @@ async def snapshot_meta():
         """).fetchall()
     return {
         "dataset": "Coinnect Open Rate Data",
-        "description": "Best-route fee% and received amount for key corridors, captured every 3 minutes.",
+        "description": "Best-route fee% and received amount for key corridors, captured every 5 minutes.",
         "license": "CC-BY 4.0",
         "cite_as": "Coinnect (coinnect.bot) Open Rate Data",
         "download": "/v1/snapshot/daily?date=YYYY-MM-DD",

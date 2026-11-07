@@ -3,6 +3,7 @@ Route engine — finds cheapest/fastest paths between currencies.
 Uses Dijkstra on a live currency graph built from exchange rates.
 """
 
+import copy
 import heapq
 from dataclasses import dataclass
 from datetime import datetime, UTC
@@ -128,8 +129,8 @@ def _dijkstra(
         # K-shortest-paths: only prune exact duplicates (same currency, same
         # provider set, same step count). This lets different exchange combinations
         # through the same intermediate currency all get explored.
-        providers_key = frozenset(e.via for e in path)
-        state = (curr, providers_key)
+        path_vias = frozenset(e.via for e in path)
+        state = (curr, path_vias)
         if state in visited_states and visited_states[state] <= priority:
             continue
         visited_states[state] = priority
@@ -147,11 +148,13 @@ def _dijkstra(
             continue
 
         for edge in graph.get(curr, []):
-            # Skip if this exchange was already used in the path (no circular routes)
-            if any(e.via == edge.via for e in path):
+            # Skip if this exchange was already used in the path (no circular routes).
+            # A set lookup instead of scanning the path for every edge (py-spy,
+            # 2026-11-07: this test and the frozenset above were ~31 % of CPU).
+            if edge.via in path_vias:
                 continue
-            new_amount = curr_amount * edge.exchange_rate * (1 - edge.fee_pct / 100)
             new_priority = priority + (edge.fee_pct if optimize == "cost" else edge.estimated_minutes)
+            new_amount = curr_amount * edge.exchange_rate * (1 - edge.fee_pct / 100)
             tie_breaker += 1
             heapq.heappush(heap, (
                 new_priority,
@@ -215,15 +218,27 @@ def find_routes(
     return merged
 
 
+def _amount_valid(edges: list[Edge], amount: float) -> list[Edge]:
+    """Edges that accept this amount (max_amount=0 means unlimited), order kept."""
+    return [e for e in edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
+
+
 def build_quote(
     edges: list[Edge],
     from_currency: str,
     to_currency: str,
     amount: float,
 ) -> QuoteResult:
-    # Filter by both min and max amount (max_amount=0 means unlimited)
-    valid_edges = [e for e in edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
-    graph = build_graph(routable_edges(valid_edges, from_currency, to_currency))
+    graph = build_graph(routable_edges(_amount_valid(edges, amount), from_currency, to_currency))
+    return _quote_from_graph(graph, from_currency, to_currency, amount)
+
+
+def _quote_from_graph(
+    graph: dict[str, list[Edge]],
+    from_currency: str,
+    to_currency: str,
+    amount: float,
+) -> QuoteResult:
     raw_routes = find_routes(graph, from_currency, to_currency, amount)
 
     if not raw_routes:
@@ -305,11 +320,33 @@ def build_public_quote(
 
     CPU-bound: call it off the event loop.
     """
-    real_edges = [e for e in edges if not is_reference_provider(e.via)]
-    result = build_quote(edges, from_currency, to_currency, amount)
+    _raw, public, amount_range = build_raw_and_public_quote(edges, from_currency, to_currency, amount)
+    return public, amount_range
+
+
+def build_raw_and_public_quote(
+    edges: list[Edge],
+    from_currency: str,
+    to_currency: str,
+    amount: float,
+) -> tuple[QuoteResult, QuoteResult, tuple[float, float | None] | None]:
+    """build_quote() and build_public_quote() of the same input in one go.
+
+    The public quote's first pass *is* build_quote() of the same edges, so the
+    refresh, which needs both for every tracked corridor, routed it twice. The raw
+    result is copied before the public one relabels and filters its routes.
+    """
+    # Filter the full edge list once (amount, then hubs/endpoints) and derive both
+    # graphs from it. The filters keep order and commute with the reference-provider
+    # filter, so this equals two build_quote() calls without three full passes each.
+    valid = _amount_valid(edges, amount)
+    routable = routable_edges(valid, from_currency, to_currency)
+    result = _quote_from_graph(build_graph(routable), from_currency, to_currency, amount)
+    raw = copy.deepcopy(result)
     # Second pass without reference bridges: pure crypto multi-hop routes
     # (Binance→Bitso etc.) get crowded out by cheaper reference paths in the first.
-    result_real = build_quote(real_edges, from_currency, to_currency, amount)
+    real_routable = [e for e in routable if not is_reference_provider(e.via)]
+    result_real = _quote_from_graph(build_graph(real_routable), from_currency, to_currency, amount)
 
     seen = set()
     merged = []
@@ -335,9 +372,8 @@ def build_public_quote(
                 route.label = f"Option {i + 1}"
     result.routes = routes
 
-    valid = [e for e in edges if amount >= e.min_amount and (e.max_amount == 0 or amount <= e.max_amount)]
     amount_range = None
     if valid:
         positive_maxes = [e.max_amount for e in valid if e.max_amount > 0]
         amount_range = (min(e.min_amount for e in valid), max(positive_maxes) if positive_maxes else None)
-    return result, amount_range
+    return raw, result, amount_range

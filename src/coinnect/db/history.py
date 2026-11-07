@@ -1,7 +1,7 @@
 """
 Rate history — SQLite store for corridor snapshots.
 
-Captured every 3 minutes by the background task.
+Captured every 5 minutes by the background task.
 Used for sparkline charts and trend analysis.
 """
 

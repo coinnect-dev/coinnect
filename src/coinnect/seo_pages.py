@@ -5,6 +5,7 @@ Generates lightweight HTML with inline CSS, JSON-LD structured data, OG tags,
 canonical URLs, and hreflang tags. No JavaScript required to render content.
 """
 
+from coinnect import REFRESH_INTERVAL_S
 import html
 import json
 import time
@@ -232,7 +233,7 @@ CURRENCY_COUNTRIES: dict[str, str] = {
 # ── HTML cache ────────────────────────────────────────────────────────────────
 
 _html_cache: dict[str, tuple[float, str]] = {}
-CACHE_TTL = 180  # 3 minutes
+CACHE_TTL = REFRESH_INTERVAL_S  # pages follow the rate refresh
 
 # ── Reference provider filter (keep in sync with api/routes.py) ──────────────
 
@@ -346,7 +347,7 @@ def _nav_html() -> str:
 def _footer_html() -> str:
     now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     return f"""<footer class="footer">
-  <p>Rates updated every 3 minutes. Last render: {html.escape(now)}</p>
+  <p>Rates updated every 5 minutes. Last render: {html.escape(now)}</p>
   <p>Mission-driven. No affiliate fees. Open data (CC-BY 4.0).</p>
   <p><a href="/">Home</a> &middot; <a href="/exchanges">Exchanges</a> &middot;
      <a href="/explore">Corridors</a> &middot; <a href="/whitepaper">Whitepaper</a> &middot;
@@ -424,12 +425,12 @@ def render_corridor_page(
     else:
         table_html = f"""<div class="card">
 <h2>Routes for {html.escape(from_c)} to {html.escape(to_c)}</h2>
-<p>No live routes available right now. Rates refresh every 3 minutes — check back soon or
+<p>No live routes available right now. Rates refresh every 5 minutes — check back soon or
 <a href="/?from={html.escape(from_c)}&to={html.escape(to_c)}" rel="nofollow">try the interactive search</a>.</p>
 </div>"""
         meta_desc = (
             f"Send {html.escape(from_c)} to {html.escape(to_c)} — compare routes across "
-            f"crypto exchanges, Wise, and traditional remittance. Updated every 3 minutes."
+            f"crypto exchanges, Wise, and traditional remittance. Updated every 5 minutes."
         )
         og_desc = meta_desc
         best_cost = "N/A"
@@ -473,7 +474,7 @@ def render_corridor_page(
     howto_html = f"""<div class="card">
 <h2>How to send {html.escape(from_c)} to {html.escape(to_c)} cheaply</h2>
 <ol style="padding-left:1.5rem;color:#475569">
-<li style="margin:.5rem 0"><strong>Compare routes above</strong> — Coinnect checks crypto exchanges, Wise, Western Union, and more every 3 minutes.</li>
+<li style="margin:.5rem 0"><strong>Compare routes above</strong> — Coinnect checks crypto exchanges, Wise, Western Union, and more every 5 minutes.</li>
 <li style="margin:.5rem 0"><strong>Pick the cheapest path</strong> — Some routes use crypto as a bridge (e.g. buy USDC, send, sell). Others are direct bank transfers.</li>
 <li style="margin:.5rem 0"><strong>Execute it yourself</strong> — Coinnect never touches your money. Follow the step-by-step instructions for your chosen route.</li>
 </ol>
@@ -488,7 +489,7 @@ def render_corridor_page(
 <h3>Does Coinnect transfer my money?</h3>
 <p>No. Coinnect is a comparison engine. It finds the cheapest route and gives you step-by-step instructions to execute it yourself on the actual platforms (Wise, Binance, Coinbase, etc.).</p>
 <h3>How often are rates updated?</h3>
-<p>Every 3 minutes. Rates are pulled live from 15+ exchanges and remittance providers.</p>
+<p>Every 5 minutes. Rates are pulled live from 15+ exchanges and remittance providers.</p>
 <h3>Is Coinnect free?</h3>
 <p>Yes. Free for personal use, no affiliate fees, open source. <a href="/">Use the interactive search</a> for any amount.</p>
 </div>"""
@@ -519,7 +520,7 @@ def render_corridor_page(
                 "name": "How often are rates updated?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Every 3 minutes. Rates are pulled live from 15+ exchanges and remittance providers.",
+                    "text": "Every 5 minutes. Rates are pulled live from 15+ exchanges and remittance providers.",
                 },
             },
         ],
@@ -553,7 +554,7 @@ def render_corridor_page(
         '<div class="card">\n'
         '<h2>How we calculate these rates</h2>\n'
         '<p>Coinnect pulls live rates from exchange APIs (Binance, Kraken, Coinbase, Wise, and others) '
-        'every 3 minutes. For providers without live APIs, we use published fee schedules verified '
+        'every 5 minutes. For providers without live APIs, we use published fee schedules verified '
         'quarterly against World Bank data. Total cost includes exchange rate markup + transfer fees. '
         'Routes are ranked by total cost to the recipient &mdash; never by partnerships or commissions. '
         '<a href="/whitepaper">Read our methodology</a>.</p>\n'
@@ -601,8 +602,8 @@ def render_corridor_page(
     <a href="/">Home</a> &rsaquo; <a href="/send/{from_c.lower()}-to-{to_c.lower()}">Send {html.escape(from_c)} to {html.escape(to_c)}</a>
   </nav>
   <h1>Send Money to {to_country} from {from_country} — Find the Best {html.escape(from_c)} to {html.escape(to_c)} Rate</h1>
-  <time datetime="{now_iso}" style="font-size:12px;color:#9ca3af">Last updated: {now_str} &middot; Refreshes every 3 minutes</time>
-  <p class="subtitle">Compare the cheapest ways to send money from {from_country} to {to_country}. {html.escape(from_c)} to {html.escape(to_c)} rates updated every 3 minutes across 15+ providers.</p>
+  <time datetime="{now_iso}" style="font-size:12px;color:#9ca3af">Last updated: {now_str} &middot; Refreshes every 5 minutes</time>
+  <p class="subtitle">Compare the cheapest ways to send money from {from_country} to {to_country}. {html.escape(from_c)} to {html.escape(to_c)} rates updated every 5 minutes across 15+ providers.</p>
 
   {answer_box}
   {table_html}
@@ -701,7 +702,7 @@ def render_country_page(
 
     meta_desc = (
         f"Compare money transfer rates to and from {country_name} ({currency}). "
-        f"Live rates updated every 3 minutes across crypto, Wise, and remittance providers."
+        f"Live rates updated every 5 minutes across crypto, Wise, and remittance providers."
     )
 
     now_dt = datetime.now(UTC)
@@ -727,7 +728,7 @@ def render_country_page(
         '<div class="card">\n'
         '<h2>How we calculate these rates</h2>\n'
         '<p>Coinnect pulls live rates from exchange APIs (Binance, Kraken, Coinbase, Wise, and others) '
-        'every 3 minutes. For providers without live APIs, we use published fee schedules verified '
+        'every 5 minutes. For providers without live APIs, we use published fee schedules verified '
         'quarterly against World Bank data. Total cost includes exchange rate markup + transfer fees. '
         'Routes are ranked by total cost to the recipient &mdash; never by partnerships or commissions. '
         '<a href="/whitepaper">Read our methodology</a>.</p>\n'
@@ -762,8 +763,8 @@ def render_country_page(
     <a href="/">Home</a> &rsaquo; <a href="/rates/{country_slug}">Rates: {country_name}</a>
   </nav>
   <h1>Money Transfer Rates: {country_name}</h1>
-  <time datetime="{now_iso}" style="font-size:12px;color:#9ca3af">Last updated: {now_str} &middot; Refreshes every 3 minutes</time>
-  <p class="subtitle">Live rates for all corridors involving {currency} ({country_name}) — updated every 3 minutes.</p>
+  <time datetime="{now_iso}" style="font-size:12px;color:#9ca3af">Last updated: {now_str} &middot; Refreshes every 5 minutes</time>
+  <p class="subtitle">Live rates for all corridors involving {currency} ({country_name}) — updated every 5 minutes.</p>
 
   {sections_html}
   {methodology_html}

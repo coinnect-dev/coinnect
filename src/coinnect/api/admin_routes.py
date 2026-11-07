@@ -93,7 +93,7 @@ async def admin_integrations(x_admin_key: str | None = Header(None)):
     wise_blocked = all(v is None for _, v in _wise_rate_cache.values()) if _wise_rate_cache else None
 
     integrations = {
-        "ccxt": {"status": "live", "note": "21 exchanges via CCXT, refreshed every 3 min"},
+        "ccxt": {"status": "live", "note": "21 exchanges via CCXT, refreshed every 5 min"},
         "wise": {
             "status": "blocked" if wise_blocked else ("ok" if wise_cached > 0 else "empty"),
             "cached_corridors": wise_cached,
