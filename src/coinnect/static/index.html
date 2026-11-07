@@ -43,7 +43,7 @@
 
   <!-- Structured data -->
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebApplication","name":"Coinnect","url":"https://coinnect.bot","description":"Open protocol for global money routing. Find the best rate between any two currencies — fiat, crypto, P2P. Free. Open. For humans and bots.","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Miguel","email":"miguel@coinnect.bot"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"featureList":["Compare 30+ exchange and remittance providers","Real-time rates refreshed every 3 minutes","Multi-hop route optimization","REST API and MCP server for AI agents","17 languages supported","Open source (MIT license)"],"screenshot":"https://coinnect.bot/static/logo.svg","softwareVersion":"2026.11.02.1"}
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Coinnect","url":"https://coinnect.bot","description":"Open protocol for global money routing. Find the best rate between any two currencies — fiat, crypto, P2P. Free. Open. For humans and bots.","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Miguel","email":"miguel@coinnect.bot"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"featureList":["Compare 30+ exchange and remittance providers","Real-time rates refreshed every 5 minutes","Multi-hop route optimization","REST API and MCP server for AI agents","17 languages supported","Open source (MIT license)"],"screenshot":"https://coinnect.bot/static/logo.svg","softwareVersion":"2026.11.02.1"}
   </script>
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"Organization","name":"Coinnect","url":"https://coinnect.bot","logo":"https://coinnect.bot/static/logo.svg","contactPoint":{"@type":"ContactPoint","email":"miguel@coinnect.bot","contactType":"customer support"},"sameAs":["https://github.com/coinnect-dev/coinnect"]}
@@ -268,7 +268,7 @@
       <p class="mt-2 text-base text-cyan-600 dark:text-cyan-400 font-medium" id="taglineRotator"></p>
       <!-- Stats -->
       <div class="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-gray-400">
-        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live rates every 3 min</span>
+        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live rates every 5 min</span>
         <span>22+ exchanges</span>
         <span>50+ currencies</span>
         <span>Free for everyone</span>
@@ -795,7 +795,7 @@
     <p class="text-xs text-gray-400 mb-4" data-i18n="ds_sub">Every search checks all sources. No affiliate fees, no hidden markup.</p>
     <!-- Legend -->
     <div class="flex flex-wrap gap-3 mb-5 text-[10px] text-gray-500 dark:text-gray-400">
-      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <strong data-i18n="badge_live">LIVE RATE</strong> — <span data-i18n="badge_live_desc">Exchange API, refreshed ~3 min</span></span>
+      <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <strong data-i18n="badge_live">LIVE RATE</strong> — <span data-i18n="badge_live_desc">Exchange API, refreshed ~5 min</span></span>
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span> <strong data-i18n="badge_official">OFFICIAL</strong> — <span data-i18n="badge_official_desc">Central bank / country rate</span></span>
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500"></span> <strong data-i18n="badge_reference">REFERENCE</strong> — <span data-i18n="badge_reference_desc">Market data aggregator</span></span>
       <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> <strong data-i18n="badge_estimated">ESTIMATED</strong> — <span data-i18n="badge_estimated_desc">Published fee tables</span></span>
@@ -1046,7 +1046,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="flex items-center gap-2">
       <span data-i18n="footer_nofunds">Coinnect never holds your funds</span>
       <span>·</span>
-      <span data-i18n="footer_rates">Rates refresh every 3 min</span>
+      <span data-i18n="footer_rates">Rates refresh every 5 min</span>
     </div>
     <div class="flex items-center gap-2">
       <a href="#donate" onclick="document.getElementById('donateSection')?.scrollIntoView({behavior:'smooth'});return false;"
@@ -1141,18 +1141,18 @@ const REQS={
 
 const FEATURED={'Cheapest':'','Fastest':''}; // internal labels, translated via tag_cheapest/tag_fastest
 const PROVIDER_INFO = {
-  'Binance': {url:'https://binance.com',refresh:'~3 min (live order book)',contact:'https://www.binance.com/en/support',fees:'https://www.binance.com/en/fee/schedule'},
-  'Kraken': {url:'https://kraken.com',refresh:'~3 min (live order book)',contact:'https://support.kraken.com',fees:'https://www.kraken.com/features/fee-schedule'},
-  'Coinbase': {url:'https://coinbase.com',refresh:'~3 min (live order book)',contact:'https://help.coinbase.com',fees:'https://help.coinbase.com/en/coinbase/trading-and-funding/pricing-and-fees/fees'},
-  'OKX': {url:'https://okx.com',refresh:'~3 min (live order book)',contact:'https://www.okx.com/support',fees:'https://www.okx.com/fees'},
-  'Bybit': {url:'https://bybit.com',refresh:'~3 min (live order book)',contact:'https://www.bybit.com/en/help-center',fees:'https://www.bybit.com/en/help-center/article/Fee-Structure'},
-  'KuCoin': {url:'https://kucoin.com',refresh:'~3 min (live order book)',contact:'https://www.kucoin.com/support',fees:'https://www.kucoin.com/vip/level'},
-  'Bitso': {url:'https://bitso.com',refresh:'~3 min (live REST API)',contact:'https://help.bitso.com',fees:'https://bitso.com/fees'},
+  'Binance': {url:'https://binance.com',refresh:'~5 min (live order book)',contact:'https://www.binance.com/en/support',fees:'https://www.binance.com/en/fee/schedule'},
+  'Kraken': {url:'https://kraken.com',refresh:'~5 min (live order book)',contact:'https://support.kraken.com',fees:'https://www.kraken.com/features/fee-schedule'},
+  'Coinbase': {url:'https://coinbase.com',refresh:'~5 min (live order book)',contact:'https://help.coinbase.com',fees:'https://help.coinbase.com/en/coinbase/trading-and-funding/pricing-and-fees/fees'},
+  'OKX': {url:'https://okx.com',refresh:'~5 min (live order book)',contact:'https://www.okx.com/support',fees:'https://www.okx.com/fees'},
+  'Bybit': {url:'https://bybit.com',refresh:'~5 min (live order book)',contact:'https://www.bybit.com/en/help-center',fees:'https://www.bybit.com/en/help-center/article/Fee-Structure'},
+  'KuCoin': {url:'https://kucoin.com',refresh:'~5 min (live order book)',contact:'https://www.kucoin.com/support',fees:'https://www.kucoin.com/vip/level'},
+  'Bitso': {url:'https://bitso.com',refresh:'~5 min (live REST API)',contact:'https://help.bitso.com',fees:'https://bitso.com/fees'},
   'Wise': {url:'https://wise.com',refresh:'~30 min (live FX rate)',contact:'https://wise.com/help',fees:'https://wise.com/pricing'},
-  'Buda': {url:'https://buda.com',refresh:'~3 min (live REST API)',contact:'https://help.buda.com',fees:'https://www.buda.com/comisiones'},
-  'VALR': {url:'https://valr.com',refresh:'~3 min (live REST API)',contact:'https://support.valr.com',fees:'https://www.valr.com/fees'},
-  'CoinDCX': {url:'https://coindcx.com',refresh:'~3 min (live REST API)',contact:'https://support.coindcx.com',fees:'https://coindcx.com/fees'},
-  'WazirX': {url:'https://wazirx.com',refresh:'~3 min (live REST API)',contact:'https://support.wazirx.com',fees:'https://wazirx.com/fees'},
+  'Buda': {url:'https://buda.com',refresh:'~5 min (live REST API)',contact:'https://help.buda.com',fees:'https://www.buda.com/comisiones'},
+  'VALR': {url:'https://valr.com',refresh:'~5 min (live REST API)',contact:'https://support.valr.com',fees:'https://www.valr.com/fees'},
+  'CoinDCX': {url:'https://coindcx.com',refresh:'~5 min (live REST API)',contact:'https://support.coindcx.com',fees:'https://coindcx.com/fees'},
+  'WazirX': {url:'https://wazirx.com',refresh:'~5 min (live REST API)',contact:'https://support.wazirx.com',fees:'https://wazirx.com/fees'},
   'SatoshiTango': {url:'https://satoshitango.com',refresh:'~5 min (live REST API)',contact:'https://satoshitango.com/contacto'},
   'Uphold': {url:'https://uphold.com',refresh:'~5 min (live public ticker)',contact:'https://support.uphold.com',fees:'https://uphold.com/get-started/service-fees'},
   'Binance P2P': {url:'https://p2p.binance.com',refresh:'~5 min (live P2P offers)',contact:'https://www.binance.com/en/support'},
@@ -2865,7 +2865,7 @@ async function getFingerprint(){
     <div class="px-6 py-5 space-y-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
       <div>
         <div class="font-semibold text-gray-900 dark:text-white mb-1" data-i18n="disc_rate_h">Rate accuracy</div>
-        <p data-i18n="disc_rate">Exchange rates and fees shown on Coinnect are sourced from provider APIs and published pricing pages. Rates update approximately every 3 minutes for live sources. For providers without a public API, fees are based on published pricing and marked with "~est." — these are estimates and may not reflect the exact rate you will receive.</p>
+        <p data-i18n="disc_rate">Exchange rates and fees shown on Coinnect are sourced from provider APIs and published pricing pages. Rates update approximately every 5 minutes for live sources. For providers without a public API, fees are based on published pricing and marked with "~est." — these are estimates and may not reflect the exact rate you will receive.</p>
       </div>
       <div>
         <div class="font-semibold text-gray-900 dark:text-white mb-1" data-i18n="disc_liability_h">No liability</div>
